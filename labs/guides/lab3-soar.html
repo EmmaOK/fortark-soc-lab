@@ -1,0 +1,927 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Lab 3 — SOAR Automation | Fortark SOC Labs</title>
+<style>
+  :root {
+    --bg:#0d1117; --bg2:#161b22; --bg3:#21262d; --border:#30363d;
+    --text:#e6edf3; --muted:#8b949e;
+    --accent:#58a6ff; --accent2:#3fb950; --warn:#d29922; --danger:#f85149;
+    --purple:#bc8cff; --teal:#2ea89f; --orange:#e8812a;
+    --code-bg:#1c2128; --tag-bg:#1f2a3d;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif;
+    background:var(--bg);color:var(--text);line-height:1.7;font-size:16px;}
+  .header{background:var(--bg2);border-bottom:1px solid var(--border);
+    padding:16px 0;position:sticky;top:0;z-index:100;}
+  .header-inner{max-width:860px;margin:0 auto;padding:0 24px;
+    display:flex;align-items:center;gap:12px;}
+  .logo{font-size:13px;font-weight:600;color:var(--muted);letter-spacing:.08em;}
+  .logo span{color:var(--accent);}
+  .lab-badge{padding:4px 12px;background:rgba(88,166,255,.12);
+    border:1px solid rgba(88,166,255,.3);border-radius:20px;
+    font-size:12px;font-weight:700;color:var(--accent);}
+  .container{max-width:860px;margin:0 auto;padding:40px 24px 80px;}
+  h1{font-size:30px;font-weight:800;letter-spacing:-.02em;line-height:1.2;margin-bottom:12px;}
+  h2{font-size:22px;font-weight:700;margin:40px 0 16px;
+    padding-bottom:10px;border-bottom:1px solid var(--border);}
+  h3{font-size:17px;font-weight:700;margin:28px 0 12px;}
+  p{margin-bottom:14px;}
+  hr{border:none;border-top:1px solid var(--border);margin:32px 0;}
+  strong{color:var(--text);}
+  code{font-family:'SF Mono','Fira Mono',monospace;font-size:13px;
+    background:var(--bg3);border:1px solid var(--border);
+    border-radius:4px;padding:1px 6px;color:var(--accent2);}
+  pre{background:var(--code-bg);border:1px solid var(--border);border-radius:8px;
+    padding:18px 20px;margin:16px 0;overflow-x:auto;
+    font-family:'SF Mono','Fira Mono',monospace;font-size:13px;
+    line-height:1.8;color:#a9b7c6;}
+
+  /* ── META ── */
+  .meta-strip{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:28px;
+    padding-bottom:20px;border-bottom:1px solid var(--border);}
+  .meta-chip{display:flex;align-items:center;gap:6px;
+    background:var(--bg2);border:1px solid var(--border);border-radius:20px;
+    padding:5px 14px;font-size:13px;color:var(--muted);}
+  .meta-chip strong{color:var(--text);}
+
+  /* ── MITRE TABLE ── */
+  .mitre-table{width:100%;border-collapse:collapse;margin:16px 0;font-size:14px;}
+  .mitre-table th{background:var(--bg3);border:1px solid var(--border);
+    padding:10px 14px;text-align:left;font-size:11px;font-weight:700;
+    letter-spacing:.08em;text-transform:uppercase;color:var(--muted);}
+  .mitre-table td{border:1px solid var(--border);padding:10px 14px;vertical-align:top;line-height:1.5;}
+  .mitre-table tr:nth-child(even) td{background:rgba(33,38,45,.5);}
+  .mitre-badge{display:inline-block;padding:2px 8px;
+    background:rgba(188,140,255,.12);border:1px solid rgba(188,140,255,.3);
+    border-radius:4px;font-size:11px;font-weight:700;color:var(--purple);
+    font-family:monospace;white-space:nowrap;}
+  .tactic-badge{display:inline-block;padding:2px 8px;
+    background:rgba(88,166,255,.1);border:1px solid rgba(88,166,255,.25);
+    border-radius:4px;font-size:11px;font-weight:700;color:var(--accent);}
+
+  /* ── PART NAV ── */
+  .part-nav{display:flex;flex-wrap:wrap;gap:8px;margin:24px 0;
+    padding:16px 20px;background:var(--bg2);
+    border:1px solid var(--border);border-radius:8px;}
+  .part-chip{padding:5px 14px;border-radius:20px;font-size:12px;font-weight:600;
+    color:var(--muted);border:1px solid var(--border);background:var(--bg3);
+    cursor:pointer;text-decoration:none;transition:all .2s;}
+  .part-chip:hover,.part-chip.active{background:var(--tag-bg);
+    border-color:var(--accent);color:var(--accent);}
+
+  /* ── SCENARIO ── */
+  .scenario-box{background:var(--bg2);border-left:4px solid var(--teal);
+    border-radius:0 8px 8px 0;padding:20px 24px;margin:20px 0;}
+  .scenario-box p{margin-bottom:10px;}
+  .scenario-box p:last-child{margin-bottom:0;}
+
+  /* ── PIPELINE DIAGRAM ── */
+  .pipeline{
+    background:var(--bg2);border:1px solid var(--border);border-radius:12px;
+    padding:28px 24px;margin:20px 0;
+  }
+  .pipeline-title{font-size:11px;font-weight:700;letter-spacing:.12em;
+    text-transform:uppercase;color:var(--muted);margin-bottom:24px;text-align:center;}
+  .pipeline-flow{display:flex;flex-direction:column;align-items:center;gap:0;}
+  .pipeline-node{
+    width:100%;max-width:520px;display:flex;align-items:center;gap:16px;
+    padding:14px 20px;border-radius:10px;border:1px solid;
+    position:relative;
+  }
+  .pn-icon{width:40px;height:40px;border-radius:50%;display:flex;
+    align-items:center;justify-content:center;font-size:18px;flex-shrink:0;}
+  .pn-body .pn-name{font-size:14px;font-weight:700;margin-bottom:3px;}
+  .pn-body .pn-desc{font-size:12px;color:var(--muted);line-height:1.4;}
+  .pipeline-arrow{
+    display:flex;flex-direction:column;align-items:center;
+    width:100%;max-width:520px;margin:0;
+  }
+  .arrow-line{width:2px;height:16px;background:var(--border);}
+  .arrow-label{
+    font-size:11px;color:var(--muted);text-align:center;
+    padding:4px 12px;background:var(--bg3);border:1px solid var(--border);
+    border-radius:20px;font-family:monospace;white-space:nowrap;margin:4px 0;
+  }
+  .arrow-tip{width:0;height:0;
+    border-left:6px solid transparent;border-right:6px solid transparent;
+    border-top:8px solid var(--border);}
+
+  /* node colours */
+  .pn-attacker{background:rgba(248,81,73,.06);border-color:rgba(248,81,73,.3);}
+  .pn-attacker .pn-icon{background:rgba(248,81,73,.15);}
+  .pn-attacker .pn-name{color:var(--danger);}
+  .pn-target{background:rgba(210,153,34,.06);border-color:rgba(210,153,34,.3);}
+  .pn-target .pn-icon{background:rgba(210,153,34,.15);}
+  .pn-target .pn-name{color:var(--warn);}
+  .pn-wazuh{background:rgba(88,166,255,.06);border-color:rgba(88,166,255,.3);}
+  .pn-wazuh .pn-icon{background:rgba(88,166,255,.15);}
+  .pn-wazuh .pn-name{color:var(--accent);}
+  .pn-shuffle{background:rgba(188,140,255,.06);border-color:rgba(188,140,255,.3);}
+  .pn-shuffle .pn-icon{background:rgba(188,140,255,.15);}
+  .pn-shuffle .pn-name{color:var(--purple);}
+  .pn-thehive{background:rgba(46,168,159,.06);border-color:rgba(46,168,159,.3);}
+  .pn-thehive .pn-icon{background:rgba(46,168,159,.15);}
+  .pn-thehive .pn-name{color:var(--teal);}
+  .pn-analyst{background:rgba(63,185,80,.06);border-color:rgba(63,185,80,.3);}
+  .pn-analyst .pn-icon{background:rgba(63,185,80,.15);}
+  .pn-analyst .pn-name{color:var(--accent2);}
+
+  /* ── ROLE TABLE ── */
+  .role-table{width:100%;border-collapse:collapse;margin:16px 0;font-size:14px;}
+  .role-table th{background:var(--bg3);border:1px solid var(--border);
+    padding:10px 14px;text-align:left;font-size:11px;font-weight:700;
+    letter-spacing:.08em;text-transform:uppercase;color:var(--muted);}
+  .role-table td{border:1px solid var(--border);padding:10px 14px;vertical-align:top;}
+  .role-table tr:nth-child(even) td{background:rgba(33,38,45,.5);}
+
+  /* ── STUDENT TABLE ── */
+  .student-table{width:100%;border-collapse:collapse;margin:16px 0;font-size:14px;}
+  .student-table th{background:var(--bg3);border:1px solid var(--border);
+    padding:10px 14px;text-align:left;font-size:11px;font-weight:700;
+    letter-spacing:.08em;text-transform:uppercase;color:var(--muted);}
+  .student-table td{border:1px solid var(--border);padding:10px 14px;}
+
+  /* ── PREFLIGHT ── */
+  .preflight{display:flex;flex-direction:column;gap:12px;margin:16px 0;}
+  .preflight-item{display:flex;align-items:flex-start;gap:14px;
+    padding:14px 18px;background:var(--bg2);
+    border:1px solid var(--border);border-radius:8px;}
+  .pf-num{width:28px;height:28px;border-radius:50%;flex-shrink:0;
+    background:var(--bg3);border:1px solid var(--border);
+    display:flex;align-items:center;justify-content:center;
+    font-weight:800;font-size:13px;color:var(--muted);}
+  .pf-body .pf-head{font-size:14px;font-weight:700;margin-bottom:4px;}
+  .pf-body .pf-sub{font-size:13px;color:var(--muted);line-height:1.5;}
+
+  /* ── STEP LIST ── */
+  .step-list{display:flex;flex-direction:column;gap:12px;margin:16px 0;}
+  .step-item{display:flex;align-items:flex-start;gap:14px;
+    padding:14px 18px;background:var(--bg2);
+    border:1px solid var(--border);border-radius:8px;}
+  .step-num{width:28px;height:28px;border-radius:50%;flex-shrink:0;
+    background:rgba(88,166,255,.15);border:1px solid rgba(88,166,255,.3);
+    display:flex;align-items:center;justify-content:center;
+    font-weight:800;font-size:13px;color:var(--accent);}
+  .step-body{font-size:14px;line-height:1.6;}
+
+  /* ── QUESTION ── */
+  .question{display:flex;gap:14px;align-items:flex-start;
+    padding:16px 18px;margin:14px 0;
+    background:var(--bg3);border:1px solid var(--border);border-radius:8px;}
+  .question-label{font-size:11px;font-weight:800;letter-spacing:.1em;
+    text-transform:uppercase;color:var(--accent);flex-shrink:0;width:36px;}
+  .question-text{font-size:15px;font-weight:600;line-height:1.5;}
+
+  /* ── CALLOUT ── */
+  .callout{background:rgba(88,166,255,.06);border-left:3px solid var(--accent);
+    border-radius:0 8px 8px 0;padding:14px 18px;margin:14px 0;
+    font-size:14px;color:var(--muted);line-height:1.7;}
+  .callout strong{color:var(--text);}
+  .callout.warn{background:rgba(210,153,34,.06);border-left-color:var(--warn);}
+  .callout.success{background:rgba(63,185,80,.06);border-left-color:var(--accent2);}
+  .callout.purple{background:rgba(188,140,255,.06);border-left-color:var(--purple);}
+
+  /* ── TIMING CAPTURE ── */
+  .timing-box{
+    display:flex;align-items:center;gap:20px;flex-wrap:wrap;
+    background:var(--bg3);border:1px solid rgba(188,140,255,.3);
+    border-radius:10px;padding:18px 22px;margin:16px 0;
+  }
+  .timing-label{font-size:14px;font-weight:700;color:var(--purple);}
+  .timing-input{
+    background:transparent;border:none;border-bottom:2px solid rgba(188,140,255,.4);
+    color:var(--purple);font-family:'SF Mono','Fira Mono',monospace;
+    font-size:28px;font-weight:800;padding:2px 8px;outline:none;
+    width:120px;text-align:center;transition:border-color .2s;
+  }
+  .timing-input:focus{border-bottom-color:var(--purple);}
+  .timing-input::placeholder{color:rgba(188,140,255,.3);font-style:italic;}
+  .timing-unit{font-size:18px;color:var(--muted);font-weight:600;}
+  .timing-sub{font-size:12px;color:var(--muted);line-height:1.5;flex:1;}
+
+  /* ── COMPARISON TABLE ── */
+  .comparison{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin:20px 0;}
+  .comp-col{background:var(--bg2);border:1px solid var(--border);border-radius:10px;overflow:hidden;}
+  .comp-header{padding:14px 18px;font-size:13px;font-weight:700;
+    letter-spacing:.06em;text-transform:uppercase;border-bottom:1px solid var(--border);}
+  .comp-header.manual{background:rgba(248,81,73,.08);color:var(--danger);}
+  .comp-header.auto{background:rgba(63,185,80,.08);color:var(--accent2);}
+  .comp-steps{padding:12px 0;}
+  .comp-step{
+    display:flex;align-items:flex-start;gap:12px;
+    padding:10px 18px;border-bottom:1px solid var(--border);font-size:13px;
+  }
+  .comp-step:last-child{border-bottom:none;}
+  .comp-step-num{
+    width:22px;height:22px;border-radius:50%;flex-shrink:0;
+    display:flex;align-items:center;justify-content:center;
+    font-size:11px;font-weight:800;
+  }
+  .comp-step.manual-step .comp-step-num{background:rgba(248,81,73,.15);color:var(--danger);}
+  .comp-step.auto-step .comp-step-num{background:rgba(63,185,80,.15);color:var(--accent2);}
+  .comp-step-text{line-height:1.5;color:var(--text);}
+  .comp-step.automated .comp-step-text{color:var(--muted);font-style:italic;}
+  .auto-chip{
+    display:inline-flex;align-items:center;gap:4px;
+    padding:1px 7px;background:rgba(63,185,80,.12);
+    border:1px solid rgba(63,185,80,.3);border-radius:10px;
+    font-size:10px;font-weight:700;color:var(--accent2);
+    vertical-align:middle;margin-left:6px;
+  }
+  .comp-footer{
+    padding:12px 18px;font-size:12px;font-weight:700;
+    border-top:1px solid var(--border);
+  }
+  .comp-footer.manual{color:var(--danger);}
+  .comp-footer.auto{color:var(--accent2);}
+
+  /* ── THEHIVE CHECKLIST ── */
+  .thehive-checklist{display:flex;flex-direction:column;gap:12px;margin:20px 0;}
+  .thc-item{display:flex;align-items:flex-start;gap:14px;
+    padding:16px 18px;background:var(--bg2);
+    border:1px solid var(--border);border-radius:8px;
+    cursor:pointer;transition:border-color .2s,background .2s;}
+  .thc-item input[type="checkbox"]{display:none;}
+  .thc-box{width:20px;height:20px;border-radius:5px;flex-shrink:0;
+    border:2px solid var(--border);margin-top:2px;
+    display:flex;align-items:center;justify-content:center;
+    transition:all .2s;background:var(--bg3);}
+  .thc-box svg{display:none;}
+  .thc-item:has(input:checked){border-color:rgba(63,185,80,.4);background:rgba(63,185,80,.04);}
+  .thc-item:has(input:checked) .thc-box{background:var(--accent2);border-color:var(--accent2);}
+  .thc-item:has(input:checked) .thc-box svg{display:block;}
+  .thc-item:has(input:checked) .thc-head{text-decoration:line-through;color:var(--muted);}
+  .thc-item:hover:not(:has(input:checked)){border-color:var(--muted);}
+  .thc-head{font-size:14px;font-weight:700;margin-bottom:4px;color:var(--text);}
+  .thc-sub{font-size:13px;color:var(--muted);line-height:1.5;}
+
+  /* ── TAKEAWAYS ── */
+  .takeaways{list-style:none;margin:16px 0;padding:0;}
+  .takeaways li{padding:14px 0;border-bottom:1px solid var(--border);
+    padding-left:20px;position:relative;font-size:15px;line-height:1.6;}
+  .takeaways li:last-child{border-bottom:none;}
+  .takeaways li::before{content:'→';position:absolute;left:0;
+    color:var(--teal);font-weight:700;}
+
+  /* ── TLP BADGE ── */
+  .tlp-red{display:inline-flex;align-items:center;gap:6px;
+    padding:4px 12px;background:rgba(248,81,73,.12);
+    border:1px solid rgba(248,81,73,.3);border-radius:20px;
+    font-size:12px;font-weight:700;color:var(--danger);}
+  .tlp-dot{width:8px;height:8px;border-radius:50%;background:var(--danger);}
+
+  /* ── CONCEPT BOX ── */
+  .concept-box{background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:24px 28px;margin:20px 0;}
+  .cb-title{font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;margin-bottom:20px;}
+  .concept-terms{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;margin-bottom:20px;}
+  .ct-card{background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:16px 18px;}
+  .ct-card .ct-term{font-size:15px;font-weight:800;margin-bottom:6px;}
+  .ct-card .ct-def{font-size:13px;color:var(--muted);line-height:1.6;}
+  .concept-loop{display:flex;align-items:center;background:var(--bg3);border:1px solid var(--border);border-radius:8px;overflow:hidden;margin-bottom:16px;}
+  .cl-step{flex:1;padding:14px 12px;text-align:center;border-right:1px solid var(--border);}
+  .cl-step:last-child{border-right:none;}
+  .cl-step .cl-icon{font-size:20px;margin-bottom:6px;}
+  .cl-step .cl-label{font-size:10px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-bottom:4px;}
+  .cl-step .cl-desc{font-size:11px;color:var(--text);line-height:1.4;}
+  .cl-arrow{font-size:14px;color:var(--border);padding:0 2px;flex-shrink:0;align-self:center;}
+  .concept-analogy{border-radius:0 6px 6px 0;padding:12px 16px;font-size:13px;color:var(--muted);line-height:1.6;}
+  .concept-analogy strong{color:var(--text);}
+
+  .access-box{background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:20px 24px;margin:20px 0 0;}
+  .access-box-title{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:12px;}
+  .access-table{width:100%;border-collapse:collapse;}
+  .access-table th{background:var(--bg3);color:var(--muted);font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;padding:8px 12px;text-align:left;border-bottom:1px solid var(--border);}
+  .access-table td{padding:9px 12px;border-bottom:1px solid var(--border);font-size:13px;vertical-align:middle;}
+  .access-table tr:last-child td{border-bottom:none;}
+  .access-table td:first-child{font-weight:600;color:var(--text);white-space:nowrap;}
+  .access-table a{color:var(--accent);text-decoration:none;font-family:monospace;font-size:12px;}
+  .access-table a:hover{text-decoration:underline;}
+  .access-cred{font-family:monospace;font-size:12px;background:var(--bg3);padding:2px 6px;border-radius:4px;}
+  .access-note{font-size:12px;color:var(--muted);margin-top:10px;padding:8px 12px;background:var(--bg3);border-radius:6px;border-left:3px solid var(--accent);}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-inner">
+    <div class="logo">Fortark <span>SOC</span> Labs</div>
+    <div class="lab-badge">Lab 3 of 7</div>
+  </div>
+</div>
+
+<div class="container">
+
+  <h1>SOAR Automation</h1>
+  <p style="font-size:18px;color:var(--muted);margin-bottom:20px;line-height:1.5;">Making the SOC respond in seconds — without a human in the loop</p>
+
+  <div class="meta-strip">
+    <div class="meta-chip">⏱ <strong>60 minutes</strong></div>
+    <div class="meta-chip">📊 Difficulty: <strong>Intermediate — builds on Labs 1 &amp; 2</strong></div>
+    <div class="meta-chip">🔧 Wazuh · Shuffle SOAR · TheHive</div>
+  </div>
+
+  <!-- MITRE -->
+  <h2>MITRE ATT&CK coverage</h2>
+  <table class="mitre-table">
+    <thead><tr><th>Phase</th><th>Technique</th><th>What it means in plain English</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><span class="tactic-badge">Initial Access</span></td>
+        <td><span class="mitre-badge">T1110.001</span></td>
+        <td>Attacker hammers SSH login until it breaks — brute force / password spraying</td>
+      </tr>
+      <tr>
+        <td><span class="tactic-badge">Detection</span></td>
+        <td style="color:var(--muted);font-size:13px;">—</td>
+        <td>Wazuh detects the brute force and successful login via rule 40112</td>
+      </tr>
+      <tr>
+        <td><span class="tactic-badge">Response</span></td>
+        <td style="color:var(--muted);font-size:13px;">—</td>
+        <td>Shuffle SOAR automatically creates a TheHive incident case — no analyst involved</td>
+      </tr>
+    </tbody>
+  </table>
+
+
+  <!-- ACCESS -->
+  <h2 id="access">Platform Access</h2>
+  <div class="access-box">
+    <div class="access-box-title">Open these in separate browser tabs before starting</div>
+    <table class="access-table">
+      <thead><tr><th>Tool</th><th>URL</th><th>Login</th></tr></thead>
+      <tbody>
+        <tr><td>Wazuh (SIEM)</td><td><a href="http://localhost" target="_blank">http://localhost</a></td><td><span class="access-cred">admin</span> / <span class="access-cred">S0cPlatf0rm!e0d085fd</span></td></tr>
+        <tr><td>TheHive (cases)</td><td><a href="http://localhost/thehive/" target="_blank">http://localhost/thehive/</a></td><td><span class="access-cred">studentN@thehive.local</span> / <span class="access-cred">FortarkLabs1!</span></td></tr>
+        <tr><td>Shuffle (SOAR)</td><td><a href="https://localhost:3001" target="_blank">https://localhost:3001</a></td><td><span class="access-cred">studentN</span> / <span class="access-cred">FortarkLabs1!</span></td></tr>
+      </tbody>
+    </table>
+    <div class="access-note"><strong>N</strong> = your seat number (1–5). Accept the SSL certificate warning on the Shuffle link.</div>
+  </div>
+
+  <!-- CONCEPT -->
+  <h2 id="concept">What is SOAR?</h2>
+
+  <div class="concept-box">
+    <div class="cb-title" style="color:var(--teal)">Two terms you need to understand first</div>
+
+    <div class="concept-terms">
+      <div class="ct-card">
+        <div class="ct-term" style="color:var(--teal)">SOAR — Security Orchestration, Automation, and Response</div>
+        <div class="ct-def">Tools that connect your security products together and automate repetitive response tasks. On its own, Wazuh detects a brute force and fires an alert that sits in a queue until someone opens it — hours later. SOAR changes this: a pre-written playbook runs automatically the moment the alert fires. The case is created, the IP is logged, the analyst is notified. No human involvement. No delay.</div>
+      </div>
+      <div class="ct-card">
+        <div class="ct-term" style="color:var(--accent)">Playbook</div>
+        <div class="ct-def">A pre-written sequence of steps that runs automatically in response to a trigger. "If a brute force alert fires, create a TheHive case, tag it with the attacker's IP, set severity to High, and notify the on-call analyst." That sequence, codified into a workflow, runs the same way every time, in under 3 seconds, without anyone having to remember the steps.</div>
+      </div>
+    </div>
+
+    <div class="concept-loop">
+      <div class="cl-step">
+        <div class="cl-icon">🚨</div>
+        <div class="cl-label">Alert fires</div>
+        <div class="cl-desc">Wazuh detects the brute force</div>
+      </div>
+      <div class="cl-arrow">→</div>
+      <div class="cl-step">
+        <div class="cl-icon">⚡</div>
+        <div class="cl-label">SOAR called</div>
+        <div class="cl-desc">Wazuh integration calls Shuffle instantly</div>
+      </div>
+      <div class="cl-arrow">→</div>
+      <div class="cl-step">
+        <div class="cl-icon">📋</div>
+        <div class="cl-label">Playbook runs</div>
+        <div class="cl-desc">Parses alert, extracts IP, sets severity</div>
+      </div>
+      <div class="cl-arrow">→</div>
+      <div class="cl-step">
+        <div class="cl-icon">📁</div>
+        <div class="cl-label">Case created</div>
+        <div class="cl-desc">TheHive case waiting before analyst opens laptop</div>
+      </div>
+    </div>
+
+    <div class="concept-analogy" style="background:rgba(46,168,159,.05);border-left:3px solid var(--teal)">
+      <strong>Analogy:</strong> Think of a hospital's cardiac emergency system. When a patient's heart monitor flatlines, it does not wait for a nurse to notice the screen. It triggers an alarm, pages the crash team, and unlocks the crash cart — automatically, in the first 10 seconds. The team arrives to a room that is already prepared. SOAR does the same thing for a SOC: the analyst arrives to a case that is already documented, timestamped, and tagged.
+    </div>
+  </div>
+
+  <nav class="part-nav">
+    <a class="part-chip" href="#access">Platform Access</a>
+    <a class="part-chip" href="#concept">What is SOAR?</a>
+    <a class="part-chip" href="#scenario">Scenario</a>
+    <a class="part-chip" href="#pipeline">The Pipeline</a>
+    <a class="part-chip" href="#preflight">Pre-flight</a>
+    <a class="part-chip" href="#part1">Part 1 — Tour</a>
+    <a class="part-chip" href="#part2">Part 2 — Trigger</a>
+    <a class="part-chip" href="#part3">Part 3 — Examine</a>
+    <a class="part-chip" href="#part4">Part 4 — Promote</a>
+    <a class="part-chip" href="#part5">Part 5 — Compare</a>
+    <a class="part-chip" href="#part6">Part 6 — Close</a>
+    <a class="part-chip" href="#takeaways">Takeaways</a>
+  </nav>
+
+  <hr>
+
+  <!-- SCENARIO -->
+  <h2 id="scenario">The scenario</h2>
+
+  <div class="scenario-box">
+    <p>In Lab 1 you ran a brute force attack. You found the alert manually.</p>
+    <p>In Lab 2 you investigated what happened after the attacker got in. You built the timeline manually.</p>
+    <p>Now imagine you are running a SOC for 500 servers. A new brute force attempt hits every 3 minutes. You cannot investigate each one by hand — you will be buried by the time any analyst opens the first ticket.</p>
+    <p><strong>This is the problem SOAR solves.</strong></p>
+    <p style="margin-bottom:0;"><strong>SOAR</strong> (Security Orchestration, Automation and Response) intercepts the Wazuh alert automatically and runs a response playbook — creating a TheHive incident case, tagging it with MITRE ATT&amp;CK techniques, and logging the attacker's IP, all within 3 seconds of the first brute force packet hitting your server. No human involvement. No delay. The case is already waiting when an analyst opens their dashboard in the morning.</p>
+  </div>
+
+  <hr>
+
+  <!-- PIPELINE -->
+  <h2 id="pipeline">How the automation pipeline works</h2>
+
+  <div class="pipeline">
+    <div class="pipeline-title">End-to-end automation — alert to case in under 5 seconds</div>
+    <div class="pipeline-flow">
+
+      <div class="pipeline-node pn-attacker">
+        <div class="pn-icon">💀</div>
+        <div class="pn-body">
+          <div class="pn-name">Attacker</div>
+          <div class="pn-desc">Runs hydra from Kali — SSH brute force against s[N]-lab-target</div>
+        </div>
+      </div>
+
+      <div class="pipeline-arrow">
+        <div class="arrow-line"></div>
+        <div class="arrow-label">SSH brute force → rule 40112 fires</div>
+        <div class="arrow-line"></div>
+        <div class="arrow-tip"></div>
+      </div>
+
+      <div class="pipeline-node pn-wazuh">
+        <div class="pn-icon">🔍</div>
+        <div class="pn-body">
+          <div class="pn-name">Wazuh Manager</div>
+          <div class="pn-desc">Correlates failures + successful login → fires rule 40112 (Level 12) → calls shuffle-execute integration</div>
+        </div>
+      </div>
+
+      <div class="pipeline-arrow">
+        <div class="arrow-line"></div>
+        <div class="arrow-label">HTTP POST — full alert JSON</div>
+        <div class="arrow-line"></div>
+        <div class="arrow-tip"></div>
+      </div>
+
+      <div class="pipeline-node pn-shuffle">
+        <div class="pn-icon">⚙️</div>
+        <div class="pn-body">
+          <div class="pn-name">Shuffle SOAR</div>
+          <div class="pn-desc">Receives alert → runs workflow "Wazuh Brute Force — Auto TheHive Case" → parses agent name, attacker IP, severity → calls TheHive API</div>
+        </div>
+      </div>
+
+      <div class="pipeline-arrow">
+        <div class="arrow-line"></div>
+        <div class="arrow-label">POST /api/v1/alert — structured case data</div>
+        <div class="arrow-line"></div>
+        <div class="arrow-tip"></div>
+      </div>
+
+      <div class="pipeline-node pn-thehive">
+        <div class="pn-icon">🐝</div>
+        <div class="pn-body">
+          <div class="pn-name">TheHive</div>
+          <div class="pn-desc">Creates HIGH severity alert: "[AUTOMATED] SSH Brute Force + Login Detected" with agent, IP, MITRE tags</div>
+        </div>
+      </div>
+
+      <div class="pipeline-arrow">
+        <div class="arrow-line"></div>
+        <div class="arrow-label">Case waiting on next login</div>
+        <div class="arrow-line"></div>
+        <div class="arrow-tip"></div>
+      </div>
+
+      <div class="pipeline-node pn-analyst">
+        <div class="pn-icon">🧑‍💻</div>
+        <div class="pn-body">
+          <div class="pn-name">Analyst Dashboard</div>
+          <div class="pn-desc">Opens TheHive — incident already documented, tagged, and ready for review. No manual ticket creation needed.</div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <table class="role-table">
+    <thead><tr><th>Component</th><th>Role</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><strong style="color:var(--accent);">Wazuh</strong></td>
+        <td>Detects the event and sends the full alert JSON to Shuffle via the integration script</td>
+      </tr>
+      <tr>
+        <td><strong style="color:var(--purple);">Shuffle SOAR</strong></td>
+        <td>Receives the alert, parses the fields, executes the workflow, calls the TheHive API</td>
+      </tr>
+      <tr>
+        <td><strong style="color:var(--teal);">TheHive</strong></td>
+        <td>Stores the structured incident alert for analyst review — ready to promote to a full case</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <hr>
+
+  <!-- STUDENT DETAILS -->
+  <h2>Your student details</h2>
+  <p>Same target as Labs 1 and 2.</p>
+  <table class="student-table">
+    <thead><tr><th>Student</th><th>Target</th><th>Wazuh filter</th></tr></thead>
+    <tbody>
+      <tr><td>Student 1</td><td><code>ssh victim@lab-target</code></td><td><code>agent.name: lab-target</code></td></tr>
+      <tr><td>Student 2</td><td><code>ssh victim@lab-target</code></td><td><code>agent.name: lab-target</code></td></tr>
+      <tr><td>Student 3</td><td><code>ssh victim@lab-target</code></td><td><code>agent.name: lab-target</code></td></tr>
+      <tr><td>Student 4</td><td><code>ssh victim@lab-target</code></td><td><code>agent.name: lab-target</code></td></tr>
+      <tr><td>Student 5</td><td><code>ssh victim@lab-target</code></td><td><code>agent.name: lab-target</code></td></tr>
+    </tbody>
+  </table>
+
+  <hr>
+
+  <!-- PRE-FLIGHT -->
+  <h2 id="preflight">Pre-flight check</h2>
+  <div class="preflight">
+    <div class="preflight-item">
+      <div class="pf-num">1</div>
+      <div class="pf-body">
+        <div class="pf-head">Wazuh dashboard loads</div>
+        <div class="pf-sub">Open <code>http://localhost</code> and confirm you can see the Wazuh dashboard.</div>
+      </div>
+    </div>
+    <div class="preflight-item">
+      <div class="pf-num">2</div>
+      <div class="pf-body">
+        <div class="pf-head">Your Wazuh agent is active</div>
+        <div class="pf-sub">Agents → <code>s[N]-lab-target</code> → status: <strong>Active</strong> (green dot).</div>
+      </div>
+    </div>
+    <div class="preflight-item">
+      <div class="pf-num">3</div>
+      <div class="pf-body">
+        <div class="pf-head">Kali terminal loads</div>
+        <div class="pf-sub">Open <code>http://localhost/attacker/</code> — you should see the <code>student@kali</code> prompt.</div>
+      </div>
+    </div>
+    <div class="preflight-item">
+      <div class="pf-num">4</div>
+      <div class="pf-body">
+        <div class="pf-head">TheHive loads</div>
+        <div class="pf-sub">
+          Navigate to TheHive from the dashboard sidebar.<br>
+          Login: <code>shuffle@soc.local</code> / <code>FortarkLabs1!</code><br>
+          You should see the alerts list (it may already have entries from previous lab sessions).
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <hr>
+
+  <!-- PART 1 -->
+  <h2 id="part1">Part 1 — Tour the automation pipeline before you trigger it</h2>
+  <p>Before running the attack, explore the components that will respond to it. Understanding each piece makes the automation feel real rather than magical.</p>
+
+  <h3>Step 1 — Look at the Shuffle workflow</h3>
+  <div class="step-list">
+    <div class="step-item">
+      <div class="step-num">1</div>
+      <div class="step-body">Open <code>http://localhost:3001</code> in a browser.<br>Login: <code>admin</code> / <code>FortarkLabs1!</code></div>
+    </div>
+    <div class="step-item">
+      <div class="step-num">2</div>
+      <div class="step-body">Click <strong>Workflows</strong> → <strong>Wazuh Brute Force — Auto TheHive Case</strong>.</div>
+    </div>
+    <div class="step-item">
+      <div class="step-num">3</div>
+      <div class="step-body">You will see a single action node: <strong>thehive-create</strong>. Click it and read the configuration — look at the URL and the body fields.</div>
+    </div>
+  </div>
+
+  <div class="question">
+    <div class="question-label">Q1</div>
+    <div class="question-text">What does the <strong>thehive-create</strong> action do when the workflow runs? <em style="color:var(--muted);font-weight:400;">(What URL does it call? What does the body contain?)</em></div>
+  </div>
+
+  <div class="callout purple">
+    The action makes an HTTP POST to TheHive's alert API at <code>http://localhost:9000/api/v1/alert</code>. The body contains fields extracted from the Wazuh alert: the agent name that was attacked, the attacker's source IP, and the severity level. Shuffle maps these automatically from the incoming alert JSON.
+  </div>
+
+  <h3>Step 2 — Understand the Wazuh integration</h3>
+  <p>The integration that connects Wazuh to Shuffle is configured in two places:</p>
+
+  <div class="step-list">
+    <div class="step-item">
+      <div class="step-num" style="background:rgba(88,166,255,.15);border-color:rgba(88,166,255,.3);color:var(--accent);">A</div>
+      <div class="step-body">
+        <strong>In <code>ossec.conf</code></strong> — the Wazuh manager config has an integration block that says: fire on any alert of level 7 or higher, call a script named <code>shuffle-execute</code>, and pass the full alert as JSON.
+      </div>
+    </div>
+    <div class="step-item">
+      <div class="step-num" style="background:rgba(88,166,255,.15);border-color:rgba(88,166,255,.3);color:var(--accent);">B</div>
+      <div class="step-body">
+        <strong>The <code>shuffle-execute</code> script</strong> reads the alert JSON, checks whether it is rule 40112 (brute force + successful login) or level 10+, and if so, calls the Shuffle API to execute the workflow.
+      </div>
+    </div>
+  </div>
+
+  <div class="question">
+    <div class="question-label">Q2</div>
+    <div class="question-text">Why does the integration only fire on rule 40112 specifically, rather than every level-7 alert?</div>
+  </div>
+
+  <div class="callout">
+    Rule 40112 matches <em>both</em> a brute force attempt <em>and</em> a successful login — the combination that signals an actual breach. Many brute force attempts fail and are loud, routine events. <strong>Rule 40112 is the quiet, dangerous one: it means the attacker found the password.</strong> That is the event worth automatic case creation.
+  </div>
+
+  <hr>
+
+  <!-- PART 2 -->
+  <h2 id="part2">Part 2 — Trigger the automation</h2>
+  <p>You are going to run the same brute force attack from Lab 1. This time, instead of looking at Wazuh manually, you will watch the SOAR automation respond.</p>
+
+  <div class="step-list">
+    <div class="step-item">
+      <div class="step-num">1</div>
+      <div class="step-body">
+        Open <strong>two browser tabs side by side</strong>:
+        <ul style="margin-top:8px;padding-left:20px;font-size:14px;color:var(--muted);">
+          <li><strong style="color:var(--text);">Tab A</strong> — TheHive alerts list (login as <code>shuffle@soc.local</code>)</li>
+          <li><strong style="color:var(--text);">Tab B</strong> — Wazuh dashboard, filter <code>agent.name: s[N]-lab-target</code>, time range Last 15 minutes</li>
+        </ul>
+      </div>
+    </div>
+    <div class="step-item">
+      <div class="step-num">2</div>
+      <div class="step-body">
+        In the Kali terminal, run the brute force:
+        <pre style="margin:8px 0 0;">hydra -l victim -P /usr/share/wordlists/rockyou.txt -t 16 -W 1 -F ssh://s[N]-lab-target</pre>
+      </div>
+    </div>
+    <div class="step-item">
+      <div class="step-num">3</div>
+      <div class="step-body">
+        <strong>Watch both tabs while hydra runs.</strong> You are looking for:
+        <ul style="margin-top:8px;padding-left:20px;font-size:14px;color:var(--muted);">
+          <li><strong style="color:var(--text);">Wazuh tab</strong> — the rule 40112 alert to appear</li>
+          <li><strong style="color:var(--text);">TheHive tab</strong> — a new alert to appear automatically, without you doing anything</li>
+        </ul>
+      </div>
+    </div>
+    <div class="step-item">
+      <div class="step-num">4</div>
+      <div class="step-body">When hydra finds the password and exits, <strong>note the exact time.</strong></div>
+    </div>
+    <div class="step-item">
+      <div class="step-num">5</div>
+      <div class="step-body">Count the seconds between when the Wazuh rule 40112 alert appears and when the TheHive alert appears.</div>
+    </div>
+  </div>
+
+  <div class="question">
+    <div class="question-label">Q3</div>
+    <div class="question-text">How many seconds passed between the Wazuh rule 40112 alert and the TheHive case appearing?</div>
+  </div>
+
+  <div class="timing-box">
+    <div>
+      <div class="timing-label">Wazuh → TheHive</div>
+      <div style="display:flex;align-items:center;gap:8px;margin-top:6px;">
+        <input class="timing-input" id="timingInput" type="number" min="0" placeholder="—">
+        <span class="timing-unit">seconds</span>
+      </div>
+    </div>
+    <div class="timing-sub">
+      In a well-tuned SOAR pipeline, alert-to-case creation takes <strong style="color:var(--text);">3–8 seconds</strong>:<br>
+      Wazuh → integration script (~1s) → Shuffle (~1s) → worker spawns + workflow runs (~3–5s) → TheHive API call (~1s).<br>
+      No analyst was involved at any point.
+    </div>
+  </div>
+
+  <hr>
+
+  <!-- PART 3 -->
+  <h2 id="part3">Part 3 — Examine the automatically created case</h2>
+  <p>Open TheHive and click on the new alert titled <strong>[AUTOMATED] SSH Brute Force + Login Detected</strong>. Read through the case details.</p>
+
+  <div class="question">
+    <div class="question-label">Q4</div>
+    <div class="question-text">What information did Shuffle automatically pull from the Wazuh alert? <em style="color:var(--muted);font-weight:400;">(Look at the description field — agent name, attacker IP, alert level)</em></div>
+  </div>
+
+  <div class="question">
+    <div class="question-label">Q5</div>
+    <div class="question-text">What MITRE ATT&amp;CK tags were automatically applied?</div>
+  </div>
+
+  <div class="question">
+    <div class="question-label">Q6</div>
+    <div class="question-text">What severity is the case set to, and why?</div>
+  </div>
+
+  <div class="callout">
+    The severity is <strong>HIGH (3)</strong>. A successful SSH login after brute force is not a failed attempt — the attacker is inside. The severity was set automatically based on the Wazuh rule level, not by analyst judgement. <strong>This ensures consistency:</strong> every brute force + login event gets the same severity treatment, regardless of which analyst is on shift or how tired they are at 3am.
+  </div>
+
+  <hr>
+
+  <!-- PART 4 -->
+  <h2 id="part4">Part 4 — Promote the alert to a case and enrich it</h2>
+  <p>The automated alert is a starting point, not the finished product. Your job as an analyst is to review it, validate it, and promote it to a full investigation case.</p>
+
+  <div class="step-list">
+    <div class="step-item">
+      <div class="step-num">1</div>
+      <div class="step-body">In the alert view, click <strong>Preview</strong> to see all fields.</div>
+    </div>
+    <div class="step-item">
+      <div class="step-num">2</div>
+      <div class="step-body">
+        Verify the attacker IP. In the Kali terminal:
+        <pre style="margin:8px 0 0;">ip addr show</pre>
+        The IP shown in Kali should match what is in the TheHive alert.
+      </div>
+    </div>
+    <div class="step-item">
+      <div class="step-num">3</div>
+      <div class="step-body">If everything looks correct, click <strong>Import</strong> (or <strong>Promote to case</strong>) to convert the alert to a full case.</div>
+    </div>
+    <div class="step-item">
+      <div class="step-num">4</div>
+      <div class="step-body">
+        In the case, add the following observables manually:
+        <table style="width:100%;border-collapse:collapse;margin-top:10px;font-size:13px;">
+          <thead><tr style="background:var(--bg3);">
+            <th style="border:1px solid var(--border);padding:8px 12px;text-align:left;color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.06em;">Observable</th>
+            <th style="border:1px solid var(--border);padding:8px 12px;text-align:left;color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.06em;">Type</th>
+          </tr></thead>
+          <tbody>
+            <tr><td style="border:1px solid var(--border);padding:8px 12px;font-family:monospace;color:var(--accent2);">Attacker IP (from the alert)</td><td style="border:1px solid var(--border);padding:8px 12px;"><span style="background:var(--bg3);border:1px solid var(--border);border-radius:4px;padding:2px 8px;font-size:11px;font-weight:700;color:var(--muted);">IP address</span></td></tr>
+            <tr><td style="border:1px solid var(--border);padding:8px 12px;font-family:monospace;color:var(--accent2);">/etc/passwd</td><td style="border:1px solid var(--border);padding:8px 12px;"><span style="background:var(--bg3);border:1px solid var(--border);border-radius:4px;padding:2px 8px;font-size:11px;font-weight:700;color:var(--muted);">Filename</span></td></tr>
+            <tr><td style="border:1px solid var(--border);padding:8px 12px;font-family:monospace;color:var(--accent2);">https://httpbin.org/post</td><td style="border:1px solid var(--border);padding:8px 12px;"><span style="background:var(--bg3);border:1px solid var(--border);border-radius:4px;padding:2px 8px;font-size:11px;font-weight:700;color:var(--muted);">URL</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div class="question">
+    <div class="question-label">Q7</div>
+    <div class="question-text">What is the difference between an <strong>alert</strong> and a <strong>case</strong> in TheHive?</div>
+  </div>
+
+  <div class="callout success">
+    An <strong>alert</strong> is an automated notification — a raw signal that something may have happened. It is not yet confirmed, not yet assigned, and not yet under active investigation.<br><br>
+    A <strong>case</strong> is a confirmed incident under investigation — assigned analyst, structured timeline, tasks, and a verdict. <strong>Promoting an alert to a case is the analyst's judgement call that says: "This is real. We are working it."</strong>
+  </div>
+
+  <hr>
+
+  <!-- PART 5 -->
+  <h2 id="part5">Part 5 — Compare automated vs. manual response</h2>
+  <p>Think back to Lab 1. Compare what you did then to what happened in this lab.</p>
+
+  <div class="comparison">
+    <div class="comp-col">
+      <div class="comp-header manual">Lab 1 — Manual response</div>
+      <div class="comp-steps">
+        <div class="comp-step manual-step"><div class="comp-step-num">1</div><div class="comp-step-text">Run the attack</div></div>
+        <div class="comp-step manual-step"><div class="comp-step-num">2</div><div class="comp-step-text">Open Wazuh dashboard</div></div>
+        <div class="comp-step manual-step"><div class="comp-step-num">3</div><div class="comp-step-text">Find the alert manually</div></div>
+        <div class="comp-step manual-step"><div class="comp-step-num">4</div><div class="comp-step-text">Understand what it means</div></div>
+        <div class="comp-step manual-step"><div class="comp-step-num">5</div><div class="comp-step-text">Open TheHive</div></div>
+        <div class="comp-step manual-step"><div class="comp-step-num">6</div><div class="comp-step-text">Create the case manually</div></div>
+        <div class="comp-step manual-step"><div class="comp-step-num">7</div><div class="comp-step-text">Add MITRE tags manually</div></div>
+        <div class="comp-step manual-step"><div class="comp-step-num">8</div><div class="comp-step-text">Add observables manually</div></div>
+      </div>
+      <div class="comp-footer manual">~5 minutes per alert</div>
+    </div>
+    <div class="comp-col">
+      <div class="comp-header auto">Lab 3 — SOAR automated</div>
+      <div class="comp-steps">
+        <div class="comp-step manual-step"><div class="comp-step-num">1</div><div class="comp-step-text">Run the attack</div></div>
+        <div class="comp-step manual-step"><div class="comp-step-num">2</div><div class="comp-step-text">Open Wazuh dashboard</div></div>
+        <div class="comp-step manual-step"><div class="comp-step-num">3</div><div class="comp-step-text">Find the alert manually</div></div>
+        <div class="comp-step manual-step"><div class="comp-step-num">4</div><div class="comp-step-text">Understand what it means</div></div>
+        <div class="comp-step auto-step"><div class="comp-step-num">5</div><div class="comp-step-text">TheHive case created <span class="auto-chip">AUTO</span></div></div>
+        <div class="comp-step auto-step"><div class="comp-step-num">6</div><div class="comp-step-text">MITRE tags applied <span class="auto-chip">AUTO</span></div></div>
+        <div class="comp-step auto-step"><div class="comp-step-num">7</div><div class="comp-step-text">Agent &amp; IP populated <span class="auto-chip">AUTO</span></div></div>
+        <div class="comp-step auto-step"><div class="comp-step-num">8</div><div class="comp-step-text">Severity set <span class="auto-chip">AUTO</span></div></div>
+      </div>
+      <div class="comp-footer auto">~5 seconds for steps 5–8</div>
+    </div>
+  </div>
+
+  <div class="question">
+    <div class="question-label">Q8</div>
+    <div class="question-text">In a SOC monitoring 500 endpoints with 200 alerts per day, how much analyst time per day does this automation save?</div>
+  </div>
+
+  <div class="callout warn">
+    <strong>Rough math:</strong> creating a TheHive case manually takes ~5 minutes for a well-practiced analyst. 200 alerts × 5 minutes = 1,000 minutes = <strong>16+ analyst-hours per day</strong>, just on ticket creation. SOAR doesn't replace the investigation — it eliminates the administrative overhead so analysts can spend those hours on actual analysis.
+  </div>
+
+  <div class="question">
+    <div class="question-label">Q9</div>
+    <div class="question-text">What are the risks of fully automated case creation — what could go wrong?</div>
+  </div>
+
+  <div class="callout">
+    Two main risks: <br><br>
+    <strong>(1) False positives</strong> — if the detection logic is too broad, SOAR creates cases for legitimate events, flooding the queue and training analysts to ignore alerts.<br><br>
+    <strong>(2) Automated response overreach</strong> — if the playbook goes further than case creation (e.g., automatically blocking IPs, killing processes, isolating hosts), a false positive becomes an outage. This is why most SOCs automate case creation and enrichment, but keep containment actions as human-approved steps.
+  </div>
+
+  <hr>
+
+  <!-- PART 6 -->
+  <h2 id="part6">Part 6 — Close the case</h2>
+  <p>Work through each step in TheHive to close the investigation.</p>
+
+  <div class="thehive-checklist">
+
+    <label class="thc-item">
+      <input type="checkbox">
+      <div class="thc-box"><svg width="12" height="12" viewBox="0 0 12 12" fill="white"><path d="M1.5 6l3 3 6-6" stroke="white" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+      <div>
+        <div class="thc-head">1 — Set the verdict</div>
+        <div class="thc-sub">Set to: <strong style="color:var(--danger);">True Positive — Confirmed Breach</strong></div>
+      </div>
+    </label>
+
+    <label class="thc-item">
+      <input type="checkbox">
+      <div class="thc-box"><svg width="12" height="12" viewBox="0 0 12 12" fill="white"><path d="M1.5 6l3 3 6-6" stroke="white" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+      <div>
+        <div class="thc-head">2 — Set the TLP</div>
+        <div class="thc-sub">
+          Set to: <span class="tlp-red"><span class="tlp-dot"></span>TLP:RED</span>
+          <span style="font-size:13px;color:var(--muted);margin-left:8px;">Do not share externally — this involves an active breach on your infrastructure.</span>
+        </div>
+      </div>
+    </label>
+
+    <label class="thc-item">
+      <input type="checkbox">
+      <div class="thc-box"><svg width="12" height="12" viewBox="0 0 12 12" fill="white"><path d="M1.5 6l3 3 6-6" stroke="white" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+      <div>
+        <div class="thc-head">3 — Write a closing summary</div>
+        <div class="thc-sub">
+          Add 2–3 sentences to the description field covering:
+          <ul style="margin-top:6px;padding-left:18px;line-height:1.8;">
+            <li>What happened (brute force → successful login)</li>
+            <li>How it was detected (Wazuh rule 40112)</li>
+            <li>How the case was created (Shuffle SOAR automation)</li>
+          </ul>
+        </div>
+      </div>
+    </label>
+
+    <label class="thc-item">
+      <input type="checkbox">
+      <div class="thc-box"><svg width="12" height="12" viewBox="0 0 12 12" fill="white"><path d="M1.5 6l3 3 6-6" stroke="white" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+      <div>
+        <div class="thc-head">4 — Close the case</div>
+        <div class="thc-sub">Mark the case as closed in TheHive.</div>
+      </div>
+    </label>
+
+  </div>
+
+  <hr>
+
+  <!-- TAKEAWAYS -->
+  <h2 id="takeaways">Key takeaways</h2>
+
+  <ul class="takeaways">
+    <li><strong>SOAR is not magic — it is plumbing.</strong> The automation pipeline is just a sequence of API calls: Wazuh calls Shuffle, Shuffle calls TheHive. Understanding each connection means you can troubleshoot when it breaks.</li>
+    <li><strong>Automation is only as good as the detection.</strong> Shuffle created the case because Wazuh fired rule 40112. If the detection rule was wrong, every case would be a false positive. SOAR amplifies both good and bad detection logic.</li>
+    <li><strong>The case is still yours to close.</strong> Automation handles the administrative layer — ticket creation, tagging, enrichment. The analyst judgement — is this real? what is the impact? what do we do next? — stays with the human. Automation gives you more time to think, not permission to stop thinking.</li>
+    <li><strong>Speed changes the game.</strong> Lab 1 showed you the attack. Lab 2 showed you the aftermath. Lab 3 shows you that by the time a real analyst would have opened the Wazuh dashboard, the case was already created, tagged, and waiting. In incidents where minutes matter, that gap is the difference between containment and breach.</li>
+    <li><strong>Alert fatigue is real.</strong> A SOC that creates a case for every single Wazuh alert would be unusable within a week. The filter — rule 40112 specifically, not every level-7 alert — is a deliberate tuning decision. Getting that filter right is one of the hardest ongoing problems in detection engineering.</li>
+  </ul>
+
+  <hr>
+  <p style="font-size:13px;color:var(--muted);text-align:center;padding-top:8px;">
+    Fortark SOC Labs · Lab 3 of 7 · Next: <strong>Ransomware Detection</strong>
+  </p>
+
+</div>
+</body>
+</html>

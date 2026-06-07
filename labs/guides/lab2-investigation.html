@@ -1,0 +1,1415 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Lab 2 — Post-Breach Investigation | Fortark SOC Labs</title>
+<style>
+  :root {
+    --bg: #0d1117; --bg2: #161b22; --bg3: #21262d; --border: #30363d;
+    --text: #e6edf3; --muted: #8b949e;
+    --accent: #58a6ff; --accent2: #3fb950; --warn: #d29922; --danger: #f85149;
+    --purple: #bc8cff; --teal: #39d353; --orange: #e8812a;
+    --code-bg: #1c2128; --tag-bg: #1f2a3d;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+    background: var(--bg); color: var(--text);
+    line-height: 1.7; font-size: 16px;
+  }
+  .header {
+    background: var(--bg2); border-bottom: 1px solid var(--border);
+    padding: 16px 0; position: sticky; top: 0; z-index: 100;
+  }
+  .header-inner {
+    max-width: 860px; margin: 0 auto; padding: 0 24px;
+    display: flex; align-items: center; gap: 12px;
+  }
+  .logo { font-size: 13px; font-weight: 600; color: var(--muted); letter-spacing: .08em; }
+  .logo span { color: var(--accent); }
+  .lab-badge {
+    padding: 4px 12px; background: rgba(88,166,255,.12);
+    border: 1px solid rgba(88,166,255,.3); border-radius: 20px;
+    font-size: 12px; font-weight: 700; color: var(--accent);
+  }
+  .container { max-width: 860px; margin: 0 auto; padding: 40px 24px 80px; }
+  h1 { font-size: 30px; font-weight: 800; letter-spacing: -.02em; line-height: 1.2; margin-bottom: 12px; }
+  h2 {
+    font-size: 22px; font-weight: 700; margin: 40px 0 16px;
+    padding-bottom: 10px; border-bottom: 1px solid var(--border);
+  }
+  h3 { font-size: 17px; font-weight: 700; margin: 28px 0 12px; color: var(--text); }
+  p { margin-bottom: 14px; color: var(--text); }
+  hr { border: none; border-top: 1px solid var(--border); margin: 32px 0; }
+  strong { color: var(--text); }
+  em { color: var(--muted); font-style: italic; }
+  code {
+    font-family: 'SF Mono', 'Fira Mono', monospace; font-size: 13px;
+    background: var(--bg3); border: 1px solid var(--border);
+    border-radius: 4px; padding: 1px 6px; color: var(--accent2);
+  }
+  pre {
+    background: var(--code-bg); border: 1px solid var(--border); border-radius: 8px;
+    padding: 18px 20px; margin: 16px 0; overflow-x: auto;
+    font-family: 'SF Mono', 'Fira Mono', monospace; font-size: 13px;
+    line-height: 1.8; color: #a9b7c6;
+  }
+  pre .hl { color: var(--accent2); }
+
+  /* ── META STRIP ── */
+  .meta-strip {
+    display: flex; flex-wrap: wrap; gap: 10px;
+    margin-bottom: 28px; padding-bottom: 20px;
+    border-bottom: 1px solid var(--border);
+  }
+  .meta-chip {
+    display: flex; align-items: center; gap: 6px;
+    background: var(--bg2); border: 1px solid var(--border); border-radius: 20px;
+    padding: 5px 14px; font-size: 13px; color: var(--muted);
+  }
+  .meta-chip strong { color: var(--text); }
+
+  /* ── MITRE TABLE ── */
+  .mitre-table {
+    width: 100%; border-collapse: collapse; margin: 16px 0; font-size: 14px;
+  }
+  .mitre-table th {
+    background: var(--bg3); border: 1px solid var(--border);
+    padding: 10px 14px; text-align: left; font-size: 11px;
+    font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--muted);
+  }
+  .mitre-table td {
+    border: 1px solid var(--border); padding: 10px 14px;
+    vertical-align: top; line-height: 1.5;
+  }
+  .mitre-table tr:nth-child(even) td { background: rgba(33,38,45,.5); }
+  .mitre-badge {
+    display: inline-block; padding: 2px 8px;
+    background: rgba(188,140,255,.12); border: 1px solid rgba(188,140,255,.3);
+    border-radius: 4px; font-size: 11px; font-weight: 700;
+    color: var(--purple); font-family: monospace; white-space: nowrap;
+  }
+  .tactic-badge {
+    display: inline-block; padding: 2px 8px;
+    background: rgba(88,166,255,.1); border: 1px solid rgba(88,166,255,.25);
+    border-radius: 4px; font-size: 11px; font-weight: 700; color: var(--accent);
+  }
+
+  /* ── SCENARIO BOX ── */
+  .scenario-box {
+    background: var(--bg2); border-left: 4px solid var(--danger);
+    border-radius: 0 8px 8px 0; padding: 20px 24px; margin: 20px 0;
+  }
+  .scenario-box p { margin-bottom: 10px; }
+  .scenario-box p:last-child { margin-bottom: 0; }
+
+  /* ── DETECTION COVERAGE TABLE ── */
+  .detection-table { width: 100%; border-collapse: collapse; margin: 16px 0; font-size: 14px; }
+  .detection-table th {
+    background: var(--bg3); border: 1px solid var(--border);
+    padding: 10px 14px; text-align: left; font-size: 11px;
+    font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--muted);
+  }
+  .detection-table td { border: 1px solid var(--border); padding: 10px 14px; font-family: monospace; font-size: 13px; }
+  .detection-table td:last-child { font-family: -apple-system,sans-serif; font-size: 13px; color: var(--muted); }
+  .src-wazuh {
+    display: inline-flex; align-items: center; gap: 5px; padding: 2px 9px;
+    background: rgba(88,166,255,.1); border: 1px solid rgba(88,166,255,.25);
+    border-radius: 4px; font-size: 11px; font-weight: 700; color: var(--accent);
+    font-family: sans-serif;
+  }
+  .src-suricata {
+    display: inline-flex; align-items: center; gap: 5px; padding: 2px 9px;
+    background: rgba(232,129,42,.1); border: 1px solid rgba(232,129,42,.3);
+    border-radius: 4px; font-size: 11px; font-weight: 700; color: var(--orange);
+    font-family: sans-serif;
+  }
+  .src-fim {
+    display: inline-flex; align-items: center; gap: 5px; padding: 2px 9px;
+    background: rgba(63,185,80,.1); border: 1px solid rgba(63,185,80,.25);
+    border-radius: 4px; font-size: 11px; font-weight: 700; color: var(--accent2);
+    font-family: sans-serif;
+  }
+
+  /* ── STUDENT TABLE ── */
+  .student-table { width: 100%; border-collapse: collapse; margin: 16px 0; font-size: 14px; }
+  .student-table th {
+    background: var(--bg3); border: 1px solid var(--border);
+    padding: 10px 14px; text-align: left; font-size: 11px;
+    font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--muted);
+  }
+  .student-table td { border: 1px solid var(--border); padding: 10px 14px; }
+  .student-table td code { font-size: 12px; }
+
+  /* ── PREFLIGHT ── */
+  .preflight { display: flex; flex-direction: column; gap: 12px; margin: 16px 0; }
+  .preflight-item {
+    display: flex; align-items: flex-start; gap: 14px;
+    padding: 14px 18px; background: var(--bg2);
+    border: 1px solid var(--border); border-radius: 8px;
+  }
+  .pf-num {
+    width: 28px; height: 28px; border-radius: 50%; flex-shrink: 0;
+    background: var(--bg3); border: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 800; font-size: 13px; color: var(--muted);
+  }
+  .pf-body .pf-head { font-size: 14px; font-weight: 700; margin-bottom: 4px; }
+  .pf-body .pf-sub { font-size: 13px; color: var(--muted); line-height: 1.5; }
+
+  /* ── STEP LIST ── */
+  .step-list { display: flex; flex-direction: column; gap: 12px; margin: 16px 0; }
+  .step-item {
+    display: flex; align-items: flex-start; gap: 14px;
+    padding: 14px 18px; background: var(--bg2);
+    border: 1px solid var(--border); border-radius: 8px;
+  }
+  .step-num {
+    width: 28px; height: 28px; border-radius: 50%; flex-shrink: 0;
+    background: rgba(88,166,255,.15); border: 1px solid rgba(88,166,255,.3);
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 800; font-size: 13px; color: var(--accent);
+  }
+  .step-body { font-size: 14px; line-height: 1.6; }
+  .step-body strong { color: var(--text); }
+
+  /* ── STAGE CARD ── */
+  .stage-card {
+    background: var(--bg2); border: 1px solid var(--border); border-radius: 10px;
+    margin: 24px 0; overflow: hidden;
+  }
+  .stage-header {
+    display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+    padding: 14px 20px; background: var(--bg3); border-bottom: 1px solid var(--border);
+  }
+  .stage-num {
+    width: 28px; height: 28px; border-radius: 50%; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 800; font-size: 13px;
+  }
+  .stage-title { font-size: 15px; font-weight: 700; flex: 1; }
+  .stage-body { padding: 18px 20px; }
+  .stage-body p { margin-bottom: 10px; font-size: 15px; color: var(--muted); }
+  .filter-label {
+    font-size: 11px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase;
+    color: var(--muted); margin-bottom: 6px; margin-top: 14px;
+  }
+
+  /* ── QUESTION ── */
+  .question {
+    display: flex; gap: 14px; align-items: flex-start;
+    padding: 16px 18px; margin: 14px 0;
+    background: var(--bg3); border: 1px solid var(--border); border-radius: 8px;
+  }
+  .question-label {
+    font-size: 11px; font-weight: 800; letter-spacing: .1em;
+    text-transform: uppercase; color: var(--accent); flex-shrink: 0;
+    width: 36px;
+  }
+  .question-text { font-size: 15px; font-weight: 600; line-height: 1.5; }
+
+  /* ── CALLOUT ── */
+  .callout {
+    background: rgba(88,166,255,.06); border-left: 3px solid var(--accent);
+    border-radius: 0 8px 8px 0; padding: 14px 18px; margin: 14px 0;
+    font-size: 14px; color: var(--muted); line-height: 1.7;
+  }
+  .callout strong { color: var(--text); }
+  .callout.warn {
+    background: rgba(210,153,34,.06); border-left-color: var(--warn);
+  }
+  .callout.danger {
+    background: rgba(248,81,73,.06); border-left-color: var(--danger);
+  }
+  .callout.success {
+    background: rgba(63,185,80,.06); border-left-color: var(--accent2);
+  }
+
+  /* ── PART 3 — TIMELINE FORM ── */
+  .timeline-form { display: flex; flex-direction: column; gap: 16px; margin: 20px 0; }
+  .tl-stage {
+    background: var(--bg2); border: 1px solid var(--border); border-radius: 10px;
+    overflow: hidden;
+  }
+  .tl-stage-head {
+    display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+    padding: 12px 18px; border-bottom: 1px solid var(--border);
+  }
+  .tl-num {
+    width: 26px; height: 26px; border-radius: 50%; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 800; font-size: 12px;
+  }
+  .tl-stage-name { font-size: 14px; font-weight: 700; flex: 1; }
+  .tl-mitre { font-size: 11px; color: var(--purple); font-family: monospace; }
+  .tl-body { padding: 14px 18px; display: flex; flex-direction: column; gap: 10px; }
+  .tl-field-row { display: grid; grid-template-columns: 110px 1fr; align-items: center; gap: 12px; }
+  .tl-field-label {
+    font-size: 11px; font-weight: 700; text-transform: uppercase;
+    letter-spacing: .08em; color: var(--muted);
+  }
+  .tl-input {
+    background: transparent; border: none;
+    border-bottom: 1px solid var(--border); color: var(--text);
+    font-family: 'SF Mono', 'Fira Mono', monospace; font-size: 13px;
+    padding: 5px 0; outline: none; width: 100%; transition: border-color .2s;
+  }
+  .tl-input:focus { border-bottom-color: var(--accent); }
+  .tl-input::placeholder { color: rgba(139,148,158,.45); font-style: italic; }
+  .tl-static {
+    font-size: 12px; color: var(--muted); padding: 5px 0;
+  }
+
+  /* ── TIMELINE ELAPSED ── */
+  .tl-elapsed {
+    background: var(--bg3); border: 1px solid var(--border); border-radius: 8px;
+    padding: 14px 18px; display: flex; align-items: center; gap: 14px;
+  }
+  .tl-elapsed-label { font-size: 13px; font-weight: 700; }
+  .tl-elapsed-input {
+    background: transparent; border: none; border-bottom: 1px solid var(--border);
+    color: var(--warn); font-family: 'SF Mono','Fira Mono',monospace; font-size: 16px;
+    font-weight: 700; padding: 4px 8px; outline: none; width: 140px;
+    transition: border-color .2s;
+  }
+  .tl-elapsed-input:focus { border-bottom-color: var(--warn); }
+  .tl-elapsed-input::placeholder { color: rgba(210,153,34,.4); font-style: italic; }
+  .tl-elapsed-sub { font-size: 12px; color: var(--muted); line-height: 1.4; }
+
+  /* ── THEHIVE CHECKLIST ── */
+  .thehive-checklist { display: flex; flex-direction: column; gap: 12px; margin: 20px 0; }
+  .thc-item {
+    display: flex; align-items: flex-start; gap: 14px;
+    padding: 16px 18px; background: var(--bg2);
+    border: 1px solid var(--border); border-radius: 8px;
+    cursor: pointer; transition: border-color .2s, background .2s;
+  }
+  .thc-item input[type="checkbox"] { display: none; }
+  .thc-box {
+    width: 20px; height: 20px; border-radius: 5px; flex-shrink: 0;
+    border: 2px solid var(--border); margin-top: 2px;
+    display: flex; align-items: center; justify-content: center;
+    transition: all .2s; background: var(--bg3);
+  }
+  .thc-box svg { display: none; }
+  .thc-item:has(input:checked) { border-color: rgba(63,185,80,.4); background: rgba(63,185,80,.04); }
+  .thc-item:has(input:checked) .thc-box { background: var(--accent2); border-color: var(--accent2); }
+  .thc-item:has(input:checked) .thc-box svg { display: block; }
+  .thc-item:has(input:checked) .thc-head { text-decoration: line-through; color: var(--muted); }
+  .thc-item:hover:not(:has(input:checked)) { border-color: var(--muted); }
+  .thc-head { font-size: 14px; font-weight: 700; margin-bottom: 4px; color: var(--text); }
+  .thc-sub { font-size: 13px; color: var(--muted); line-height: 1.5; }
+
+  /* ── IOC TABLE ── */
+  .ioc-table { width: 100%; border-collapse: collapse; margin: 16px 0; font-size: 14px; }
+  .ioc-table th {
+    background: var(--bg3); border: 1px solid var(--border);
+    padding: 10px 14px; text-align: left; font-size: 11px;
+    font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--muted);
+  }
+  .ioc-table td { border: 1px solid var(--border); padding: 10px 14px; font-size: 13px; }
+  .ioc-table td:first-child { font-family: monospace; color: var(--accent2); }
+  .ioc-type {
+    display: inline-block; padding: 2px 8px;
+    background: var(--bg3); border: 1px solid var(--border);
+    border-radius: 4px; font-size: 11px; font-weight: 700; color: var(--muted);
+  }
+
+  /* ── PROMPT BOX ── */
+  .prompt-box {
+    background: var(--code-bg); border: 1px solid rgba(88,166,255,.2);
+    border-radius: 8px; padding: 20px 22px; margin: 16px 0;
+    font-family: 'SF Mono', 'Fira Mono', monospace; font-size: 13px;
+    line-height: 1.9; color: #a9b7c6; white-space: pre-wrap;
+  }
+  .prompt-box .ph { color: rgba(88,166,255,.7); font-style: italic; }
+
+  /* ── TAKEAWAYS ── */
+  .takeaways { list-style: none; margin: 16px 0; padding: 0; }
+  .takeaways li {
+    padding: 14px 0; border-bottom: 1px solid var(--border);
+    padding-left: 20px; position: relative; font-size: 15px; line-height: 1.6;
+  }
+  .takeaways li:last-child { border-bottom: none; }
+  .takeaways li::before {
+    content: '→'; position: absolute; left: 0;
+    color: var(--accent); font-weight: 700;
+  }
+
+  /* ── PART NAV CHIPS ── */
+  .part-nav {
+    display: flex; flex-wrap: wrap; gap: 8px; margin: 24px 0;
+    padding: 16px 20px; background: var(--bg2);
+    border: 1px solid var(--border); border-radius: 8px;
+  }
+  .part-chip {
+    padding: 5px 14px; border-radius: 20px; font-size: 12px; font-weight: 600;
+    color: var(--muted); border: 1px solid var(--border); background: var(--bg3);
+    cursor: pointer; text-decoration: none; transition: all .2s;
+  }
+  .part-chip:hover, .part-chip.active {
+    background: var(--tag-bg); border-color: var(--accent); color: var(--accent);
+  }
+
+  /* ── CONCEPT BOX ── */
+  .concept-box{background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:24px 28px;margin:20px 0;}
+  .cb-title{font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;margin-bottom:20px;}
+  .concept-terms{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:16px;margin-bottom:20px;}
+  .ct-card{background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:16px 18px;}
+  .ct-card .ct-term{font-size:15px;font-weight:800;margin-bottom:6px;}
+  .ct-card .ct-def{font-size:13px;color:var(--muted);line-height:1.6;}
+  .concept-loop{display:flex;align-items:center;background:var(--bg3);border:1px solid var(--border);border-radius:8px;overflow:hidden;margin-bottom:16px;}
+  .cl-step{flex:1;padding:14px 12px;text-align:center;border-right:1px solid var(--border);}
+  .cl-step:last-child{border-right:none;}
+  .cl-step .cl-icon{font-size:20px;margin-bottom:6px;}
+  .cl-step .cl-label{font-size:10px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-bottom:4px;}
+  .cl-step .cl-desc{font-size:11px;color:var(--text);line-height:1.4;}
+  .cl-arrow{font-size:14px;color:var(--border);padding:0 2px;flex-shrink:0;align-self:center;}
+  .concept-analogy{border-radius:0 6px 6px 0;padding:12px 16px;font-size:13px;color:var(--muted);line-height:1.6;}
+  .concept-analogy strong{color:var(--text);}
+
+  /* ── ENRICHMENT TOOLS ── */
+  .tool-card{background:var(--bg2);border:1px solid var(--border);border-radius:10px;overflow:hidden;margin:16px 0;}
+  .tool-header{padding:14px 20px;display:flex;align-items:center;gap:14px;border-bottom:1px solid var(--border);}
+  .tool-icon{width:36px;height:36px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;}
+  .tool-name{font-size:15px;font-weight:700;margin-bottom:2px;}
+  .tool-desc{font-size:12px;color:var(--muted);}
+  .tool-body{padding:16px 20px;}
+  .field-table{width:100%;border-collapse:collapse;font-size:13px;margin:0;}
+  .field-table td{border:1px solid var(--border);padding:8px 14px;vertical-align:top;line-height:1.5;}
+  .field-table td:first-child{font-weight:700;white-space:nowrap;width:36%;color:var(--text);background:rgba(33,38,45,.4);}
+  .field-table td:last-child{color:var(--muted);}
+  .enrich-result-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:2px;background:var(--border);border:1px solid var(--border);border-radius:8px;overflow:hidden;margin:16px 0;}
+  .er-cell{background:var(--bg2);padding:12px 16px;}
+  .er-cell-head{font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-bottom:8px;}
+  .er-field{display:flex;justify-content:space-between;align-items:flex-start;gap:8px;margin-bottom:6px;font-size:12px;}
+  .er-field:last-child{margin-bottom:0;}
+  .er-key{color:var(--muted);flex-shrink:0;}
+  .er-val{background:var(--bg3);border:1px solid var(--border);border-radius:3px;padding:2px 8px;font-family:monospace;font-size:11px;color:var(--text);}
+  /* ── BONUS SECTION ── */
+  .bonus-box{background:rgba(188,140,255,.04);border:1px solid rgba(188,140,255,.25);border-radius:10px;padding:20px 24px;margin:28px 0;}
+  .bonus-header{font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--purple);margin-bottom:16px;display:flex;align-items:center;gap:8px;}
+  .bonus-ip{font-size:18px;font-weight:800;font-family:'SF Mono','Fira Mono',monospace;color:var(--accent);background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:8px 16px;display:inline-block;margin:10px 0 16px;}
+  .comp-table{width:100%;border-collapse:collapse;font-size:13px;margin:16px 0;}
+  .comp-table th{background:var(--bg3);border:1px solid var(--border);padding:9px 14px;text-align:left;font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);}
+  .comp-table td{border:1px solid var(--border);padding:8px 14px;font-size:13px;}
+  .comp-table td:first-child{font-weight:600;color:var(--text);}
+  .comp-table input[type="text"]{background:var(--bg3);border:none;padding:3px 6px;color:var(--text);font-size:12px;width:100%;font-family:inherit;outline:none;}
+  .bq-label{display:inline-block;padding:2px 8px;background:rgba(188,140,255,.12);border:1px solid rgba(188,140,255,.3);border-radius:4px;font-size:10px;font-weight:700;color:var(--purple);letter-spacing:.06em;margin-right:6px;}
+
+  .access-box{background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:20px 24px;margin:20px 0 0;}
+  .access-box-title{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:12px;}
+  .access-table{width:100%;border-collapse:collapse;}
+  .access-table th{background:var(--bg3);color:var(--muted);font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;padding:8px 12px;text-align:left;border-bottom:1px solid var(--border);}
+  .access-table td{padding:9px 12px;border-bottom:1px solid var(--border);font-size:13px;vertical-align:middle;}
+  .access-table tr:last-child td{border-bottom:none;}
+  .access-table td:first-child{font-weight:600;color:var(--text);white-space:nowrap;}
+  .access-table a{color:var(--accent);text-decoration:none;font-family:monospace;font-size:12px;}
+  .access-table a:hover{text-decoration:underline;}
+  .access-cred{font-family:monospace;font-size:12px;background:var(--bg3);padding:2px 6px;border-radius:4px;}
+  .access-note{font-size:12px;color:var(--muted);margin-top:10px;padding:8px 12px;background:var(--bg3);border-radius:6px;border-left:3px solid var(--accent);}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-inner">
+    <div class="logo">Fortark <span>SOC</span> Labs</div>
+    <div class="lab-badge">Lab 2 of 7</div>
+  </div>
+</div>
+
+<div class="container">
+
+  <h1>Post-Breach Investigation</h1>
+  <p style="font-size:18px;color:var(--muted);margin-bottom:20px;line-height:1.5;">What did they do after they got in?</p>
+
+  <div class="meta-strip">
+    <div class="meta-chip">⏱ <strong>60 minutes</strong></div>
+    <div class="meta-chip">📊 Difficulty: <strong>Beginner — builds on Lab 1</strong></div>
+    <div class="meta-chip">🔧 Wazuh · Suricata · TheHive · Cortex · Claude</div>
+  </div>
+
+  <!-- MITRE ATT&CK -->
+  <h2>MITRE ATT&CK coverage</h2>
+  <table class="mitre-table">
+    <thead>
+      <tr>
+        <th>Tactic</th>
+        <th>Technique</th>
+        <th>What it means in plain English</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="tactic-badge">Discovery</span></td>
+        <td><span class="mitre-badge">T1082</span></td>
+        <td>Attacker runs commands to learn about the machine they just broke into</td>
+      </tr>
+      <tr>
+        <td><span class="tactic-badge">Discovery</span></td>
+        <td><span class="mitre-badge">T1033</span></td>
+        <td>Attacker checks who else is logged in and who owns the system</td>
+      </tr>
+      <tr>
+        <td><span class="tactic-badge">Discovery</span></td>
+        <td><span class="mitre-badge">T1049</span></td>
+        <td>Attacker maps open connections and listening services</td>
+      </tr>
+      <tr>
+        <td><span class="tactic-badge">Credential Access</span></td>
+        <td><span class="mitre-badge">T1552.001</span></td>
+        <td>Attacker reads /etc/passwd and looks for SSH keys stored on the machine</td>
+      </tr>
+      <tr>
+        <td><span class="tactic-badge">Collection</span></td>
+        <td><span class="mitre-badge">T1074.001</span></td>
+        <td>Attacker bundles everything into a single archive before sending it out</td>
+      </tr>
+      <tr>
+        <td><span class="tactic-badge">Exfiltration</span></td>
+        <td><span class="mitre-badge">T1041</span></td>
+        <td>Attacker sends the archive out over HTTPS to a remote server</td>
+      </tr>
+    </tbody>
+  </table>
+
+
+  <!-- ACCESS -->
+  <h2 id="access">Platform Access</h2>
+  <div class="access-box">
+    <div class="access-box-title">Open these in separate browser tabs before starting</div>
+    <table class="access-table">
+      <thead><tr><th>Tool</th><th>URL</th><th>Login</th></tr></thead>
+      <tbody>
+        <tr><td>Wazuh (SIEM)</td><td><a href="http://localhost" target="_blank">http://localhost</a></td><td><span class="access-cred">admin</span> / <span class="access-cred">S0cPlatf0rm!e0d085fd</span></td></tr>
+        <tr><td>TheHive (cases)</td><td><a href="http://localhost/thehive/" target="_blank">http://localhost/thehive/</a></td><td><span class="access-cred">studentN@thehive.local</span> / <span class="access-cred">FortarkLabs1!</span></td></tr>
+      </tbody>
+    </table>
+    <div class="access-note"><strong>N</strong> = your seat number (1–5).</div>
+  </div>
+
+  <!-- CONCEPT -->
+  <h2 id="concept">What is post-breach investigation?</h2>
+
+  <div class="concept-box">
+    <div class="cb-title" style="color:var(--teal)">Three terms you need to understand first</div>
+
+    <div class="concept-terms">
+      <div class="ct-card">
+        <div class="ct-term" style="color:var(--teal)">Post-Breach</div>
+        <div class="ct-def">"Post" means after. Post-breach means after the attacker has already gotten in. The question shifts from "how do I stop them" to "what did they do, when, and what did they take." Most security training focuses on prevention. This lab focuses on what happens when prevention fails — because it does fail, regularly.</div>
+      </div>
+      <div class="ct-card">
+        <div class="ct-term" style="color:var(--purple)">IOC — Indicator of Compromise</div>
+        <div class="ct-def">Any piece of evidence that a system was compromised — an IP address the attacker connected from, a file they created, a command they ran, a domain they contacted. IOCs are the footprints attackers leave behind. Collecting them is how you prove what happened and prevent the same attacker from hitting the next target.</div>
+      </div>
+      <div class="ct-card">
+        <div class="ct-term" style="color:var(--accent)">Enrichment</div>
+        <div class="ct-def">Looking up an IOC in external threat intelligence databases to learn more about it. If you find an IP address in your logs, enrichment means asking: "Has anyone else seen this IP in an attack? Is it on a known-bad list?" Enrichment turns a raw IP address into context — and context turns an alert into a conclusion.</div>
+      </div>
+    </div>
+
+    <div class="concept-loop">
+      <div class="cl-step">
+        <div class="cl-icon">👣</div>
+        <div class="cl-label">Attacker acts</div>
+        <div class="cl-desc">Runs commands, reads files, creates archives</div>
+      </div>
+      <div class="cl-arrow">→</div>
+      <div class="cl-step">
+        <div class="cl-icon">🗂️</div>
+        <div class="cl-label">Evidence left</div>
+        <div class="cl-desc">Traces in syslog, FIM, and network alerts</div>
+      </div>
+      <div class="cl-arrow">→</div>
+      <div class="cl-step">
+        <div class="cl-icon">🔍</div>
+        <div class="cl-label">Analyst collects</div>
+        <div class="cl-desc">Sequences fragments into a timeline</div>
+      </div>
+      <div class="cl-arrow">→</div>
+      <div class="cl-step">
+        <div class="cl-icon">📋</div>
+        <div class="cl-label">IOCs enriched</div>
+        <div class="cl-desc">Raw IP → threat intel → verdict</div>
+      </div>
+    </div>
+
+    <div class="concept-analogy" style="background:rgba(46,168,159,.05);border-left:3px solid var(--teal)">
+      <strong>Analogy:</strong> Think of it like a crime scene investigation. The attacker has left the building. The detective arrives and starts looking for evidence — fingerprints (file hashes), footprints (network logs), witnesses (syslog entries). Each piece of evidence is an IOC. Running that evidence through a database is enrichment. The goal: reconstruct exactly what the criminal did, even after they are gone.
+    </div>
+  </div>
+
+  <nav class="part-nav">
+    <a class="part-chip" href="#access">Platform Access</a>
+    <a class="part-chip" href="#concept">What is post-breach?</a>
+    <a class="part-chip" href="#scenario">Scenario</a>
+    <a class="part-chip" href="#preflight">Pre-flight</a>
+    <a class="part-chip" href="#part1">Part 1 — Simulation</a>
+    <a class="part-chip" href="#part2">Part 2 — Hunt</a>
+    <a class="part-chip" href="#part3">Part 3 — Timeline</a>
+    <a class="part-chip" href="#part4">Part 4 — Enrich IP</a>
+    <a class="part-chip" href="#part5">Part 5 — Claude</a>
+    <a class="part-chip" href="#part6">Part 6 — TheHive</a>
+    <a class="part-chip" href="#takeaways">Takeaways</a>
+  </nav>
+
+  <hr>
+
+  <!-- SCENARIO -->
+  <h2 id="scenario">The scenario</h2>
+
+  <div class="scenario-box">
+    <p>The brute force from Lab 1 succeeded. The attacker is now inside your server, logged in as <code>victim</code>.</p>
+    <p>What they do next happens fast — under 30 seconds from first keystroke to data leaving the building. Most organisations do not detect this phase at all. Their alerts fire on the brute force but miss everything that comes after.</p>
+    <p>Your job in this lab is different. You are not going to look at the brute force again. You are going to investigate what happened <em>after</em> the attacker got in — reconstruct their moves step by step from the evidence they left behind, build a complete incident timeline, and document it in a case management system the way a real SOC team would.</p>
+    <p style="margin-bottom:0;"><strong>This is where the real investigation work lives.</strong></p>
+  </div>
+
+  <h3>How post-exploitation detection works</h3>
+  <p>An attacker inside a system leaves traces in three different places. Each requires a different detection tool:</p>
+
+  <table class="detection-table">
+    <thead>
+      <tr>
+        <th>What the attacker does</th>
+        <th>Detection tool</th>
+        <th>Alert type</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Runs commands (<code>id</code>, <code>uname</code>, <code>ps</code>)</td>
+        <td><span class="src-wazuh">Wazuh</span></td>
+        <td>Syslog alert (auth.log)</td>
+      </tr>
+      <tr>
+        <td>Reads sensitive files (<code>/etc/passwd</code>, SSH keys)</td>
+        <td><span class="src-fim">Wazuh FIM</span></td>
+        <td>File integrity monitoring alert</td>
+      </tr>
+      <tr>
+        <td>Creates a file in <code>/tmp/</code></td>
+        <td><span class="src-fim">Wazuh FIM</span></td>
+        <td>File integrity monitoring alert</td>
+      </tr>
+      <tr>
+        <td>Sends data out over HTTPS</td>
+        <td><span class="src-suricata">Suricata</span></td>
+        <td>Network intrusion detection alert</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="callout">
+    <strong>No single tool sees everything.</strong> Your job is to collect the fragments from each source and assemble them into a single coherent story. This is what incident investigation actually is.
+  </div>
+
+  <hr>
+
+  <!-- STUDENT DETAILS -->
+  <h2>Your student details</h2>
+  <p>Same target as Lab 1. Use your student number everywhere you see <code>[N]</code>.</p>
+
+  <table class="student-table">
+    <thead>
+      <tr>
+        <th>Student</th>
+        <th>SSH into your target</th>
+        <th>Wazuh filter</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr><td>Student 1</td><td><code>ssh victim@lab-target</code></td><td><code>agent.name: lab-target</code></td></tr>
+      <tr><td>Student 2</td><td><code>ssh victim@lab-target</code></td><td><code>agent.name: lab-target</code></td></tr>
+      <tr><td>Student 3</td><td><code>ssh victim@lab-target</code></td><td><code>agent.name: lab-target</code></td></tr>
+      <tr><td>Student 4</td><td><code>ssh victim@lab-target</code></td><td><code>agent.name: lab-target</code></td></tr>
+      <tr><td>Student 5</td><td><code>ssh victim@lab-target</code></td><td><code>agent.name: lab-target</code></td></tr>
+    </tbody>
+  </table>
+
+  <hr>
+
+  <!-- PRE-FLIGHT -->
+  <h2 id="preflight">Pre-flight check</h2>
+  <p>Confirm all four things are working before you run anything.</p>
+
+  <div class="preflight">
+    <div class="preflight-item">
+      <div class="pf-num">1</div>
+      <div class="pf-body">
+        <div class="pf-head">Dashboard loads</div>
+        <div class="pf-sub">Open <code>http://localhost</code> — you should see the Wazuh dashboard.</div>
+      </div>
+    </div>
+    <div class="preflight-item">
+      <div class="pf-num">2</div>
+      <div class="pf-body">
+        <div class="pf-head">Your agent is active</div>
+        <div class="pf-sub">Agents → <code>s[N]-lab-target</code> → status: <strong>Active</strong> (green dot).</div>
+      </div>
+    </div>
+    <div class="preflight-item">
+      <div class="pf-num">3</div>
+      <div class="pf-body">
+        <div class="pf-head">Kali terminal loads</div>
+        <div class="pf-sub">Open <code>http://localhost/attacker/</code> in a second tab — you should see the <code>student@kali</code> prompt.</div>
+      </div>
+    </div>
+    <div class="preflight-item">
+      <div class="pf-num">4</div>
+      <div class="pf-body">
+        <div class="pf-head">SSH into your target works</div>
+        <div class="pf-sub">
+          In the Kali terminal: <code>ssh victim@s[N]-lab-target</code> (password: <code>password123</code>). If it connects, type <code>exit</code>. If you get a host key warning:
+          <pre style="margin:8px 0 0;">ssh-keygen -f '/home/student/.ssh/known_hosts' -R 's[N]-lab-target'</pre>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <hr>
+
+  <!-- PART 1 -->
+  <h2 id="part1">Part 1 — Run the attack simulation</h2>
+  <p>You are going to simulate an attacker who has just logged into the victim machine. The simulation script runs a realistic post-exploitation chain — the same sequence a real attacker would follow in the first 30 seconds after gaining access.</p>
+
+  <p style="font-size:14px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-bottom:10px;">What the script does — in order</p>
+  <table class="detection-table" style="margin-bottom:20px;">
+    <thead>
+      <tr>
+        <th>Stage</th>
+        <th>What happens</th>
+        <th>How it is detected</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span style="color:var(--accent);font-weight:700;">1 — Discovery</span></td>
+        <td>Runs <code>uname</code>, <code>id</code>, <code>who</code>, <code>ps</code> to learn about the machine</td>
+        <td><span class="src-wazuh">Wazuh syslog</span> — logged to <code>auth.log</code> with tag <code>DISCOVERY</code></td>
+      </tr>
+      <tr>
+        <td><span style="color:var(--accent2);font-weight:700;">2 — Credential access</span></td>
+        <td>Reads <code>/etc/passwd</code> and lists <code>~/.ssh/</code></td>
+        <td><span class="src-fim">Wazuh FIM</span> — file integrity monitoring fires on <code>/etc/passwd</code></td>
+      </tr>
+      <tr>
+        <td><span style="color:var(--warn);font-weight:700;">3 — Network recon</span></td>
+        <td>Runs <code>netstat</code> and <code>ifconfig</code> to map the network</td>
+        <td><span class="src-wazuh">Wazuh syslog</span> — logged to <code>auth.log</code> with tag <code>RECON</code></td>
+      </tr>
+      <tr>
+        <td><span style="color:var(--orange);font-weight:700;">4 — Data staging</span></td>
+        <td>Creates <code>/tmp/lab2-post-exploit/loot.tar.gz</code> bundling everything collected</td>
+        <td><span class="src-fim">Wazuh FIM</span> — new file created in monitored <code>/tmp/</code> directory</td>
+      </tr>
+      <tr>
+        <td><span style="color:var(--danger);font-weight:700;">5 — Exfiltration</span></td>
+        <td>Sends the archive to <code>https://httpbin.org/post</code> via HTTPS POST</td>
+        <td><span class="src-suricata">Suricata</span> — catches the outbound connection</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="callout" style="margin-bottom:24px;">
+    The script prints each stage to your terminal as it runs. <strong>The full chain completes in approximately 15 seconds.</strong> Your job in Part 2 is to find all 5 stages in the SOC platform — as if you had no idea what the script did.
+  </div>
+
+  <div class="step-list">
+    <div class="step-item">
+      <div class="step-num">1</div>
+      <div class="step-body">
+        Open your Wazuh dashboard and set your filter <strong>before</strong> running anything:
+        <pre style="margin:8px 0 0;">agent.name: s[N]-lab-target</pre>
+        Set time range to <strong>Last 15 minutes</strong>. Leave this tab visible.
+      </div>
+    </div>
+    <div class="step-item">
+      <div class="step-num">2</div>
+      <div class="step-body">
+        In the Kali terminal, SSH into your target:
+        <pre style="margin:8px 0 0;">ssh victim@s[N]-lab-target
+<span style="color:var(--muted)"># password: password123</span></pre>
+      </div>
+    </div>
+    <div class="step-item">
+      <div class="step-num">3</div>
+      <div class="step-body">
+        Run the simulation script:
+        <pre style="margin:8px 0 0;">/tmp/lab2-post-exploitation-sim.sh</pre>
+        <strong>Note the exact time it starts.</strong> The script prints each stage as it runs. The full chain takes about 15 seconds.
+      </div>
+    </div>
+    <div class="step-item">
+      <div class="step-num">4</div>
+      <div class="step-body">
+        <strong>Watch your Wazuh dashboard while it runs.</strong> You should see alerts begin to appear in real time.
+      </div>
+    </div>
+    <div class="step-item">
+      <div class="step-num">5</div>
+      <div class="step-body">
+        When the script finishes, type <code>exit</code> to leave the SSH session.
+      </div>
+    </div>
+  </div>
+
+  <hr>
+
+  <!-- PART 2 -->
+  <h2 id="part2">Part 2 — Hunt the 5 stages</h2>
+  <p>The simulation ran 5 distinct attack stages. Your job now is to find evidence of each one in the SOC platform — as if you had no idea what the script did.</p>
+  <p>Work through each stage in order. Use the filters provided but read the actual alert content to understand what you are looking at.</p>
+
+  <!-- Stage 1 -->
+  <div class="stage-card">
+    <div class="stage-header">
+      <div class="stage-num" style="background:rgba(88,166,255,.15);border:1px solid rgba(88,166,255,.3);color:var(--accent);">1</div>
+      <div class="stage-title">System Discovery</div>
+      <span class="mitre-badge">T1082</span>
+      <span class="mitre-badge">T1033</span>
+      <span class="src-wazuh">Wazuh syslog</span>
+    </div>
+    <div class="stage-body">
+      <p>The first thing any attacker does after getting in is figure out where they are. They run basic commands to learn about the machine: what OS is running, who the users are, what processes are active.</p>
+      <div class="filter-label">Wazuh filter</div>
+      <pre>agent.name: s[N]-lab-target AND full_log: *DISCOVERY*</pre>
+
+      <div class="question">
+        <div class="question-label">Q1</div>
+        <div class="question-text">What commands did the attacker run? <em>(Look at the log messages — they list the commands explicitly)</em></div>
+      </div>
+
+      <div class="question">
+        <div class="question-label">Q2</div>
+        <div class="question-text">Why would an attacker run <code>id</code> and <code>who</code> immediately after logging in?</div>
+      </div>
+
+      <div class="callout">
+        These commands answer the two most important questions for an attacker: <strong>"How much power do I have?"</strong> (<code>id</code> reveals if they have root) and <strong>"Is anyone watching?"</strong> (<code>who</code> shows if other users are logged in). This reconnaissance takes under 3 seconds and happens on every intrusion.
+      </div>
+    </div>
+  </div>
+
+  <!-- Stage 2 -->
+  <div class="stage-card">
+    <div class="stage-header">
+      <div class="stage-num" style="background:rgba(63,185,80,.15);border:1px solid rgba(63,185,80,.3);color:var(--accent2);">2</div>
+      <div class="stage-title">Credential File Access</div>
+      <span class="mitre-badge">T1552.001</span>
+      <span class="src-fim">Wazuh FIM</span>
+    </div>
+    <div class="stage-body">
+      <p>The attacker then goes hunting for credentials and access keys stored on the machine.</p>
+      <div class="filter-label">Wazuh filter</div>
+      <pre>agent.name: s[N]-lab-target AND rule.groups: syscheck</pre>
+      <p>Look for <strong>FIM (File Integrity Monitoring)</strong> alerts. Wazuh watches certain files and directories and fires an alert any time they are accessed or changed.</p>
+
+      <div class="question">
+        <div class="question-label">Q3</div>
+        <div class="question-text">Which sensitive file was accessed? <em>(Look for the <code>syscheck.path</code> field in the alert)</em></div>
+      </div>
+
+      <div class="question">
+        <div class="question-label">Q4</div>
+        <div class="question-text">Why is <code>/etc/passwd</code> valuable to an attacker?</div>
+      </div>
+
+      <div class="callout">
+        The <code>/etc/passwd</code> file lists every user account on the system — usernames, home directories, and shell types. Combined with <code>/etc/shadow</code> (the password hash file), an attacker can attempt to crack passwords offline. Even without the hashes, the username list helps them target other accounts on the network.
+      </div>
+    </div>
+  </div>
+
+  <!-- Stage 3 -->
+  <div class="stage-card">
+    <div class="stage-header">
+      <div class="stage-num" style="background:rgba(210,153,34,.15);border:1px solid rgba(210,153,34,.3);color:var(--warn);">3</div>
+      <div class="stage-title">Network Reconnaissance</div>
+      <span class="mitre-badge">T1049</span>
+      <span class="mitre-badge">T1016</span>
+      <span class="src-wazuh">Wazuh syslog</span>
+    </div>
+    <div class="stage-body">
+      <p>Next the attacker maps the network — what connections are open, what services are running, what other machines can they reach from here.</p>
+      <div class="filter-label">Wazuh filter</div>
+      <pre>agent.name: s[N]-lab-target AND full_log: *RECON*</pre>
+
+      <div class="question">
+        <div class="question-label">Q5</div>
+        <div class="question-text">What network commands did the attacker run?</div>
+      </div>
+
+      <div class="question">
+        <div class="question-label">Q6</div>
+        <div class="question-text">Why does an attacker care about the network configuration of a machine they have already compromised?</div>
+      </div>
+
+      <div class="callout">
+        Getting into one machine is rarely the end goal. The attacker is looking for <strong>paths to move laterally</strong> — other servers they can reach from here, internal services now accessible because they are inside the network, credentials they can reuse. The network recon tells them what their next move is.
+      </div>
+    </div>
+  </div>
+
+  <!-- Stage 4 -->
+  <div class="stage-card">
+    <div class="stage-header">
+      <div class="stage-num" style="background:rgba(232,129,42,.15);border:1px solid rgba(232,129,42,.3);color:var(--orange);">4</div>
+      <div class="stage-title">Data Staging</div>
+      <span class="mitre-badge">T1074.001</span>
+      <span class="src-fim">Wazuh FIM</span>
+    </div>
+    <div class="stage-body">
+      <p>Before exfiltrating data, attackers bundle everything they collected into a single compressed archive. This is called <strong>staging</strong>.</p>
+      <div class="filter-label">Wazuh filter</div>
+      <pre>agent.name: s[N]-lab-target AND rule.groups: syscheck</pre>
+      <p>Look for a FIM alert showing a <strong>new file created in <code>/tmp/</code></strong>.</p>
+
+      <div class="question">
+        <div class="question-label">Q7</div>
+        <div class="question-text">What is the full path of the staged file?</div>
+      </div>
+
+      <div class="question">
+        <div class="question-label">Q8</div>
+        <div class="question-text">Why do attackers compress and archive data before exfiltrating it?</div>
+      </div>
+
+      <div class="callout">
+        Sending one compressed file is faster, harder to detect, and easier to encrypt than sending multiple individual files. It also means the exfiltration looks like a single outbound connection rather than a stream of file reads — making it harder to correlate with the earlier credential access.
+      </div>
+    </div>
+  </div>
+
+  <!-- Stage 5 -->
+  <div class="stage-card">
+    <div class="stage-header">
+      <div class="stage-num" style="background:rgba(248,81,73,.15);border:1px solid rgba(248,81,73,.3);color:var(--danger);">5</div>
+      <div class="stage-title">Exfiltration</div>
+      <span class="mitre-badge">T1041</span>
+      <span class="src-suricata">Suricata</span>
+    </div>
+    <div class="stage-body">
+      <p>The final stage: the staged archive leaves the building. Suricata caught the outbound HTTP POST at the network layer.</p>
+      <div class="filter-label">Wazuh filter</div>
+      <pre>data.alert.signature_id: 9000010</pre>
+      <p>This alert comes from <strong>Suricata</strong>, the network intrusion detection system. Unlike Wazuh (which watches what happens on the host), Suricata watches network traffic. It caught the outbound HTTP POST carrying the loot archive.</p>
+
+      <div class="callout" style="background:rgba(248,81,73,.08);border-color:rgba(248,81,73,.3);">
+        <strong>Note on internet noise:</strong> <code>httpbin.org</code> is a public test endpoint — you may see alerts from other containers or background traffic. Filter precisely using <code>data.alert.signature_id: 9000010</code> to isolate only the lab exfil alert from your target.
+      </div>
+
+      <p>Once you find the alert, expand it and look at these fields:</p>
+      <table style="width:100%;border-collapse:collapse;font-size:.85rem;margin:1rem 0;">
+        <thead>
+          <tr style="background:rgba(255,255,255,.05);">
+            <th style="padding:.5rem .75rem;text-align:left;border-bottom:1px solid rgba(255,255,255,.1);">Field</th>
+            <th style="padding:.5rem .75rem;text-align:left;border-bottom:1px solid rgba(255,255,255,.1);">What it tells you</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td style="padding:.4rem .75rem;border-bottom:1px solid rgba(255,255,255,.05);"><code>data.dest_ip</code></td><td style="padding:.4rem .75rem;border-bottom:1px solid rgba(255,255,255,.05);">Destination IP the data was sent to</td></tr>
+          <tr><td style="padding:.4rem .75rem;border-bottom:1px solid rgba(255,255,255,.05);"><code>data.dest_port</code></td><td style="padding:.4rem .75rem;border-bottom:1px solid rgba(255,255,255,.05);">Destination port (80 = plain HTTP)</td></tr>
+          <tr><td style="padding:.4rem .75rem;border-bottom:1px solid rgba(255,255,255,.05);"><code>data.app_proto</code></td><td style="padding:.4rem .75rem;border-bottom:1px solid rgba(255,255,255,.05);">Application protocol detected by Suricata</td></tr>
+          <tr><td style="padding:.4rem .75rem;border-bottom:1px solid rgba(255,255,255,.05);"><code>data.alert.metadata.flowbits</code></td><td style="padding:.4rem .75rem;border-bottom:1px solid rgba(255,255,255,.05);">Flowbits set by ET rules — e.g. <code>ET.formdata</code> means a multipart form-data body (file upload) was detected</td></tr>
+          <tr><td style="padding:.4rem .75rem;"><code>data.direction</code></td><td style="padding:.4rem .75rem;">Traffic direction — should be <code>to_server</code> (outbound)</td></tr>
+        </tbody>
+      </table>
+
+      <div class="question">
+        <div class="question-label">Q9</div>
+        <div class="question-text">What is the destination IP of the exfiltration? <em>(Read it from <code>data.dest_ip</code>)</em></div>
+      </div>
+
+      <div class="question">
+        <div class="question-label">Q10</div>
+        <div class="question-text">What does the <code>ET.formdata</code> flowbit tell you about how the data was sent?</div>
+      </div>
+
+      <div class="callout">
+        The <code>ET.formdata</code> flowbit means the POST body was a multipart form-data upload — the same format used to upload files through a web form. Attackers use this to disguise data exfiltration as normal web traffic. The data moved over plain HTTP on port 80, making it fully visible in transit but blending in with ordinary web requests.
+      </div>
+    </div>
+  </div>
+
+  <hr>
+
+  <!-- PART 3 -->
+  <h2 id="part3">Part 3 — Build the attack timeline</h2>
+  <p>You now have evidence from three different detection tools. Put it together into a single timeline. Fill in the exact timestamps and findings from your Wazuh and Suricata alerts.</p>
+
+  <div class="timeline-form">
+
+    <!-- Stage 1 -->
+    <div class="tl-stage">
+      <div class="tl-stage-head">
+        <div class="tl-num" style="background:rgba(88,166,255,.15);border:1px solid rgba(88,166,255,.3);color:var(--accent);">1</div>
+        <div class="tl-stage-name">System Discovery</div>
+        <span class="tl-mitre">T1082 · T1033</span>
+        <span class="src-wazuh">Wazuh syslog</span>
+      </div>
+      <div class="tl-body">
+        <div class="tl-field-row">
+          <div class="tl-field-label">Time (UTC)</div>
+          <input class="tl-input" id="tl1-time" type="text" placeholder="e.g. 13:51:04">
+        </div>
+        <div class="tl-field-row">
+          <div class="tl-field-label">Commands run</div>
+          <input class="tl-input" id="tl1-cmds" type="text" placeholder="e.g. id, uname -a, who, ps aux">
+        </div>
+      </div>
+    </div>
+
+    <!-- Stage 2 -->
+    <div class="tl-stage">
+      <div class="tl-stage-head">
+        <div class="tl-num" style="background:rgba(63,185,80,.15);border:1px solid rgba(63,185,80,.3);color:var(--accent2);">2</div>
+        <div class="tl-stage-name">Credential File Access</div>
+        <span class="tl-mitre">T1552.001</span>
+        <span class="src-fim">Wazuh FIM</span>
+      </div>
+      <div class="tl-body">
+        <div class="tl-field-row">
+          <div class="tl-field-label">Time (UTC)</div>
+          <input class="tl-input" id="tl2-time" type="text" placeholder="e.g. 13:51:06">
+        </div>
+        <div class="tl-field-row">
+          <div class="tl-field-label">File accessed</div>
+          <input class="tl-input" id="tl2-file" type="text" placeholder="syscheck.path value from the alert">
+        </div>
+      </div>
+    </div>
+
+    <!-- Stage 3 -->
+    <div class="tl-stage">
+      <div class="tl-stage-head">
+        <div class="tl-num" style="background:rgba(210,153,34,.15);border:1px solid rgba(210,153,34,.3);color:var(--warn);">3</div>
+        <div class="tl-stage-name">Network Reconnaissance</div>
+        <span class="tl-mitre">T1049 · T1016</span>
+        <span class="src-wazuh">Wazuh syslog</span>
+      </div>
+      <div class="tl-body">
+        <div class="tl-field-row">
+          <div class="tl-field-label">Time (UTC)</div>
+          <input class="tl-input" id="tl3-time" type="text" placeholder="e.g. 13:51:08">
+        </div>
+        <div class="tl-field-row">
+          <div class="tl-field-label">Commands run</div>
+          <input class="tl-input" id="tl3-cmds" type="text" placeholder="e.g. netstat -an, ip route, ss -tlnp">
+        </div>
+      </div>
+    </div>
+
+    <!-- Stage 4 -->
+    <div class="tl-stage">
+      <div class="tl-stage-head">
+        <div class="tl-num" style="background:rgba(232,129,42,.15);border:1px solid rgba(232,129,42,.3);color:var(--orange);">4</div>
+        <div class="tl-stage-name">Data Staging</div>
+        <span class="tl-mitre">T1074.001</span>
+        <span class="src-fim">Wazuh FIM</span>
+      </div>
+      <div class="tl-body">
+        <div class="tl-field-row">
+          <div class="tl-field-label">Time (UTC)</div>
+          <input class="tl-input" id="tl4-time" type="text" placeholder="e.g. 13:51:10">
+        </div>
+        <div class="tl-field-row">
+          <div class="tl-field-label">File created</div>
+          <input class="tl-input" id="tl4-file" type="text" placeholder="full path from syscheck.path, e.g. /tmp/lab2-post-exploit/loot.tar.gz">
+        </div>
+      </div>
+    </div>
+
+    <!-- Stage 5 -->
+    <div class="tl-stage">
+      <div class="tl-stage-head">
+        <div class="tl-num" style="background:rgba(248,81,73,.15);border:1px solid rgba(248,81,73,.3);color:var(--danger);">5</div>
+        <div class="tl-stage-name">Exfiltration</div>
+        <span class="tl-mitre">T1041</span>
+        <span class="src-suricata">Suricata</span>
+      </div>
+      <div class="tl-body">
+        <div class="tl-field-row">
+          <div class="tl-field-label">Time (UTC)</div>
+          <input class="tl-input" id="tl5-time" type="text" placeholder="e.g. 13:51:14">
+        </div>
+        <div class="tl-field-row">
+          <div class="tl-field-label">Destination</div>
+          <input class="tl-input" id="tl5-dest" type="text" placeholder="destination IP or domain from the Suricata alert">
+        </div>
+        <div class="tl-field-row">
+          <div class="tl-field-label">Data size</div>
+          <input class="tl-input" id="tl5-size" type="text" placeholder="bytes transferred">
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Q11 -->
+  <div class="tl-elapsed">
+    <div>
+      <div class="tl-elapsed-label">Q11 — Total elapsed time, Stage 1 → Stage 5</div>
+      <div class="tl-elapsed-sub" style="margin-top:4px;">From first command to data leaving the building.</div>
+    </div>
+    <input class="tl-elapsed-input" id="tl-elapsed" type="text" placeholder="__ seconds">
+  </div>
+
+  <div class="callout warn" style="margin-top:16px;">
+    <strong>The speed of post-exploitation is one of the most important things to understand about modern breaches.</strong> The attacker went from login to data leaving the building in under 30 seconds. Most SOC alert queues have a human response time measured in minutes. The data was already gone before any analyst could have responded.
+  </div>
+
+  <hr>
+
+  <!-- PART 4 -->
+  <h2 id="part4">Part 4 — Enrich the attacker's infrastructure</h2>
+  <p>The exfiltration went to a specific destination. Before you write your incident report, you need context on that destination from external threat intelligence. Three tools will tell you three different things.</p>
+
+  <div class="step-list">
+    <div class="step-item">
+      <div class="step-num">1</div>
+      <div class="step-body">
+        Go to <a href="http://localhost/thehive/" target="_blank"><strong>TheHive</strong></a> and log in with your student credentials (<code>student1@thehive.local</code> / <code>FortarkLabs1!</code>). Then create a new case:
+        <ol style="margin:10px 0 10px 16px;line-height:1.9;">
+          <li>Click <strong>+ New Case</strong> (top-right on the Cases page)</li>
+          <li>Fill in the fields:
+            <pre style="margin:8px 0;">Title    : Post-exploitation: brute force and exfil — s[N]-lab-target — [today's date]
+Severity : High
+TLP      : Amber (default)
+Tags     : lab2  T1082  T1552.001  T1074.001  T1041</pre>
+            Paste your incident summary into the <strong>Description</strong> field.
+          </li>
+          <li>Click <strong>Create</strong></li>
+        </ol>
+        Then add observables inside the case — click the <strong>Observables</strong> tab → <strong>+ Add observable</strong>:
+        <ul style="margin:8px 0 8px 16px;line-height:1.9;">
+          <li>Destination IP from <code>data.dest_ip</code> → type: <strong>ip</strong></li>
+          <li><code>httpbin.org</code> → type: <strong>domain</strong></li>
+        </ul>
+        Then add tasks — click the <strong>Tasks</strong> tab → <strong>+ Add task</strong> for each step you worked through (e.g. "Triage Wazuh alerts", "Enrich IOCs via Cortex", "Write timeline").
+      </div>
+    </div>
+    <div class="step-item">
+      <div class="step-num">2</div>
+      <div class="step-body">Note the destination IP from your Stage 5 Suricata alert. Add it as an <strong>observable</strong> inside the case (type: IP address).</div>
+    </div>
+    <div class="step-item">
+      <div class="step-num">3</div>
+      <div class="step-body">
+        Go to the <a href="http://localhost/tools/" target="_blank"><strong>SOC Tools dashboard</strong></a> → <strong>IOC Lookup</strong> tab. Paste the destination IP, select your seat number, and run all three analysers:
+        <pre style="margin:10px 0;">AbuseIPDB        — community abuse reports
+VirusTotal       — 90+ engine threat intelligence
+Shodan           — publicly visible services on that IP</pre>
+        Results appear directly in the panel — no extra clicks needed.
+        <div class="callout" style="margin-top:10px;font-size:.85rem;">
+          <strong>Note:</strong> You can also run analysers from inside the TheHive case (Observables tab → Run analysers), but the in-case report view requires a newer Cortex version to render. Use the SOC Tools dashboard to read the actual results.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TOOL: AbuseIPDB -->
+  <div class="tool-card">
+    <div class="tool-header">
+      <div class="tool-icon" style="background:rgba(248,81,73,.12);">🛡️</div>
+      <div>
+        <div class="tool-name">AbuseIPDB</div>
+        <div class="tool-desc">Community-run database of reported malicious IPs — scored by volume and recency of reports</div>
+      </div>
+    </div>
+    <div class="tool-body">
+      <table class="field-table">
+        <tr><td>Confidence score</td><td>0% = never reported &nbsp;·&nbsp; 100% = reported by many sources recently</td></tr>
+        <tr><td>Total reports</td><td>Number of individual abuse reports filed against this IP</td></tr>
+        <tr><td>Abuse categories</td><td>The types of attack observed — SSH brute force, DDoS, port scanning, etc.</td></tr>
+        <tr><td>ISP / Usage type</td><td>Data centre vs. residential vs. CDN tells you what kind of infrastructure this is</td></tr>
+        <tr><td>Country</td><td>Where the IP block is registered</td></tr>
+      </table>
+    </div>
+  </div>
+
+  <!-- TOOL: VirusTotal -->
+  <div class="tool-card">
+    <div class="tool-header">
+      <div class="tool-icon" style="background:rgba(63,185,80,.12);">🔬</div>
+      <div>
+        <div class="tool-name">VirusTotal</div>
+        <div class="tool-desc">Runs the IP or domain through 90+ antivirus engines and threat intelligence feeds simultaneously</div>
+      </div>
+    </div>
+    <div class="tool-body">
+      <table class="field-table">
+        <tr><td>Detection ratio</td><td>"X / 90" — how many vendors flagged it as malicious out of all engines checked</td></tr>
+        <tr><td>Community score</td><td>Positive = trusted by community &nbsp;·&nbsp; Negative = flagged by community</td></tr>
+        <tr><td>Categories</td><td>How vendors classify the site — test service, malware distribution, phishing, etc.</td></tr>
+        <tr><td>Last analysis date</td><td>When it was most recently scanned by VirusTotal's engines</td></tr>
+      </table>
+    </div>
+  </div>
+
+  <!-- TOOL: Shodan -->
+  <div class="tool-card">
+    <div class="tool-header">
+      <div class="tool-icon" style="background:rgba(210,153,34,.12);">🌐</div>
+      <div>
+        <div class="tool-name">Shodan</div>
+        <div class="tool-desc">Search engine for internet-connected devices — shows open ports, services, and ownership information</div>
+      </div>
+    </div>
+    <div class="tool-body">
+      <table class="field-table">
+        <tr><td>Open ports</td><td>80/443 = web server &nbsp;·&nbsp; 22 = SSH &nbsp;·&nbsp; 3306 = database &nbsp;·&nbsp; Unexpected ports = suspicious</td></tr>
+        <tr><td>Hostnames</td><td>Domain names that resolve to this IP address</td></tr>
+        <tr><td>Organization</td><td>Who registered this IP block (cloud provider, hosting company, CDN, etc.)</td></tr>
+        <tr><td>ASN</td><td>Autonomous System Number — identifies the network this IP belongs to</td></tr>
+      </table>
+    </div>
+  </div>
+
+  <!-- Q12: Results table -->
+  <div class="question">
+    <div class="question-label">Q12</div>
+    <div class="question-text">Record your Cortex results for the destination IP:</div>
+  </div>
+  <div class="enrich-result-grid">
+    <div class="er-cell">
+      <div class="er-cell-head">AbuseIPDB</div>
+      <div class="er-field"><span class="er-key">Confidence</span><span class="er-val">_____%</span></div>
+      <div class="er-field"><span class="er-key">Reports</span><span class="er-val">_______</span></div>
+      <div class="er-field"><span class="er-key">Categories</span><span class="er-val">_______</span></div>
+      <div class="er-field"><span class="er-key">ISP type</span><span class="er-val">_______</span></div>
+    </div>
+    <div class="er-cell">
+      <div class="er-cell-head">VirusTotal</div>
+      <div class="er-field"><span class="er-key">Detections</span><span class="er-val">___ / 90</span></div>
+      <div class="er-field"><span class="er-key">Community</span><span class="er-val">_______</span></div>
+      <div class="er-field"><span class="er-key">Category</span><span class="er-val">_______</span></div>
+    </div>
+    <div class="er-cell">
+      <div class="er-cell-head">Shodan</div>
+      <div class="er-field"><span class="er-key">Ports</span><span class="er-val">_______</span></div>
+      <div class="er-field"><span class="er-key">Hostname</span><span class="er-val">_______</span></div>
+      <div class="er-field"><span class="er-key">Org</span><span class="er-val">_______</span></div>
+    </div>
+  </div>
+
+  <div class="question">
+    <div class="question-label">Q13</div>
+    <div class="question-text">Is the destination flagged as malicious by any of the three tools?</div>
+  </div>
+
+  <div class="callout danger">
+    <strong>The lesson: clean infrastructure is the attacker's strategy.</strong>
+    <br><br>
+    The destination is <strong>httpbin.org</strong> — a completely legitimate developer testing service. AbuseIPDB: zero reports. VirusTotal: clean across all 90+ engines. Shodan: standard web server, reputable CDN owner.
+    <br><br>
+    Attackers deliberately choose destinations like this. httpbin.org, Pastebin, GitHub, Google Drive, Dropbox, OneDrive — trusted by every corporate firewall, zero alerts from any IP reputation system. Blocking them would break legitimate developer and business workflows.
+    <br><br>
+    This is why <strong>behavioural detection</strong> matters more than blocklists. Suricata fired not because httpbin.org is malicious. It fired because an outbound POST with a file attachment from a server that has no business sending file uploads is <em>anomalous behaviour</em>, regardless of the destination's reputation.
+    <br><br>
+    <strong>A clean enrichment result is not evidence of innocence. It is evidence of a competent attacker who chose their infrastructure carefully.</strong>
+  </div>
+
+  <!-- BONUS -->
+  <div class="bonus-box">
+    <div class="bonus-header">⭐ Bonus — What does "flagged" actually look like?</div>
+    <p style="font-size:14px;color:var(--muted);margin-bottom:16px;">You have seen clean infrastructure through Cortex. Now run one more enrichment so you know what a flagged result looks like for comparison.</p>
+    <p style="font-size:13px;color:var(--muted);margin-bottom:4px;">Add this as a second observable in your TheHive case and run the same three analysers:</p>
+    <div class="bonus-ip">185.220.101.180</div>
+    <p style="font-size:13px;color:var(--muted);margin-bottom:16px;">This is a <strong style="color:var(--text)">Tor exit node</strong> — one of the relay servers through which traffic exits the Tor anonymization network. Tor itself is legitimate software used by journalists and security researchers. But attackers route their activity through Tor to hide their true origin. As a result, Tor exit nodes are regularly reported in AbuseIPDB by analysts who see attacks arriving from them.</p>
+
+    <div class="question" style="margin-top:0;">
+      <div class="question-label" style="background:rgba(188,140,255,.12);color:var(--purple);border-color:rgba(188,140,255,.3);">B1</div>
+      <div class="question-text">What is the AbuseIPDB confidence score? How many reports? What categories are listed?</div>
+    </div>
+
+    <div class="question">
+      <div class="question-label" style="background:rgba(188,140,255,.12);color:var(--purple);border-color:rgba(188,140,255,.3);">B2</div>
+      <div class="question-text">What does VirusTotal say? How does the detection ratio compare to httpbin.org?</div>
+    </div>
+
+    <div class="question">
+      <div class="question-label" style="background:rgba(188,140,255,.12);color:var(--purple);border-color:rgba(188,140,255,.3);">B3</div>
+      <div class="question-text">Fill in the comparison table:</div>
+    </div>
+    <table class="comp-table">
+      <thead>
+        <tr><th>Field</th><th>httpbin.org IP (clean infra)</th><th>185.220.101.180 (Tor exit)</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>AbuseIPDB confidence</td><td><input type="text" placeholder="____%"></td><td><input type="text" placeholder="____%"></td></tr>
+        <tr><td>Total abuse reports</td><td><input type="text" placeholder="0"></td><td><input type="text" placeholder="____"></td></tr>
+        <tr><td>VirusTotal detections</td><td><input type="text" placeholder="0 / 90"></td><td><input type="text" placeholder="___ / 90"></td></tr>
+        <tr><td>Shodan organization</td><td><input type="text" placeholder="____"></td><td><input type="text" placeholder="____"></td></tr>
+        <tr><td>Your verdict</td><td><input type="text" placeholder="clean / malicious / ambiguous"></td><td><input type="text" placeholder="clean / malicious / ambiguous"></td></tr>
+      </tbody>
+    </table>
+
+    <div class="callout warn" style="margin-top:16px;">
+      Notice what you have compared: both IPs are technically associated with legitimate services. httpbin.org is a developer tool. The Tor exit node is legitimate Tor infrastructure. Both can appear in real attacks. <strong>Threat intelligence gives you context, not verdicts.</strong> The analyst's job is to weigh that context against the behaviour observed on the host.
+    </div>
+  </div>
+
+  <hr>
+
+  <!-- PART 5 -->
+  <h2 id="part5">Part 5 — Ask Claude to write the incident narrative</h2>
+  <p>You have the raw evidence. Now turn it into something an executive can read and a junior analyst can act on.</p>
+  <p>Open a Claude conversation and paste this prompt with your actual findings filled in:</p>
+
+  <div class="prompt-box">I am a SOC analyst. I have just completed investigating a
+post-exploitation incident on a Linux server called s[N]-lab-target.
+
+Here is the complete evidence I found:
+
+Timeline:
+<span class="ph">[paste your completed timeline from Part 3]</span>
+
+Destination IP enrichment (httpbin.org):
+<span class="ph">[paste what AbuseIPDB, VirusTotal, and Shodan returned]</span>
+
+What was staged and exfiltrated:
+- /etc/passwd (full user list)
+- SSH key directory listing
+- Network configuration and open connections
+- Running process list
+
+Please write two things:
+1. A one-paragraph executive briefing — clear, no jargon, explains
+   the business impact
+2. Analyst notes for the TheHive case — technical detail, IOCs,
+   recommended next steps</div>
+
+  <div class="question">
+    <div class="question-label">Q14</div>
+    <div class="question-text">Does Claude's executive summary accurately reflect the severity of what happened?</div>
+  </div>
+
+  <div class="question">
+    <div class="question-label">Q15</div>
+    <div class="question-text">What IOCs (indicators of compromise) does Claude identify?</div>
+  </div>
+
+  <div class="callout success">
+    An <strong>IOC</strong> is any piece of evidence that indicates a compromise occurred — an IP address, a file path, a domain, a hash. Building a complete IOC list is one of the most important outputs of any incident investigation: it tells you what to block, what to scan for, and what to share with threat intelligence feeds.
+  </div>
+
+  <hr>
+
+  <!-- PART 6 -->
+  <h2 id="part6">Part 6 — Complete the TheHive case</h2>
+  <p>Using Claude's output and your own analysis, finish documenting the incident. Work through each step below.</p>
+
+  <div class="thehive-checklist">
+
+    <label class="thc-item">
+      <input type="checkbox">
+      <div class="thc-box">
+        <svg width="12" height="12" viewBox="0 0 12 12" fill="white"><path d="M1.5 6l3 3 6-6" stroke="white" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </div>
+      <div>
+        <div class="thc-head">1 — Add case description</div>
+        <div class="thc-sub">Paste Claude's analyst notes into the case description field. This becomes the permanent record of what happened.</div>
+      </div>
+    </label>
+
+    <label class="thc-item">
+      <input type="checkbox">
+      <div class="thc-box">
+        <svg width="12" height="12" viewBox="0 0 12 12" fill="white"><path d="M1.5 6l3 3 6-6" stroke="white" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </div>
+      <div>
+        <div class="thc-head">2 — Set severity to High</div>
+        <div class="thc-sub">The attacker accessed <code>/etc/passwd</code> and the SSH key directory. In a real environment every account on this server is potentially compromised and lateral movement is likely.</div>
+      </div>
+    </label>
+
+    <label class="thc-item">
+      <input type="checkbox">
+      <div class="thc-box">
+        <svg width="12" height="12" viewBox="0 0 12 12" fill="white"><path d="M1.5 6l3 3 6-6" stroke="white" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </div>
+      <div>
+        <div class="thc-head">3 — Add all IOCs as observables</div>
+        <div class="thc-sub">
+          <table class="ioc-table" style="margin:10px 0 0;">
+            <thead><tr><th>Observable</th><th>Type</th></tr></thead>
+            <tbody>
+              <tr><td>IP address of the Kali attacker</td><td><span class="ioc-type">IP address</span></td></tr>
+              <tr><td>Destination IP (httpbin.org)</td><td><span class="ioc-type">IP address</span></td></tr>
+              <tr><td>/tmp/lab2-post-exploit/loot.tar.gz</td><td><span class="ioc-type">Filename</span></td></tr>
+              <tr><td>http://httpbin.org/post</td><td><span class="ioc-type">URL</span></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </label>
+
+    <label class="thc-item">
+      <input type="checkbox">
+      <div class="thc-box">
+        <svg width="12" height="12" viewBox="0 0 12 12" fill="white"><path d="M1.5 6l3 3 6-6" stroke="white" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </div>
+      <div>
+        <div class="thc-head">4 — Add MITRE ATT&CK tags</div>
+        <div class="thc-sub">Add all techniques identified in this lab:
+          <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;">
+            <span class="mitre-badge">T1110.001</span>
+            <span class="mitre-badge">T1082</span>
+            <span class="mitre-badge">T1033</span>
+            <span class="mitre-badge">T1049</span>
+            <span class="mitre-badge">T1552.001</span>
+            <span class="mitre-badge">T1074.001</span>
+            <span class="mitre-badge">T1041</span>
+          </div>
+        </div>
+      </div>
+    </label>
+
+    <label class="thc-item">
+      <input type="checkbox">
+      <div class="thc-box">
+        <svg width="12" height="12" viewBox="0 0 12 12" fill="white"><path d="M1.5 6l3 3 6-6" stroke="white" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </div>
+      <div>
+        <div class="thc-head">5 — Close the case</div>
+        <div class="thc-sub">Set verdict to: <strong style="color:var(--danger);">True Positive — Confirmed Breach</strong></div>
+      </div>
+    </label>
+
+  </div>
+
+  <hr>
+
+  <!-- CLEANUP -->
+  <h2>Cleanup</h2>
+  <p>SSH back into your target from the Kali terminal and remove the simulation artifacts:</p>
+  <pre>ssh victim@s[N]-lab-target
+/tmp/lab2-post-exploitation-sim.sh --cleanup
+exit</pre>
+
+  <hr>
+
+  <!-- KEY TAKEAWAYS -->
+  <h2 id="takeaways">Key takeaways</h2>
+
+  <ul class="takeaways">
+    <li><strong>Most breaches are detected in post-exploitation, not initial access.</strong> The brute force is loud and obvious. What the attacker does after getting in is quieter and harder to catch — but it is where the actual damage happens.</li>
+    <li><strong>Post-exploitation leaves traces in three different places.</strong> Host logs (Wazuh), file access (FIM), and network traffic (Suricata). No single tool sees the full picture. Correlation is the analyst's core skill.</li>
+    <li><strong>Speed makes human response nearly impossible.</strong> Login to data exfiltration in under 30 seconds. Automated detection and pre-built response playbooks are not optional — they are the only way to respond in time.</li>
+    <li><strong>IP reputation tools miss clean infrastructure.</strong> httpbin.org is not malicious. Attackers know this and deliberately use legitimate services. Behaviour-based detection catches what blocklists cannot.</li>
+    <li><strong>The TheHive case is the product.</strong> The alerts are just raw material. The documented, structured, properly tagged incident case with a clear verdict and complete IOC list is what actually serves the organisation.</li>
+    <li><strong>Claude turns fragments into narrative.</strong> An analyst with 10 alert timestamps and a list of file paths can produce a board-level incident briefing in 30 seconds. That is the leverage that makes AI genuinely useful in a SOC.</li>
+  </ul>
+
+  <hr>
+  <p style="font-size:13px;color:var(--muted);text-align:center;padding-top:8px;">
+    Fortark SOC Labs · Lab 2 of 7 · Next: <strong>SOAR Automation</strong>
+  </p>
+
+</div>
+</body>
+</html>

@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Module 2 — The SOC Analyst Role | Fortark SOC Labs</title>
+<style>
+  :root {
+    --bg: #0d1117; --bg2: #161b22; --bg3: #21262d; --border: #30363d;
+    --text: #e6edf3; --muted: #8b949e; --accent: #58a6ff; --accent2: #3fb950;
+    --warn: #d29922; --danger: #f85149; --code-bg: #1c2128; --tag-bg: #1f2a3d;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif; background: var(--bg); color: var(--text); line-height: 1.7; font-size: 16px; }
+  .header { background: var(--bg2); border-bottom: 1px solid var(--border); padding: 16px 0; position: sticky; top: 0; z-index: 100; }
+  .header-inner { max-width: 860px; margin: 0 auto; padding: 0 24px; display: flex; align-items: center; gap: 12px; }
+  .logo { font-size: 13px; font-weight: 600; color: var(--muted); letter-spacing: 0.08em; text-transform: uppercase; }
+  .logo span { color: var(--accent); }
+  .sep { color: var(--border); font-size: 18px; }
+  .module-badge { background: var(--bg3); color: var(--muted); border: 1px solid var(--border); border-radius: 4px; padding: 2px 8px; font-size: 12px; font-weight: 600; letter-spacing: 0.05em; }
+  .container { max-width: 860px; margin: 0 auto; padding: 48px 24px 80px; }
+  h1 { font-size: 28px; font-weight: 700; color: var(--text); margin-bottom: 8px; letter-spacing: -0.02em; }
+  .meta { display: flex; gap: 20px; flex-wrap: wrap; margin: 16px 0 32px; font-size: 14px; color: var(--muted); }
+  .meta-item { display: flex; align-items: center; gap: 6px; }
+  .meta-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--accent2); }
+  hr { border: none; border-top: 1px solid var(--border); margin: 40px 0; }
+  h2 { font-size: 20px; font-weight: 700; color: var(--text); margin: 40px 0 16px; padding-bottom: 8px; border-bottom: 1px solid var(--border); }
+  h3 { font-size: 16px; font-weight: 600; color: var(--accent); margin: 28px 0 12px; }
+  p { margin: 12px 0; }
+  strong { color: var(--text); }
+  pre { background: var(--code-bg); border: 1px solid var(--border); border-radius: 6px; padding: 16px 20px; overflow-x: auto; margin: 16px 0; font-family: 'SF Mono','Fira Mono','Cascadia Code','Consolas',monospace; font-size: 13px; line-height: 1.6; color: #a9b7c6; }
+  code { font-family: 'SF Mono','Fira Mono',monospace; font-size: 13px; background: var(--code-bg); border: 1px solid var(--border); border-radius: 3px; padding: 2px 6px; color: #a9b7c6; }
+  pre code { background: none; border: none; padding: 0; }
+  table { width: 100%; border-collapse: collapse; margin: 16px 0 24px; font-size: 14px; }
+  th { background: var(--bg3); color: var(--muted); text-align: left; padding: 10px 14px; font-weight: 600; font-size: 12px; letter-spacing: 0.06em; text-transform: uppercase; border: 1px solid var(--border); }
+  td { padding: 10px 14px; border: 1px solid var(--border); vertical-align: top; line-height: 1.5; }
+  tr:nth-child(even) td { background: var(--bg2); }
+  .callout { background: var(--bg3); border: 1px solid var(--border); border-left: 3px solid var(--accent2); border-radius: 6px; padding: 16px 20px; margin: 20px 0; font-size: 14px; color: var(--muted); line-height: 1.7; }
+  .callout strong { color: var(--text); }
+  .important { background: #1a1f00; border: 1px solid var(--warn); border-radius: 6px; padding: 16px 20px; margin: 20px 0; font-size: 14px; line-height: 1.7; }
+  .important strong { color: var(--warn); }
+  .scenario { background: var(--bg2); border: 1px solid var(--border); border-left: 3px solid var(--accent); border-radius: 6px; padding: 20px 24px; margin: 20px 0; font-style: italic; line-height: 1.8; }
+  .scenario .time { font-family: monospace; font-size: 13px; color: var(--warn); font-style: normal; font-weight: 600; display: block; margin-bottom: 8px; }
+  ul, ol { padding-left: 24px; margin: 12px 0; }
+  li { margin: 8px 0; line-height: 1.6; }
+  .takeaways { list-style: none; padding: 0; margin: 16px 0; }
+  .takeaways li { padding: 14px 0 14px 20px; border-bottom: 1px solid var(--border); position: relative; font-size: 15px; }
+  .takeaways li::before { content: ''; position: absolute; left: 0; top: 22px; width: 6px; height: 6px; border-radius: 50%; background: var(--accent2); }
+  .takeaways li:last-child { border-bottom: none; }
+  .next-btn { display: inline-block; margin-top: 24px; background: var(--accent); color: var(--bg); padding: 10px 20px; border-radius: 6px; font-weight: 700; font-size: 14px; text-decoration: none; }
+  .next-btn:hover { opacity: 0.85; }
+  .next-btn-green { background: var(--accent2); }
+  @media (max-width: 600px) { h1 { font-size: 22px; } .container { padding: 24px 16px 60px; } }
+</style>
+</head>
+<body>
+
+<header class="header">
+  <div class="header-inner">
+    <div class="logo"><span>Fortark</span> SOC Labs</div>
+    <div class="sep">/</div>
+    <div class="module-badge">PRE-LAB &middot; MODULE 2 OF 3</div>
+  </div>
+</header>
+
+<div class="container">
+
+  <h1>The SOC Analyst Role</h1>
+  <div class="meta">
+    <div class="meta-item"><div class="meta-dot"></div>15 minutes</div>
+    <div class="meta-item"><div class="meta-dot"></div>Foundational</div>
+    <div class="meta-item"><div class="meta-dot"></div>Read before Lab 1</div>
+  </div>
+
+  <h2>The alert on your screen at 2:17am</h2>
+
+  <div class="scenario">
+    <span class="time">02:17 UTC &mdash; Your shift</span>
+    It is the middle of the night. You are the analyst on the overnight shift. Your screen shows a new alert:<br><br>
+    <strong>Rule 2502 &mdash; Brute Force: syslog: User missed the password more than one time</strong><br>
+    Level 10 &middot; Source IP: 140.82.114.4 &middot; Target: lab-target &middot; 13 failures in 60 seconds<br><br>
+    You have 30 minutes to acknowledge this. Your organisation's contract says so.<br><br>
+    You have three questions to answer before you can go back to your coffee:<br><br>
+    1. <strong>Is this real, or a false alarm?</strong><br>
+    2. <strong>If it is real, how bad is it?</strong><br>
+    3. <strong>What do I do right now?</strong>
+  </div>
+
+  <p>This is triage. It is the core skill of a Tier 1 SOC analyst. Everything in this course is designed to make you fast and accurate at it.</p>
+
+  <hr>
+
+  <h2>What is a SOC?</h2>
+
+  <p>A <strong>Security Operations Centre</strong> (SOC) is a team — or a managed service — whose job is to monitor an organisation's systems for security threats 24 hours a day, 7 days a week, 365 days a year.</p>
+
+  <p>Large organisations build their own internal SOC. Smaller organisations outsource to a <strong>Managed Security Service Provider (MSSP)</strong> — a company that runs a SOC on their behalf for a monthly fee.</p>
+
+  <p>Either way, the SOC is the organisation's first line of defence against active threats. When something bad is happening right now, the SOC is the team that sees it first.</p>
+
+  <hr>
+
+  <h2>The tier structure</h2>
+
+  <p>SOC teams are organised into tiers based on skill and responsibility:</p>
+
+  <h3>Tier 1 &mdash; Alert Analyst</h3>
+  <p>This is where most SOC careers start. Tier 1 analysts monitor the alert queue, triage incoming alerts, filter out false positives, and escalate confirmed or suspected incidents to Tier 2. Volume work — a busy Tier 1 analyst might triage 50&ndash;100 alerts per shift.</p>
+
+  <h3>Tier 2 &mdash; Incident Responder</h3>
+  <p>Tier 2 analysts investigate escalated incidents in depth. They dig into the full timeline, correlate data across multiple tools, determine the scope of a breach, and recommend or carry out containment actions. Deeper technical work, fewer cases.</p>
+
+  <h3>Tier 3 &mdash; Threat Hunter / Senior Analyst</h3>
+  <p>Tier 3 does not wait for alerts. They proactively search for threats that have not triggered any detection — attackers who are already inside but have not been caught yet. They also build and tune the detection rules that Tier 1 and Tier 2 rely on.</p>
+
+  <div class="callout">
+    <strong>In the labs in this course, you are doing Tier 1 and Tier 2 work:</strong><br>
+    &bull; Lab 1: Tier 1 triage — is this real? how bad? what next?<br>
+    &bull; Lab 2: Tier 2 investigation — what exactly did the attacker do after they got in?<br>
+    &bull; Lab 3 onwards: understanding how SOC tooling supports both tiers
+  </div>
+
+  <hr>
+
+  <h2>What a Tier 1 shift actually looks like</h2>
+
+  <p>A Tier 1 analyst on shift has an alert queue — a live list of alerts that have fired and need to be reviewed. The queue is prioritised by severity. Level 10+ alerts sit at the top.</p>
+
+  <p>For each alert, the analyst:</p>
+
+  <ol>
+    <li><strong>Opens the alert</strong> — reads what rule fired, when, on which system, from which source</li>
+    <li><strong>Investigates context</strong> — is this source IP seen before? is this rule noisy on this machine? is this during business hours or 3am?</li>
+    <li><strong>Makes a decision</strong> — true positive (real threat), false positive (benign activity matching the rule), or needs more investigation</li>
+    <li><strong>Documents the decision</strong> — writes a triage note explaining what they found and why they made the call they made</li>
+    <li><strong>Takes action</strong> — closes the alert, escalates to Tier 2, blocks an IP, notifies the client</li>
+  </ol>
+
+  <p>That last step — the documented decision — is not bureaucracy. It is the product. The next analyst on shift needs to understand what happened. A legal team may need it if the incident becomes a court case. A compliance auditor may review it. An incident post-mortem will use it.</p>
+
+  <div class="important">
+    <strong>Spotting the alert is the easy part. Writing a clear, accurate, defensible record of what you found and what you decided — that is what the job actually requires.</strong>
+  </div>
+
+  <hr>
+
+  <h2>True positives and false positives</h2>
+
+  <p>Every alert is one of four things:</p>
+
+  <table>
+    <thead>
+      <tr>
+        <th></th>
+        <th>Threat is real</th>
+        <th>Threat is not real</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>Alert fired</strong></td>
+        <td>True Positive &#10003;</td>
+        <td>False Positive</td>
+      </tr>
+      <tr>
+        <td><strong>Alert did not fire</strong></td>
+        <td>False Negative</td>
+        <td>True Negative &#10003;</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <p><strong>True Positive</strong> — The alert fired and there is a real threat. This is what you act on.</p>
+  <p><strong>False Positive</strong> — The alert fired but it is benign activity. The rule matched something innocent. These are noise — and managing them is a significant part of the job.</p>
+  <p><strong>False Negative</strong> — A real threat happened but no alert fired. The worst outcome — you never know.</p>
+  <p><strong>True Negative</strong> — Nothing happened, no alert fired. Normal and expected.</p>
+
+  <p>Every detection rule is a balance between catching real threats (minimising false negatives) and not generating so many false positives that analysts stop paying attention. A rule that fires on everything catches everything — and analysts learn to ignore it within a week. A rule that almost never fires gets treated as urgent — but may miss things.</p>
+
+  <div class="callout">
+    <strong>In Lab 1, you will verify a True Positive</strong> — the alert is real, the attack is real, and the triage note should record it as such.
+  </div>
+
+  <hr>
+
+  <h2>What an SLA is and who it serves</h2>
+
+  <p>An <strong>SLA</strong> (Service Level Agreement) is a contractual commitment about performance. In a SOC context, SLAs define how fast the team must respond to different types of alerts.</p>
+
+  <p>The organisation — the one paying for the SOC service — is not buying "someone will look at this eventually." They are buying a guaranteed response window. If the SOC misses that window, there are financial and reputational consequences.</p>
+
+  <p>A typical SOC SLA structure:</p>
+
+  <table>
+    <thead>
+      <tr>
+        <th>Severity</th>
+        <th>Acknowledge</th>
+        <th>Investigate</th>
+        <th>Escalate</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Low (1&ndash;6)</td>
+        <td>Next business day</td>
+        <td>72 hours</td>
+        <td>Not required</td>
+      </tr>
+      <tr>
+        <td>Medium (7&ndash;9)</td>
+        <td>4 hours</td>
+        <td>8 hours</td>
+        <td>Tier 2 within 8 hours</td>
+      </tr>
+      <tr>
+        <td>High (10&ndash;11)</td>
+        <td>30 minutes</td>
+        <td>2 hours</td>
+        <td>Tier 2 immediately</td>
+      </tr>
+      <tr>
+        <td>Critical (12&ndash;14)</td>
+        <td>15 minutes</td>
+        <td>Immediate</td>
+        <td>Management within 30 min</td>
+      </tr>
+      <tr>
+        <td>Emergency (15)</td>
+        <td>Immediate</td>
+        <td>Immediate</td>
+        <td>CISO now</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <p>"Acknowledge" means an analyst has seen the alert and confirmed they are working it. The clock starts when the alert fires — not when you open your laptop.</p>
+
+  <p>This is why a level 10 alert at 2:17am matters. The SLA clock started at 2:17am. If no analyst acknowledges it by 2:47am, the SOC has breached its contract. This is why overnight shifts exist. This is why there is always someone watching.</p>
+
+  <hr>
+
+  <h2>The three triage questions &mdash; in order</h2>
+
+  <p>When an alert arrives, work through these three questions in order. Do not jump to action before answering all three.</p>
+
+  <h3>Question 1: Is this real?</h3>
+  <p>Is this a true positive or a false positive? Look at the source IP — is it known and trusted? Look at the time — is this activity normal for this system at this hour? Look at the target — does the targeted username exist? Could legitimate activity generate this alert?</p>
+
+  <h3>Question 2: How bad is it?</h3>
+  <p>If it is real — what is the impact? Did the attack succeed? Is this a failed attempt or a confirmed breach? Is this an isolated event or part of a broader campaign? Which systems are affected?</p>
+
+  <h3>Question 3: What next?</h3>
+  <p>Given what you know — monitor, escalate, block, or contain? Who needs to know? What evidence needs to be preserved? What does the triage note say?</p>
+
+  <p>These questions are not sequential steps you do once. They are a loop. As you find more evidence, your answers change. A level 10 alert that looks like a false positive at first glance might become a confirmed breach once you check whether a successful login followed the failures.</p>
+
+  <hr>
+
+  <h2>The deliverable</h2>
+
+  <p>At the end of every alert investigation, there is one required output: the triage note.</p>
+
+  <p>A triage note is not a long report. It is a structured, factual record of:</p>
+  <ul>
+    <li>What happened (what the alert said)</li>
+    <li>What you found when you investigated (the evidence)</li>
+    <li>What decision you made (true positive / false positive / needs investigation)</li>
+    <li>What action you took or recommended</li>
+  </ul>
+
+<pre>Date/Time   : 2026-05-30 13:38 UTC
+Source IP   : 140.82.114.4
+Target      : admin / victim @ lab-target
+Alert hits  : rule 5710 x47  rule 2502 x3  rule 40112: YES
+Outcome     : CONFIRMED BREACH — successful login after brute force
+Verdict     : True Positive
+Action      : Escalate to Tier 2 / Incident Response
+Analyst     : [name]</pre>
+
+  <p>Short. Factual. Complete. Any analyst who reads this in three months — or three years — should understand exactly what happened and exactly what decision was made.</p>
+
+  <p>This is the document you will write at the end of Lab 1.</p>
+
+  <hr>
+
+  <h2>Key concepts from this module</h2>
+
+  <ul class="takeaways">
+    <li>A SOC monitors for active threats 24/7 — the overnight shift exists because attackers do not take breaks</li>
+    <li>Tier 1 triages alerts, Tier 2 investigates incidents, Tier 3 hunts for undetected threats</li>
+    <li>Triage answers three questions in order: real or not? how bad? what next?</li>
+    <li>Every alert is a true positive, false positive, false negative, or true negative — knowing which one changes everything</li>
+    <li>SLAs are contractual — the clock starts when the alert fires, not when you see it</li>
+    <li>The triage note is the deliverable — the documented, defensible record of what happened and what you decided</li>
+  </ul>
+
+  <a href="/guides/lab1.html" class="next-btn next-btn-green">Start Lab 1 &rarr;</a>
+
+</div>
+</body>
+</html>

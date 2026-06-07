@@ -1,0 +1,38 @@
+filebeat.inputs:
+  - type: log
+    enabled: true
+    paths:
+      - /var/log/suricata/eve.json
+    json.keys_under_root: true
+    json.overwrite_keys: true
+    json.add_error_key: true
+    fields:
+      source: suricata
+    fields_under_root: true
+    processors:
+      - drop_event:
+          when:
+            equals:
+              event_type: "stats"
+
+processors:
+  - add_host_metadata: {}
+  - add_cloud_metadata: {}
+
+output.elasticsearch:
+  hosts: ["https://opensearch:9200"]
+  username: "admin"
+  password: "${OPENSEARCH_ADMIN_PASSWORD}"
+  ssl.verification_mode: none
+  allow_older_versions: true
+  index: "suricata-%{[agent.version]}-%{+yyyy.MM.dd}"
+
+setup.ilm.enabled: false
+setup.template.name: "suricata"
+setup.template.pattern: "suricata-*"
+setup.template.settings:
+  index.number_of_shards: 1
+  index.number_of_replicas: 0
+
+logging.level: info
+logging.to_files: false

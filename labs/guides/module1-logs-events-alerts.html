@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Module 1 — Logs, Events, and Alerts | Fortark SOC Labs</title>
+<style>
+  :root {
+    --bg: #0d1117; --bg2: #161b22; --bg3: #21262d; --border: #30363d;
+    --text: #e6edf3; --muted: #8b949e; --accent: #58a6ff; --accent2: #3fb950;
+    --warn: #d29922; --danger: #f85149; --code-bg: #1c2128; --tag-bg: #1f2a3d;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif; background: var(--bg); color: var(--text); line-height: 1.7; font-size: 16px; }
+  .header { background: var(--bg2); border-bottom: 1px solid var(--border); padding: 16px 0; position: sticky; top: 0; z-index: 100; }
+  .header-inner { max-width: 860px; margin: 0 auto; padding: 0 24px; display: flex; align-items: center; gap: 12px; }
+  .logo { font-size: 13px; font-weight: 600; color: var(--muted); letter-spacing: 0.08em; text-transform: uppercase; }
+  .logo span { color: var(--accent); }
+  .sep { color: var(--border); font-size: 18px; }
+  .module-badge { background: var(--bg3); color: var(--muted); border: 1px solid var(--border); border-radius: 4px; padding: 2px 8px; font-size: 12px; font-weight: 600; letter-spacing: 0.05em; }
+  .container { max-width: 860px; margin: 0 auto; padding: 48px 24px 80px; }
+  h1 { font-size: 28px; font-weight: 700; color: var(--text); margin-bottom: 8px; letter-spacing: -0.02em; }
+  .meta { display: flex; gap: 20px; flex-wrap: wrap; margin: 16px 0 32px; font-size: 14px; color: var(--muted); }
+  .meta-item { display: flex; align-items: center; gap: 6px; }
+  .meta-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--accent2); }
+  hr { border: none; border-top: 1px solid var(--border); margin: 40px 0; }
+  h2 { font-size: 20px; font-weight: 700; color: var(--text); margin: 40px 0 16px; padding-bottom: 8px; border-bottom: 1px solid var(--border); }
+  h3 { font-size: 16px; font-weight: 600; color: var(--accent); margin: 28px 0 12px; }
+  p { margin: 12px 0; }
+  strong { color: var(--text); }
+  pre { background: var(--code-bg); border: 1px solid var(--border); border-radius: 6px; padding: 16px 20px; overflow-x: auto; margin: 16px 0; font-family: 'SF Mono','Fira Mono','Cascadia Code','Consolas',monospace; font-size: 13px; line-height: 1.6; color: #a9b7c6; }
+  code { font-family: 'SF Mono','Fira Mono',monospace; font-size: 13px; background: var(--code-bg); border: 1px solid var(--border); border-radius: 3px; padding: 2px 6px; color: #a9b7c6; }
+  pre code { background: none; border: none; padding: 0; }
+  table { width: 100%; border-collapse: collapse; margin: 16px 0 24px; font-size: 14px; }
+  th { background: var(--bg3); color: var(--muted); text-align: left; padding: 10px 14px; font-weight: 600; font-size: 12px; letter-spacing: 0.06em; text-transform: uppercase; border: 1px solid var(--border); }
+  td { padding: 10px 14px; border: 1px solid var(--border); vertical-align: top; line-height: 1.5; }
+  tr:nth-child(even) td { background: var(--bg2); }
+  .callout { background: var(--bg3); border: 1px solid var(--border); border-left: 3px solid var(--accent2); border-radius: 6px; padding: 16px 20px; margin: 20px 0; font-size: 14px; color: var(--muted); line-height: 1.7; }
+  .callout strong { color: var(--text); }
+  .important { background: #1a1f00; border: 1px solid var(--warn); border-radius: 6px; padding: 16px 20px; margin: 20px 0; font-size: 14px; line-height: 1.7; }
+  .important strong { color: var(--warn); }
+  .scenario { background: var(--bg2); border: 1px solid var(--border); border-left: 3px solid var(--accent); border-radius: 6px; padding: 20px 24px; margin: 20px 0; font-style: italic; line-height: 1.8; }
+  .scenario .time { font-family: monospace; font-size: 13px; color: var(--warn); font-style: normal; font-weight: 600; display: block; margin-bottom: 8px; }
+  ul, ol { padding-left: 24px; margin: 12px 0; }
+  li { margin: 8px 0; line-height: 1.6; }
+  .takeaways { list-style: none; padding: 0; margin: 16px 0; }
+  .takeaways li { padding: 14px 0 14px 20px; border-bottom: 1px solid var(--border); position: relative; font-size: 15px; }
+  .takeaways li::before { content: ''; position: absolute; left: 0; top: 22px; width: 6px; height: 6px; border-radius: 50%; background: var(--accent2); }
+  .takeaways li:last-child { border-bottom: none; }
+  .next-btn { display: inline-block; margin-top: 24px; background: var(--accent); color: var(--bg); padding: 10px 20px; border-radius: 6px; font-weight: 700; font-size: 14px; text-decoration: none; }
+  .next-btn:hover { opacity: 0.85; }
+  @media (max-width: 600px) { h1 { font-size: 22px; } .container { padding: 24px 16px 60px; } }
+</style>
+</head>
+<body>
+
+<header class="header">
+  <div class="header-inner">
+    <div class="logo"><span>Fortark</span> SOC Labs</div>
+    <div class="sep">/</div>
+    <div class="module-badge">PRE-LAB &middot; MODULE 1 OF 3</div>
+  </div>
+</header>
+
+<div class="container">
+
+  <h1>Logs, Events, and Alerts</h1>
+  <div class="meta">
+    <div class="meta-item"><div class="meta-dot"></div>20 minutes</div>
+    <div class="meta-item"><div class="meta-dot"></div>Foundational</div>
+    <div class="meta-item"><div class="meta-dot"></div>Read before Lab 1</div>
+  </div>
+
+  <h2>The server's diary</h2>
+
+  <p>Every action that happens on a computer leaves a trace. A user logs in — logged. An application starts — logged. A file is read — optionally logged. A login fails — logged.</p>
+
+  <p>These traces are called <strong>logs</strong>. They are timestamped records of things that happened, written automatically by the operating system and every major application running on it.</p>
+
+  <p>Here is a real log entry from an SSH server being brute forced:</p>
+
+<pre>May 30 13:38:58 lab-target sshd[12341]: Invalid user admin from 140.82.114.4 port 45231</pre>
+
+  <p>Let us break it down:</p>
+
+  <table>
+    <thead>
+      <tr>
+        <th>Part</th>
+        <th>Value</th>
+        <th>What it means</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Timestamp</td>
+        <td><code>May 30 13:38:58</code></td>
+        <td>When it happened</td>
+      </tr>
+      <tr>
+        <td>Hostname</td>
+        <td><code>lab-target</code></td>
+        <td>Which machine it happened on</td>
+      </tr>
+      <tr>
+        <td>Process</td>
+        <td><code>sshd[12341]</code></td>
+        <td>Which program wrote the log (SSH daemon, process ID 12341)</td>
+      </tr>
+      <tr>
+        <td>Message</td>
+        <td><code>Invalid user admin</code></td>
+        <td>What happened — someone tried to log in as "admin" but that account does not exist</td>
+      </tr>
+      <tr>
+        <td>Source IP</td>
+        <td><code>140.82.114.4</code></td>
+        <td>Where the attempt came from</td>
+      </tr>
+      <tr>
+        <td>Source port</td>
+        <td><code>port 45231</code></td>
+        <td>The network port the attacker used</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <p>One line. One failed login attempt. Seventeen fields of information about exactly what happened, when, where it came from, and why it failed.</p>
+
+  <p>Now imagine 200 of those lines arriving in the space of 60 seconds.</p>
+
+  <hr>
+
+  <h2>The scale problem</h2>
+
+  <p>A typical Linux server running a web application generates between <strong>50,000 and 500,000 log lines per day</strong>. A medium-sized organisation with 500 servers generates tens of millions of log lines daily.</p>
+
+  <p>No human being can read that. No team of humans can read that.</p>
+
+  <p>This is the fundamental problem that a <strong>SIEM</strong> solves.</p>
+
+  <hr>
+
+  <h2>What is a SIEM?</h2>
+
+  <p><strong>SIEM</strong> stands for Security Information and Event Management. It is a system that:</p>
+
+  <ol>
+    <li><strong>Collects</strong> logs from every server, application, and network device in the organisation — centralising them in one place</li>
+    <li><strong>Parses</strong> each log line — extracting the structured fields (timestamp, source IP, username, etc.) from the raw text</li>
+    <li><strong>Applies rules</strong> — comparing what is happening against known patterns of attacks and anomalies</li>
+    <li><strong>Fires alerts</strong> — when a rule matches, creating a structured security event that an analyst can investigate</li>
+  </ol>
+
+  <p>Think of it this way: if logs are the raw diary entries written by thousands of servers simultaneously, the SIEM is the analyst who reads all of them, recognises danger patterns, and taps you on the shoulder when something needs your attention.</p>
+
+  <p>In this course, the SIEM is <strong>Wazuh</strong>. It is collecting logs from your student target (<code>s[N]-lab-target</code>) in real time. Every SSH login attempt, every file change, every user action generates a log line — Wazuh receives it within seconds and checks it against its ruleset.</p>
+
+  <hr>
+
+  <h2>What is a rule?</h2>
+
+  <p>A <strong>rule</strong> is a condition that, when met, generates an alert.</p>
+
+  <p>Rules can be simple or complex:</p>
+
+  <div class="callout">
+    <strong>Simple rule:</strong><br>
+    If an SSH login fails, fire an alert at level 3.
+  </div>
+
+  <div class="callout">
+    <strong>Correlation rule:</strong><br>
+    If more than 8 SSH login failures occur from the same source IP within 120 seconds, fire an alert at level 10.
+  </div>
+
+  <p>The second type — a <strong>correlation rule</strong> — is where a SIEM becomes genuinely powerful. It is not just recording individual events. It is recognising that eight failed logins in two minutes from the same IP address is a pattern with a specific meaning: someone is running an automated attack.</p>
+
+  <p>This is exactly what Wazuh rule 2502 does. It does not care about any single failed login. It watches the aggregate — and when the pattern crosses a threshold, it tells you.</p>
+
+  <hr>
+
+  <h2>The alert hierarchy</h2>
+
+  <p>It helps to understand the difference between a log, an event, and an alert:</p>
+
+<pre>Raw log line
+"May 30 13:38:58 lab-target sshd[12341]: Invalid user admin from 140.82.114.4"
+        ↓
+    Parsed event
+    { timestamp, source_ip, target_user, action: "login_failure", reason: "invalid_user" }
+        ↓
+    Rule match → Alert
+    Rule 5710 fires: "sshd: Attempt to login using a non-existent user" — Level 5
+        ↓
+    Correlation → Higher alert
+    Rule 2502 fires: "syslog: User missed the password more than one time" — Level 10
+        ↓
+    Correlation with success → Critical alert
+    Rule 40112 fires: "Multiple authentication failures followed by a success" — Level 12</pre>
+
+  <p>Each step adds meaning. The raw log line tells you one thing happened. The correlation rule tells you what it means. Rule 40112 at the bottom of that chain is not just an alert — it is a conclusion: <strong>someone got in</strong>.</p>
+
+  <hr>
+
+  <h2>Three rules you will see in Lab 1</h2>
+
+  <table>
+    <thead>
+      <tr>
+        <th>Rule</th>
+        <th>What triggers it</th>
+        <th>Level</th>
+        <th>What it means</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>5710</strong></td>
+        <td>Single failed SSH login for a non-existent user</td>
+        <td>5</td>
+        <td>One attempt. Noise by itself.</td>
+      </tr>
+      <tr>
+        <td><strong>2502</strong></td>
+        <td>8+ failures from the same IP in 120 seconds</td>
+        <td>10</td>
+        <td>Brute force pattern confirmed.</td>
+      </tr>
+      <tr>
+        <td><strong>40112</strong></td>
+        <td>Multiple failures from an IP followed by a successful login</td>
+        <td>12</td>
+        <td>Breach confirmed.</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <p>Notice the level progression: 5 &rarr; 10 &rarr; 12. Wazuh is not just detecting events — it is escalating its confidence as the evidence accumulates.</p>
+
+  <p>A level 5 alert says: "Something happened. FYI."<br>
+  A level 10 alert says: "This is a pattern. Pay attention."<br>
+  A level 12 alert says: "This is an incident. Act now."</p>
+
+  <hr>
+
+  <h2>What "Invalid user" vs "Failed password" actually means</h2>
+
+  <p>This distinction will come up in Q3 of Lab 1 and it is one of the most practically important things in this module.</p>
+
+  <p>When an attacker tries to log in as a username that <strong>does not exist</strong> on the machine, the log says:</p>
+
+<pre>Invalid user admin from 140.82.114.4</pre>
+
+  <p>When an attacker tries to log in as a username that <strong>does exist</strong> but gives the wrong password, the log says:</p>
+
+<pre>Failed password for root from 140.82.114.4</pre>
+
+  <p>Both look like "failed login." Both generate similar alerts. But the second one is significantly more dangerous — it means the attacker has already identified a valid account. They just need to find the password.</p>
+
+  <p>In Lab 1, hydra targets the username <code>admin</code>. That account does not exist on the target machine. Every attempt generates "Invalid user admin" — level 5 noise. Then you manually log in as <code>victim</code> (a real account) — and rule 40112 fires at level 12. That escalation is not accidental. It reflects the actual change in risk.</p>
+
+  <hr>
+
+  <h2>Why centralising logs matters</h2>
+
+  <p>Before SIEMs, every server kept its own logs locally. An analyst investigating an attack had to SSH into each individual server, read logs manually, and try to piece together a timeline across dozens of machines.</p>
+
+  <p>Attackers exploited this. After a breach, one of the first things an attacker does is delete or modify the local logs on the machine they compromised. Evidence gone.</p>
+
+  <p>With a SIEM, logs are shipped to a central server immediately — before an attacker can delete them. By the time the attacker thinks about covering their tracks, the evidence is already somewhere else.</p>
+
+  <p>This is why Wazuh is running as a separate system from your student target. Even if the <code>lab-target</code> machine were completely destroyed, Wazuh already has the evidence.</p>
+
+  <hr>
+
+  <h2>Key concepts from this module</h2>
+
+  <ul class="takeaways">
+    <li>Logs are timestamped records of system events — every server generates thousands per day</li>
+    <li>A SIEM collects, parses, and analyses logs centrally — no human can read raw logs at scale</li>
+    <li>Rules define patterns; alerts fire when patterns match — moving from "something happened" to "this means something"</li>
+    <li>Correlation rules connect multiple events into a single meaningful alert</li>
+    <li>"Invalid user" and "failed password" are not the same thing — one means no valid username, the other means the attacker has a valid username and needs only the password</li>
+    <li>Centralised logging prevents attackers from erasing evidence after a breach</li>
+  </ul>
+
+  <a href="/guides/module2.html" class="next-btn">Next: The SOC Analyst Role &rarr;</a>
+
+</div>
+</body>
+</html>

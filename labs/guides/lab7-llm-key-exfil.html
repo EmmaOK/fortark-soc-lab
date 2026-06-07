@@ -1,0 +1,988 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Lab 7 — LLM API Key Exfiltration | Fortark SOC Labs</title>
+<style>
+  :root {
+    --bg:#0d1117; --bg2:#161b22; --bg3:#21262d; --border:#30363d;
+    --text:#e6edf3; --muted:#8b949e;
+    --accent:#58a6ff; --accent2:#3fb950; --warn:#d29922; --danger:#f85149;
+    --purple:#bc8cff; --teal:#2ea89f; --orange:#e8812a;
+    --code-bg:#1c2128;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif;
+    background:var(--bg);color:var(--text);line-height:1.7;font-size:16px;}
+
+  .header{background:var(--bg2);border-bottom:1px solid var(--border);
+    padding:16px 0;position:sticky;top:0;z-index:100;}
+  .header-inner{max-width:900px;margin:0 auto;padding:0 24px;
+    display:flex;align-items:center;gap:12px;}
+  .logo{font-size:13px;font-weight:600;color:var(--muted);letter-spacing:.08em;}
+  .logo span{color:var(--accent);}
+  .lab-badge{padding:4px 14px;background:linear-gradient(135deg,rgba(188,140,255,.15),rgba(248,81,73,.12));
+    border:1px solid rgba(188,140,255,.4);border-radius:20px;
+    font-size:12px;font-weight:700;color:var(--purple);}
+  .capstone-tag{padding:3px 10px;background:rgba(210,153,34,.1);
+    border:1px solid rgba(210,153,34,.3);border-radius:10px;
+    font-size:11px;font-weight:700;color:var(--warn);}
+  .container{max-width:900px;margin:0 auto;padding:40px 24px 80px;}
+  h1{font-size:30px;font-weight:800;letter-spacing:-.02em;line-height:1.2;margin-bottom:12px;}
+  h2{font-size:22px;font-weight:700;margin:40px 0 16px;
+    padding-bottom:10px;border-bottom:1px solid var(--border);}
+  h3{font-size:17px;font-weight:700;margin:28px 0 12px;}
+  p{margin-bottom:14px;}
+  hr{border:none;border-top:1px solid var(--border);margin:32px 0;}
+  strong{color:var(--text);}
+  ul{margin:12px 0 16px 20px;line-height:1.9;font-size:15px;}
+  code{font-family:'SF Mono','Fira Mono',monospace;font-size:13px;
+    background:var(--bg3);border:1px solid var(--border);
+    border-radius:4px;padding:1px 6px;color:var(--accent2);}
+  pre{background:var(--code-bg);border:1px solid var(--border);border-radius:8px;
+    padding:18px 20px;margin:16px 0;overflow-x:auto;
+    font-family:'SF Mono','Fira Mono',monospace;font-size:13px;
+    line-height:1.8;color:#a9b7c6;}
+
+  .meta-strip{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:28px;
+    padding-bottom:20px;border-bottom:1px solid var(--border);}
+  .meta-chip{display:flex;align-items:center;gap:6px;
+    background:var(--bg2);border:1px solid var(--border);border-radius:20px;
+    padding:5px 14px;font-size:13px;color:var(--muted);}
+  .meta-chip strong{color:var(--text);}
+
+  .mitre-table{width:100%;border-collapse:collapse;margin:16px 0;font-size:14px;}
+  .mitre-table th{background:var(--bg3);border:1px solid var(--border);
+    padding:10px 14px;text-align:left;font-size:11px;font-weight:700;
+    letter-spacing:.08em;text-transform:uppercase;color:var(--muted);}
+  .mitre-table td{border:1px solid var(--border);padding:10px 14px;vertical-align:top;line-height:1.5;}
+  .mitre-table tr:nth-child(even) td{background:rgba(33,38,45,.5);}
+  .mitre-badge{display:inline-block;padding:2px 8px;
+    background:rgba(188,140,255,.12);border:1px solid rgba(188,140,255,.3);
+    border-radius:4px;font-size:11px;font-weight:700;color:var(--purple);
+    font-family:monospace;white-space:nowrap;}
+  .tactic-badge{display:inline-block;padding:2px 8px;border-radius:4px;
+    font-size:11px;font-weight:700;}
+  .tactic-discovery{background:rgba(210,153,34,.1);border:1px solid rgba(210,153,34,.25);color:var(--warn);}
+  .tactic-cred{background:rgba(248,81,73,.1);border:1px solid rgba(248,81,73,.25);color:var(--danger);}
+  .tactic-exfil{background:rgba(232,129,42,.1);border:1px solid rgba(232,129,42,.25);color:var(--orange);}
+  .tactic-c2{background:rgba(188,140,255,.1);border:1px solid rgba(188,140,255,.25);color:var(--purple);}
+
+  .part-nav{display:flex;flex-wrap:wrap;gap:8px;margin:24px 0;
+    padding:16px 20px;background:var(--bg2);
+    border:1px solid var(--border);border-radius:8px;}
+  .part-chip{padding:5px 14px;border-radius:20px;font-size:12px;font-weight:600;
+    color:var(--muted);border:1px solid var(--border);background:var(--bg3);
+    cursor:pointer;text-decoration:none;transition:all .2s;}
+  .part-chip:hover{background:rgba(188,140,255,.1);
+    border-color:rgba(188,140,255,.4);color:var(--purple);}
+
+  /* ── KILL CHAIN ARC ── */
+  .killchain-arc{background:var(--bg2);border:1px solid var(--border);
+    border-radius:12px;padding:24px;margin:20px 0;overflow-x:auto;}
+  .kc-title{font-size:11px;font-weight:700;letter-spacing:.12em;
+    text-transform:uppercase;color:var(--muted);margin-bottom:20px;text-align:center;}
+  .kc-labs{display:flex;gap:0;min-width:600px;}
+  .kc-lab{flex:1;padding:14px 10px;text-align:center;position:relative;
+    border-right:1px solid var(--border);}
+  .kc-lab:last-child{border-right:none;}
+  .kc-lab .kl-num{font-size:11px;font-weight:800;letter-spacing:.06em;
+    text-transform:uppercase;margin-bottom:6px;}
+  .kc-lab .kl-event{font-size:11px;color:var(--muted);line-height:1.5;}
+  /* completed labs */
+  .kc-lab.done .kl-num{color:var(--muted);}
+  /* active lab 7 */
+  .kc-lab.active{background:linear-gradient(180deg,rgba(188,140,255,.06),transparent);}
+  .kc-lab.active .kl-num{color:var(--purple);}
+  .kc-lab.active .kl-event{color:var(--text);}
+  .kc-lab.active::after{content:'★ PAYLOAD';position:absolute;top:-12px;left:50%;
+    transform:translateX(-50%);font-size:9px;font-weight:800;letter-spacing:.08em;
+    color:var(--purple);background:var(--bg);padding:2px 8px;
+    border:1px solid rgba(188,140,255,.4);border-radius:10px;white-space:nowrap;}
+
+  /* ── KEY PREFIX CARD ── */
+  .prefix-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin:20px 0;}
+  .prefix-card{background:var(--bg2);border:1px solid var(--border);
+    border-radius:8px;padding:14px 16px;}
+  .pc-provider{font-size:11px;font-weight:700;letter-spacing:.08em;
+    text-transform:uppercase;color:var(--muted);margin-bottom:6px;}
+  .pc-prefix{font-family:monospace;font-size:16px;font-weight:800;
+    padding:4px 10px;border-radius:4px;display:inline-block;margin-bottom:6px;}
+  .pc-prefix.anthropic{background:rgba(188,140,255,.15);color:var(--purple);}
+  .pc-prefix.openai{background:rgba(63,185,80,.12);color:var(--accent2);}
+  .pc-prefix.hf{background:rgba(210,153,34,.12);color:var(--warn);}
+  .pc-prefix.google{background:rgba(88,166,255,.12);color:var(--accent);}
+  .pc-prefix.cohere{background:rgba(232,129,42,.12);color:var(--orange);}
+  .pc-prefix.mistral{background:rgba(139,148,158,.12);color:var(--muted);}
+  .pc-example{font-family:monospace;font-size:11px;color:var(--muted);}
+
+  /* ── VALUE TABLE ── */
+  .value-table{width:100%;border-collapse:collapse;margin:16px 0;font-size:13px;}
+  .value-table th{background:var(--bg3);border:1px solid var(--border);
+    padding:10px 14px;text-align:left;font-size:11px;font-weight:700;
+    letter-spacing:.08em;text-transform:uppercase;color:var(--muted);}
+  .value-table td{border:1px solid var(--border);padding:10px 14px;vertical-align:top;line-height:1.5;}
+  .value-table tr:nth-child(even) td{background:rgba(33,38,45,.5);}
+  .value-table td:first-child{font-family:monospace;color:var(--text);font-weight:600;}
+
+  /* ── STUDENT TABLE ── */
+  .student-table{width:100%;border-collapse:collapse;margin:16px 0;font-size:14px;}
+  .student-table th{background:var(--bg3);border:1px solid var(--border);
+    padding:10px 14px;text-align:left;font-size:11px;font-weight:700;
+    letter-spacing:.08em;text-transform:uppercase;color:var(--muted);}
+  .student-table td{border:1px solid var(--border);padding:10px 14px;}
+
+  /* ── PREFLIGHT ── */
+  .preflight{display:flex;flex-direction:column;gap:12px;margin:16px 0;}
+  .preflight-item{display:flex;align-items:flex-start;gap:14px;
+    padding:14px 18px;background:var(--bg2);border:1px solid var(--border);border-radius:8px;}
+  .pf-num{width:28px;height:28px;border-radius:50%;flex-shrink:0;
+    background:var(--bg3);border:1px solid var(--border);
+    display:flex;align-items:center;justify-content:center;
+    font-weight:800;font-size:13px;color:var(--muted);}
+  .pf-body .pf-head{font-size:14px;font-weight:700;margin-bottom:4px;}
+  .pf-body .pf-sub{font-size:13px;color:var(--muted);line-height:1.5;}
+
+  /* ── STAGE CARDS ── */
+  .stage-card{background:var(--bg2);border:1px solid var(--border);
+    border-radius:10px;overflow:hidden;margin:20px 0;}
+  .stage-header{padding:14px 20px;display:flex;align-items:center;gap:12px;
+    border-bottom:1px solid var(--border);}
+  .stage-header.discovery{background:rgba(210,153,34,.06);border-bottom-color:rgba(210,153,34,.2);}
+  .stage-header.extract{background:rgba(248,81,73,.06);border-bottom-color:rgba(248,81,73,.2);}
+  .stage-header.exfil{background:rgba(232,129,42,.06);border-bottom-color:rgba(232,129,42,.2);}
+  .stage-header.validate{background:rgba(188,140,255,.06);border-bottom-color:rgba(188,140,255,.2);}
+  .stage-icon{font-size:20px;}
+  .stage-num-label{font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;margin-bottom:2px;}
+  .stage-header.discovery .stage-num-label{color:var(--warn);}
+  .stage-header.extract .stage-num-label{color:var(--danger);}
+  .stage-header.exfil .stage-num-label{color:var(--orange);}
+  .stage-header.validate .stage-num-label{color:var(--purple);}
+  .stage-name{font-size:16px;font-weight:700;}
+  .stage-mitre{margin-left:auto;}
+  .stage-body{padding:20px;}
+
+  /* ── QUESTION ── */
+  .question{display:flex;gap:14px;align-items:flex-start;
+    padding:16px 18px;margin:14px 0;
+    background:var(--bg3);border:1px solid var(--border);border-radius:8px;}
+  .question-label{font-size:11px;font-weight:800;letter-spacing:.1em;
+    text-transform:uppercase;color:var(--purple);flex-shrink:0;width:36px;}
+  .question-text{font-size:15px;font-weight:600;line-height:1.5;}
+
+  /* ── CALLOUT ── */
+  .callout{border-radius:0 8px 8px 0;padding:14px 18px;margin:14px 0;
+    font-size:14px;color:var(--muted);line-height:1.7;border-left:3px solid;}
+  .callout strong{color:var(--text);}
+  .callout{background:rgba(88,166,255,.06);border-left-color:var(--accent);}
+  .callout.warn{background:rgba(210,153,34,.06);border-left-color:var(--warn);}
+  .callout.danger{background:rgba(248,81,73,.06);border-left-color:var(--danger);}
+  .callout.purple{background:rgba(188,140,255,.06);border-left-color:var(--purple);}
+  .callout.orange{background:rgba(232,129,42,.06);border-left-color:var(--orange);}
+  .callout.success{background:rgba(63,185,80,.06);border-left-color:var(--accent2);}
+
+  /* ── CORRELATION SHEET ── */
+  .corr-sheet{background:var(--bg2);border:1px solid rgba(188,140,255,.3);
+    border-radius:10px;padding:20px 24px;margin:20px 0;}
+  .cs-title{font-size:11px;font-weight:700;letter-spacing:.1em;
+    text-transform:uppercase;color:var(--purple);margin-bottom:16px;}
+  .cs-row{display:grid;grid-template-columns:200px 1fr;gap:12px;
+    align-items:center;margin-bottom:10px;padding-bottom:10px;
+    border-bottom:1px solid var(--border);}
+  .cs-row:last-child{border-bottom:none;margin-bottom:0;padding-bottom:0;}
+  .cs-label{font-size:13px;color:var(--muted);}
+  .cs-input{background:var(--bg3);border:1px solid var(--border);
+    border-radius:6px;padding:7px 12px;color:var(--text);
+    font-family:'SF Mono','Fira Mono',monospace;font-size:12px;
+    outline:none;width:100%;transition:border-color .2s;}
+  .cs-input:focus{border-color:var(--purple);}
+  .cs-input::placeholder{color:var(--muted);}
+
+  /* ── DETECTION GAP TABLE ── */
+  .gap-table{width:100%;border-collapse:collapse;margin:16px 0;font-size:13px;}
+  .gap-table th{background:var(--bg3);border:1px solid var(--border);
+    padding:10px 14px;text-align:left;font-size:11px;font-weight:700;
+    letter-spacing:.08em;text-transform:uppercase;color:var(--muted);}
+  .gap-table td{border:1px solid var(--border);padding:10px 14px;vertical-align:top;line-height:1.5;}
+  .gap-table tr:nth-child(even) td{background:rgba(33,38,45,.5);}
+  .gap-tag{display:inline-block;padding:2px 8px;border-radius:4px;
+    font-size:10px;font-weight:700;}
+  .gap-miss{background:rgba(248,81,73,.12);color:var(--danger);border:1px solid rgba(248,81,73,.3);}
+  .gap-partial{background:rgba(210,153,34,.12);color:var(--warn);border:1px solid rgba(210,153,34,.3);}
+
+  /* ── IR CHECKLIST ── */
+  .ir-section{background:var(--bg2);border:1px solid var(--border);
+    border-radius:10px;overflow:hidden;margin:20px 0;}
+  .ir-header{padding:14px 20px;background:rgba(248,81,73,.06);
+    border-bottom:1px solid rgba(248,81,73,.2);
+    font-size:14px;font-weight:700;color:var(--danger);}
+  .ir-body{padding:20px;}
+  .ir-items{display:flex;flex-direction:column;gap:10px;}
+  .ir-item{display:flex;align-items:flex-start;gap:14px;
+    padding:14px 16px;background:var(--bg3);border:1px solid var(--border);
+    border-radius:8px;cursor:pointer;transition:border-color .2s,background .2s;}
+  .ir-item input[type="checkbox"]{display:none;}
+  .ir-box{width:20px;height:20px;border-radius:5px;flex-shrink:0;
+    border:2px solid var(--border);margin-top:2px;
+    display:flex;align-items:center;justify-content:center;
+    transition:all .2s;background:var(--bg2);}
+  .ir-box svg{display:none;}
+  .ir-item:has(input:checked){border-color:rgba(63,185,80,.4);background:rgba(63,185,80,.04);}
+  .ir-item:has(input:checked) .ir-box{background:var(--accent2);border-color:var(--accent2);}
+  .ir-item:has(input:checked) .ir-box svg{display:block;}
+  .ir-item:has(input:checked) .ir-head{text-decoration:line-through;color:var(--muted);}
+  .ir-item:hover:not(:has(input:checked)){border-color:var(--muted);}
+  .ir-head{font-size:14px;font-weight:700;margin-bottom:4px;}
+  .ir-sub{font-size:13px;color:var(--muted);line-height:1.5;}
+
+  /* ── OBSERVABLE TABLE ── */
+  .obs-table{width:100%;border-collapse:collapse;margin:16px 0;font-size:14px;}
+  .obs-table th{background:var(--bg3);border:1px solid var(--border);
+    padding:10px 14px;text-align:left;font-size:11px;font-weight:700;
+    letter-spacing:.08em;text-transform:uppercase;color:var(--muted);}
+  .obs-table td{border:1px solid var(--border);padding:10px 14px;vertical-align:top;}
+  .obs-table tr:nth-child(even) td{background:rgba(33,38,45,.5);}
+  .obs-type{display:inline-block;padding:2px 8px;border-radius:4px;
+    font-size:11px;font-weight:700;background:var(--bg3);
+    border:1px solid var(--border);color:var(--muted);}
+
+  /* ── THEHIVE CHECKLIST ── */
+  .thehive-checklist{display:flex;flex-direction:column;gap:12px;margin:20px 0;}
+  .thc-item{display:flex;align-items:flex-start;gap:14px;
+    padding:16px 18px;background:var(--bg2);border:1px solid var(--border);
+    border-radius:8px;cursor:pointer;transition:border-color .2s,background .2s;}
+  .thc-item input[type="checkbox"]{display:none;}
+  .thc-box{width:20px;height:20px;border-radius:5px;flex-shrink:0;
+    border:2px solid var(--border);margin-top:2px;
+    display:flex;align-items:center;justify-content:center;
+    transition:all .2s;background:var(--bg3);}
+  .thc-box svg{display:none;}
+  .thc-item:has(input:checked){border-color:rgba(63,185,80,.4);background:rgba(63,185,80,.04);}
+  .thc-item:has(input:checked) .thc-box{background:var(--accent2);border-color:var(--accent2);}
+  .thc-item:has(input:checked) .thc-box svg{display:block;}
+  .thc-item:has(input:checked) .thc-head{text-decoration:line-through;color:var(--muted);}
+  .thc-item:hover:not(:has(input:checked)){border-color:var(--muted);}
+  .thc-head{font-size:14px;font-weight:700;margin-bottom:4px;color:var(--text);}
+  .thc-sub{font-size:13px;color:var(--muted);line-height:1.5;}
+
+  /* ── TAKEAWAYS ── */
+  .takeaways{list-style:none;margin:16px 0;padding:0;}
+  .takeaways li{padding:14px 0;border-bottom:1px solid var(--border);
+    padding-left:20px;position:relative;font-size:15px;line-height:1.6;}
+  .takeaways li:last-child{border-bottom:none;}
+  .takeaways li::before{content:'→';position:absolute;left:0;
+    color:var(--purple);font-weight:700;}
+  .takeaways li strong{color:var(--text);}
+
+  @media(max-width:640px){
+    .prefix-grid{grid-template-columns:1fr 1fr;}
+    .cs-row{grid-template-columns:1fr;}
+    .kc-labs{flex-direction:column;}
+    .kc-lab{border-right:none;border-bottom:1px solid var(--border);}
+  }
+
+  /* ── CONCEPT BOX ── */
+  .concept-box{background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:24px 28px;margin:20px 0;}
+  .cb-title{font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;margin-bottom:20px;}
+  .concept-terms{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:16px;margin-bottom:20px;}
+  .ct-card{background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:16px 18px;}
+  .ct-card .ct-term{font-size:15px;font-weight:800;margin-bottom:6px;}
+  .ct-card .ct-def{font-size:13px;color:var(--muted);line-height:1.6;}
+  .concept-loop{display:flex;align-items:center;background:var(--bg3);border:1px solid var(--border);border-radius:8px;overflow:hidden;margin-bottom:16px;}
+  .cl-step{flex:1;padding:14px 12px;text-align:center;border-right:1px solid var(--border);}
+  .cl-step:last-child{border-right:none;}
+  .cl-step .cl-icon{font-size:20px;margin-bottom:6px;}
+  .cl-step .cl-label{font-size:10px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-bottom:4px;}
+  .cl-step .cl-desc{font-size:11px;color:var(--text);line-height:1.4;}
+  .cl-arrow{font-size:14px;color:var(--border);padding:0 2px;flex-shrink:0;align-self:center;}
+  .concept-analogy{border-radius:0 6px 6px 0;padding:12px 16px;font-size:13px;color:var(--muted);line-height:1.6;}
+  .concept-analogy strong{color:var(--text);}
+
+  .access-box{background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:20px 24px;margin:20px 0 0;}
+  .access-box-title{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:12px;}
+  .access-table{width:100%;border-collapse:collapse;}
+  .access-table th{background:var(--bg3);color:var(--muted);font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;padding:8px 12px;text-align:left;border-bottom:1px solid var(--border);}
+  .access-table td{padding:9px 12px;border-bottom:1px solid var(--border);font-size:13px;vertical-align:middle;}
+  .access-table tr:last-child td{border-bottom:none;}
+  .access-table td:first-child{font-weight:600;color:var(--text);white-space:nowrap;}
+  .access-table a{color:var(--accent);text-decoration:none;font-family:monospace;font-size:12px;}
+  .access-table a:hover{text-decoration:underline;}
+  .access-cred{font-family:monospace;font-size:12px;background:var(--bg3);padding:2px 6px;border-radius:4px;}
+  .access-note{font-size:12px;color:var(--muted);margin-top:10px;padding:8px 12px;background:var(--bg3);border-radius:6px;border-left:3px solid var(--accent);}
+</style>
+</head>
+<body>
+
+<header class="header">
+  <div class="header-inner">
+    <div class="logo">FORTARK <span>SOC LABS</span></div>
+    <div class="lab-badge">LAB 7</div>
+    <div class="capstone-tag">CAPSTONE</div>
+  </div>
+</header>
+
+<div class="container">
+
+  <h1>LLM API Key Exfiltration<br><span style="color:var(--muted);font-weight:400;font-size:22px;">The Crown Jewels of the AI Era</span></h1>
+
+  <div class="meta-strip">
+    <div class="meta-chip">⏱ <strong>60 minutes</strong></div>
+    <div class="meta-chip">⚡ <strong>Advanced</strong> — capstone, builds on all labs</div>
+    <div class="meta-chip">🛠 <strong>Wazuh · Suricata · TheHive · Cortex</strong></div>
+  </div>
+
+  <table class="mitre-table">
+    <thead><tr><th>Tactic</th><th>Technique</th><th>What it means</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><span class="tactic-badge tactic-discovery">Discovery</span></td>
+        <td><span class="mitre-badge">T1083</span><br>File and Directory Discovery</td>
+        <td>Attacker scans for <code>.env</code> and credential config files</td>
+      </tr>
+      <tr>
+        <td><span class="tactic-badge tactic-cred">Credential Access</span></td>
+        <td><span class="mitre-badge">T1552.001</span><br>Credentials in Files</td>
+        <td><code>grep</code> extracts AI API keys matching known prefixes</td>
+      </tr>
+      <tr>
+        <td><span class="tactic-badge tactic-exfil">Exfiltration</span></td>
+        <td><span class="mitre-badge">T1041</span><br>Exfiltration Over C2 Channel</td>
+        <td>Stolen keys are POSTed to the attacker's server over HTTPS</td>
+      </tr>
+      <tr>
+        <td><span class="tactic-badge tactic-c2">C2</span></td>
+        <td><span class="mitre-badge">T1071.001</span><br>Web Protocols</td>
+        <td>Attacker validates the stolen key by calling the AI provider's API</td>
+      </tr>
+    </tbody>
+  </table>
+
+
+  <!-- ACCESS -->
+  <h2 id="access">Platform Access</h2>
+  <div class="access-box">
+    <div class="access-box-title">Open these in separate browser tabs before starting</div>
+    <table class="access-table">
+      <thead><tr><th>Tool</th><th>URL</th><th>Login</th></tr></thead>
+      <tbody>
+        <tr><td>Wazuh (SIEM)</td><td><a href="http://localhost" target="_blank">http://localhost</a></td><td><span class="access-cred">admin</span> / <span class="access-cred">S0cPlatf0rm!e0d085fd</span></td></tr>
+        <tr><td>TheHive (cases)</td><td><a href="http://localhost/thehive/" target="_blank">http://localhost/thehive/</a></td><td><span class="access-cred">studentN@thehive.local</span> / <span class="access-cred">FortarkLabs1!</span></td></tr>
+      </tbody>
+    </table>
+    <div class="access-note"><strong>N</strong> = your seat number (1–5).</div>
+  </div>
+
+  <!-- CONCEPT -->
+  <h2 id="concept">What is API key exfiltration?</h2>
+
+  <div class="concept-box">
+    <div class="cb-title" style="color:var(--purple)">Three terms you need to understand first</div>
+
+    <div class="concept-terms">
+      <div class="ct-card">
+        <div class="ct-term" style="color:var(--accent)">API — Application Programming Interface</div>
+        <div class="ct-def">A way for software programs to talk to each other over a network. When an app generates AI text, it does not run AI on your device — it sends a request to an AI provider's server, which processes it and returns a result. The API is the defined channel for that exchange: "send me a request in this format, and I will return a response in this format."</div>
+      </div>
+      <div class="ct-card">
+        <div class="ct-term" style="color:var(--purple)">API Key</div>
+        <div class="ct-def">A secret string — typically starting with a recognisable prefix like <code>sk-ant-</code> or <code>sk-proj-</code> — that proves to the API that you are authorised to use it. Without it, the provider rejects the request. With it, every request is billed to your account — and can be made by anyone who has the key.</div>
+      </div>
+      <div class="ct-card">
+        <div class="ct-term" style="color:var(--danger)">Exfiltration</div>
+        <div class="ct-def">Stealing data by sending it out of a compromised network. The attacker does not need to carry files out in a bag — they make one outbound HTTPS request containing the stolen key, and it is gone. From anywhere in the world, they can use it. Every call they make looks identical to your own legitimate API calls in the provider's logs.</div>
+      </div>
+    </div>
+
+    <div class="concept-loop">
+      <div class="cl-step">
+        <div class="cl-icon">🎮</div>
+        <div class="cl-label">C2 access</div>
+        <div class="cl-desc">Attacker inside via Lab 6 beacon</div>
+      </div>
+      <div class="cl-arrow">→</div>
+      <div class="cl-step">
+        <div class="cl-icon">🔍</div>
+        <div class="cl-label">Scan for keys</div>
+        <div class="cl-desc">grep .env files for sk-ant- sk-proj- hf_</div>
+      </div>
+      <div class="cl-arrow">→</div>
+      <div class="cl-step">
+        <div class="cl-icon">📤</div>
+        <div class="cl-label">Keys stolen</div>
+        <div class="cl-desc">POSTed to attacker's server over HTTPS</div>
+      </div>
+      <div class="cl-arrow">→</div>
+      <div class="cl-step">
+        <div class="cl-icon">💳</div>
+        <div class="cl-label">Key validated</div>
+        <div class="cl-desc">Attacker calls AI API — billed to your account</div>
+      </div>
+    </div>
+
+    <div class="concept-analogy" style="background:rgba(188,140,255,.05);border-left:3px solid var(--purple)">
+      <strong>Analogy:</strong> Imagine someone breaks into your car and finds a key card for your corporate office in the glove box. They do not need to break into the office — they walk through the front door at any time. The security system sees a valid card swipe and logs nothing unusual. You will not know until you review the entry log and notice swipes at 3am from a location you never visit. An AI API key is that key card — valid, accepted, invisible, and billing to you the entire time.
+    </div>
+  </div>
+
+  <div class="part-nav">
+    <a class="part-chip" href="#access">Platform Access</a>
+    <a class="part-chip" href="#concept">What is API key exfil?</a>
+    <a class="part-chip" href="#killchain">Kill chain</a>
+    <a class="part-chip" href="#why">Why AI keys</a>
+    <a class="part-chip" href="#prefixes">Key prefixes</a>
+    <a class="part-chip" href="#part1">Part 1 — Target</a>
+    <a class="part-chip" href="#part2">Part 2 — Trigger</a>
+    <a class="part-chip" href="#part3">Part 3 — Hunt</a>
+    <a class="part-chip" href="#part4">Part 4 — Correlate</a>
+    <a class="part-chip" href="#part5">Part 5 — Detection gap</a>
+    <a class="part-chip" href="#part6">Part 6 — IR</a>
+    <a class="part-chip" href="#part7">Part 7 — TheHive</a>
+    <a class="part-chip" href="#takeaways">Takeaways</a>
+    <a class="part-chip" href="#dashboard">SOC Tools</a>
+  </div>
+
+  <!-- KILL CHAIN COMPLETION -->
+  <h2 id="killchain">This is why Labs 1–6 existed</h2>
+  <p>Every previous lab was a building block. Lab 7 is what the attacker was working toward all along.</p>
+
+  <div class="killchain-arc">
+    <div class="kc-title">The complete kill chain — Labs 1 through 7</div>
+    <div class="kc-labs">
+      <div class="kc-lab done">
+        <div class="kl-num">Lab 1</div>
+        <div class="kl-event">SSH brute force. Attacker logs in as <code>victim</code>.</div>
+      </div>
+      <div class="kc-lab done">
+        <div class="kl-num">Lab 2</div>
+        <div class="kl-event">Exfiltrates <code>/etc/passwd</code>, SSH keys, network config.</div>
+      </div>
+      <div class="kc-lab done">
+        <div class="kl-num">Lab 3</div>
+        <div class="kl-event">SOAR creates a case. But the attacker is already inside.</div>
+      </div>
+      <div class="kc-lab done">
+        <div class="kl-num">Lab 4</div>
+        <div class="kl-event">Ransomware activates. A distraction, or a side-payment.</div>
+      </div>
+      <div class="kc-lab done">
+        <div class="kl-num">Lab 5</div>
+        <div class="kl-event">Supply chain drops C2 payload + cron persistence.</div>
+      </div>
+      <div class="kc-lab done">
+        <div class="kl-num">Lab 6</div>
+        <div class="kl-event">Beacon runs every 20s. Attacker has persistent access, waiting.</div>
+      </div>
+      <div class="kc-lab active">
+        <div class="kl-num">Lab 7</div>
+        <div class="kl-event">Attacker sends first command: <strong>find me AI keys.</strong></div>
+      </div>
+    </div>
+  </div>
+
+  <p>The attacker did not need to be clever. They needed to be patient, systematic, and invisible. That is the adversary you will face.</p>
+
+  <!-- WHY AI KEYS -->
+  <h2 id="why">Why AI keys are different from every other credential</h2>
+
+  <table class="value-table">
+    <thead><tr><th>Credential type</th><th>How attacker profits</th><th>Detection window</th></tr></thead>
+    <tbody>
+      <tr>
+        <td>SSH key</td>
+        <td>Lateral movement to other servers</td>
+        <td>Hours — triggers auth events</td>
+      </tr>
+      <tr>
+        <td>AWS access key</td>
+        <td>Spin up compute for crypto mining</td>
+        <td>Minutes to hours — billing alert</td>
+      </tr>
+      <tr>
+        <td>Database password</td>
+        <td>Dump data, sell it</td>
+        <td>Hours — large data exfil required</td>
+      </tr>
+      <tr style="background:rgba(188,140,255,.04);">
+        <td style="color:var(--purple);font-weight:700;">AI API key</td>
+        <td><strong>Sell access, run AI services at victim's expense, train models on your dime</strong></td>
+        <td><strong style="color:var(--danger);">Days to months — looks like normal API usage</strong></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="callout purple">
+    An Anthropic key used by an attacker looks <strong>identical</strong> in the provider's logs to the legitimate developer using it. Unless you are monitoring your API usage dashboard for anomalous call patterns, the theft may not surface for weeks — until the billing statement arrives.
+  </div>
+
+  <!-- KEY PREFIXES -->
+  <h2 id="prefixes">Key prefixes — your IOCs</h2>
+  <p>AI provider API keys have consistent, documented prefixes. These strings appearing in any grep command, network POST, or log file are high-confidence indicators of compromise.</p>
+
+  <div class="prefix-grid">
+    <div class="prefix-card">
+      <div class="pc-provider">Anthropic · Claude</div>
+      <div class="pc-prefix anthropic">sk-ant-</div>
+      <div class="pc-example">sk-ant-api03-XXXX...</div>
+    </div>
+    <div class="prefix-card">
+      <div class="pc-provider">OpenAI · GPT</div>
+      <div class="pc-prefix openai">sk-proj-</div>
+      <div class="pc-example">sk-proj-XXXX... or sk-XXXX...</div>
+    </div>
+    <div class="prefix-card">
+      <div class="pc-provider">HuggingFace</div>
+      <div class="pc-prefix hf">hf_</div>
+      <div class="pc-example">hf_ABCDEFabcdef...</div>
+    </div>
+    <div class="prefix-card">
+      <div class="pc-provider">Google · Vertex/Gemini</div>
+      <div class="pc-prefix google">AIzaSy</div>
+      <div class="pc-example">AIzaSyXXXXXXXX...</div>
+    </div>
+    <div class="prefix-card">
+      <div class="pc-provider">Cohere</div>
+      <div class="pc-prefix cohere">co-</div>
+      <div class="pc-example">co-XXXXXXXXXXXXXXXX</div>
+    </div>
+    <div class="prefix-card">
+      <div class="pc-provider">Mistral</div>
+      <div class="pc-prefix mistral">— varies</div>
+      <div class="pc-example">Long random alphanumeric</div>
+    </div>
+  </div>
+
+  <div class="callout danger">
+    <code>grep "sk-ant-"</code> running inside a non-interactive shell on a server is not normal developer activity. Ever. Build Wazuh rules around these prefixes — they are stable, documented, and unique to AI credentials.
+  </div>
+
+  <!-- STUDENTS -->
+  <h2>Your student details</h2>
+  <table class="student-table">
+    <thead><tr><th>Student</th><th>Target</th><th>Wazuh filter</th></tr></thead>
+    <tbody>
+      <tr><td>Student 1</td><td><code>ssh victim@lab-target</code></td><td><code>agent.name: lab-target</code></td></tr>
+      <tr><td>Student 2</td><td><code>ssh victim@lab-target</code></td><td><code>agent.name: lab-target</code></td></tr>
+      <tr><td>Student 3</td><td><code>ssh victim@lab-target</code></td><td><code>agent.name: lab-target</code></td></tr>
+      <tr><td>Student 4</td><td><code>ssh victim@lab-target</code></td><td><code>agent.name: lab-target</code></td></tr>
+      <tr><td>Student 5</td><td><code>ssh victim@lab-target</code></td><td><code>agent.name: lab-target</code></td></tr>
+    </tbody>
+  </table>
+
+  <!-- PRE-FLIGHT -->
+  <h2>Pre-flight check</h2>
+  <div class="preflight">
+    <div class="preflight-item">
+      <div class="pf-num">1</div>
+      <div class="pf-body"><div class="pf-head">Wazuh dashboard loads</div>
+        <div class="pf-sub">Open <code>http://localhost</code> — confirm you see the dashboard.</div></div>
+    </div>
+    <div class="preflight-item">
+      <div class="pf-num">2</div>
+      <div class="pf-body"><div class="pf-head">Your agent is active</div>
+        <div class="pf-sub">Agents → <code>s[N]-lab-target</code> → status: Active (green).</div></div>
+    </div>
+    <div class="preflight-item">
+      <div class="pf-num">3</div>
+      <div class="pf-body"><div class="pf-head">Kali terminal loads</div>
+        <div class="pf-sub">Open <code>http://localhost/attacker/</code> — <code>student@kali</code> prompt.</div></div>
+    </div>
+    <div class="preflight-item">
+      <div class="pf-num">4</div>
+      <div class="pf-body"><div class="pf-head">TheHive loads</div>
+        <div class="pf-sub">Navigate to TheHive from the sidebar. Login: <code>shuffle@soc.local</code> / <code>FortarkLabs1!</code></div></div>
+    </div>
+  </div>
+
+  <!-- PART 1 -->
+  <h2 id="part1">Part 1 — Understand the target</h2>
+  <p>The decoy <code>.env</code> file planted by the simulation contains credentials a real developer machine would have:</p>
+  <pre># AI provider credentials
+OPENAI_API_KEY=sk-proj-DECOY1234567890abcdef...
+ANTHROPIC_API_KEY=sk-ant-DECOY-api03-XXXXXXXX...
+HUGGINGFACE_TOKEN=hf_DECOYabcdefghijklmnop...</pre>
+
+  <div class="question">
+    <div class="question-label">Q1</div>
+    <div class="question-text">What is the key prefix for each AI provider's key in the decoy file?</div>
+  </div>
+  <div class="question">
+    <div class="question-label">Q2</div>
+    <div class="question-text">Why would a developer have all three AI provider keys in the same <code>.env</code> file?</div>
+  </div>
+  <div class="callout">
+    Multi-provider setups are standard. A team building an AI-powered product might use Anthropic for reasoning, OpenAI for embeddings, and HuggingFace for open-source models. All three keys sit in the same file — meaning a single file access gives the attacker all three providers in one read.
+  </div>
+
+  <!-- PART 2 -->
+  <h2 id="part2">Part 2 — Trigger the simulation</h2>
+  <p>Open your three Wazuh monitoring tabs first:</p>
+  <p><strong>Tab A — File activity (FIM):</strong></p>
+  <pre>agent.name: s[N]-lab-target AND rule.groups: syscheck</pre>
+  <p><strong>Tab B — Syslog (attack stages):</strong></p>
+  <pre>agent.name: s[N]-lab-target AND full_log: *lab7-key-exfil*</pre>
+  <p><strong>Tab C — Suricata (network):</strong></p>
+  <pre>agent.name: s[N]-lab-target AND rule.groups: suricata</pre>
+
+  <p>Set all three to <strong>Last 15 minutes</strong>. Then run:</p>
+  <pre>ssh victim@s[N]-lab-target
+# password: password123
+
+/tmp/lab7-llm-key-exfil-sim.sh</pre>
+
+  <p>The script runs all four stages end to end. When it finishes, type <code>exit</code>.</p>
+
+  <div class="question">
+    <div class="question-label">Q3</div>
+    <div class="question-text">How long did the complete attack chain take from discovery to key validation?</div>
+  </div>
+  <div class="callout warn">
+    In a real attack delivered through a C2 channel, this entire sequence runs in response to a single command sent through the Lab 6 beacon. The victim sees nothing. No new SSH sessions. No interactive shell. The implant runs it silently and goes quiet.
+  </div>
+
+  <!-- PART 3 — HUNT -->
+  <h2 id="part3">Part 3 — Hunt the four stages</h2>
+
+  <!-- Stage 1 -->
+  <div class="stage-card">
+    <div class="stage-header discovery">
+      <div class="stage-icon">🔍</div>
+      <div>
+        <div class="stage-num-label">Stage 1</div>
+        <div class="stage-name">Discovery</div>
+      </div>
+      <div class="stage-mitre" style="margin-left:auto;"><span class="mitre-badge">T1083</span></div>
+    </div>
+    <div class="stage-body">
+      <pre>agent.name: s[N]-lab-target AND full_log: *STAGE:DISCOVERY*</pre>
+      <div class="question"><div class="question-label">Q4</div>
+        <div class="question-text">What directories did the attacker scan for credential files?</div></div>
+      <div class="question"><div class="question-label">Q5</div>
+        <div class="question-text">What filenames was the scanner looking for?</div></div>
+      <div class="question"><div class="question-label">Q6</div>
+        <div class="question-text">How many credential files were found?</div></div>
+      <div class="callout warn">
+        <code>.env</code>, <code>*.env</code>, <code>llm_config*</code>, <code>*api_key*</code> — these are the standard hit list for a credential harvester targeting developer machines. Any of these filenames on a server (not a developer laptop) is an anomaly worth investigating.
+      </div>
+    </div>
+  </div>
+
+  <!-- Stage 2 -->
+  <div class="stage-card">
+    <div class="stage-header extract">
+      <div class="stage-icon">🔑</div>
+      <div>
+        <div class="stage-num-label">Stage 2</div>
+        <div class="stage-name">Key Extraction</div>
+      </div>
+      <div class="stage-mitre" style="margin-left:auto;"><span class="mitre-badge">T1552.001</span></div>
+    </div>
+    <div class="stage-body">
+      <pre>agent.name: s[N]-lab-target AND full_log: *STAGE:EXTRACT*</pre>
+      <pre>agent.name: s[N]-lab-target AND full_log: *EXTRACT:GREP*</pre>
+      <div class="question"><div class="question-label">Q7</div>
+        <div class="question-text">What key prefixes did the attacker grep for?</div></div>
+      <div class="question"><div class="question-label">Q8</div>
+        <div class="question-text">From which file was the Anthropic key extracted?</div></div>
+      <div class="question"><div class="question-label">Q9</div>
+        <div class="question-text">Why is <code>grep "ANTHROPIC_API_KEY"</code> on a server the most important signal in this entire lab?</div></div>
+      <div class="callout danger">
+        Developers grep their own <code>.env</code> files on their laptops constantly. But on a <strong>server</strong> — in a non-interactive shell — at an odd hour — this command has no legitimate explanation. The process context transforms an innocent command into a high-confidence IOC.
+      </div>
+    </div>
+  </div>
+
+  <!-- Stage 3 -->
+  <div class="stage-card">
+    <div class="stage-header exfil">
+      <div class="stage-icon">📤</div>
+      <div>
+        <div class="stage-num-label">Stage 3</div>
+        <div class="stage-name">Exfiltration</div>
+      </div>
+      <div class="stage-mitre" style="margin-left:auto;"><span class="mitre-badge">T1041</span></div>
+    </div>
+    <div class="stage-body">
+      <pre>agent.name: s[N]-lab-target AND full_log: *STAGE:EXFIL*</pre>
+      <pre>agent.name: s[N]-lab-target AND rule.groups: suricata</pre>
+      <div class="question"><div class="question-label">Q10</div>
+        <div class="question-text">What data was included in the exfiltration POST?<br>
+          <span style="font-size:13px;color:var(--muted);font-weight:400;">(Look at the EXFIL syslog entry — what fields were sent?)</span></div></div>
+      <div class="question"><div class="question-label">Q11</div>
+        <div class="question-text">How large is the exfiltration payload? Why can't size-based detection catch this?</div></div>
+      <div class="callout orange">
+        An Anthropic API key is approximately 100 characters. Both keys plus hostname and username fit in a JSON payload <strong>under 300 bytes</strong> — smaller than most web analytics pings. The signal is the destination and the event chain, not the payload size.
+      </div>
+    </div>
+  </div>
+
+  <!-- Stage 4 -->
+  <div class="stage-card">
+    <div class="stage-header validate">
+      <div class="stage-icon">✅</div>
+      <div>
+        <div class="stage-num-label">Stage 4</div>
+        <div class="stage-name">Key Validation</div>
+      </div>
+      <div class="stage-mitre" style="margin-left:auto;"><span class="mitre-badge">T1071.001</span></div>
+    </div>
+    <div class="stage-body">
+      <pre>agent.name: s[N]-lab-target AND full_log: *STAGE:VALIDATE*</pre>
+      <pre>agent.name: s[N]-lab-target AND rule.groups: suricata</pre>
+      <p>Look for the request with the <code>python-anthropic</code> User-Agent and <code>x-api-key</code> header.</p>
+      <div class="question"><div class="question-label">Q12</div>
+        <div class="question-text">What User-Agent did the validation request use?</div></div>
+      <div class="question"><div class="question-label">Q13</div>
+        <div class="question-text">What HTTP headers in the validation request identify this as an AI API call?</div></div>
+      <div class="question"><div class="question-label">Q14</div>
+        <div class="question-text">If the key is valid and the attacker sends a real request to <code>api.anthropic.com</code>, what does the victim see — and when?</div></div>
+      <div class="callout purple">
+        Nothing — until the next billing cycle. The call appears in the provider's logs as normal API activity from the key. Without real-time usage monitoring, the victim learns their key was stolen when they receive an unexpected invoice weeks later.
+      </div>
+    </div>
+  </div>
+
+  <!-- PART 4 — CORRELATE -->
+  <h2 id="part4">Part 4 — Correlate: prove the chain</h2>
+  <p>Prove the four events belong to the same attack by completing this correlation:</p>
+
+  <div class="corr-sheet">
+    <div class="cs-title">Correlation worksheet</div>
+    <div class="cs-row">
+      <div class="cs-label">Stage 1 (DISCOVERY) time</div>
+      <input class="cs-input" placeholder="HH:MM:SS UTC">
+    </div>
+    <div class="cs-row">
+      <div class="cs-label">Stage 2 (EXTRACT) time</div>
+      <input class="cs-input" placeholder="HH:MM:SS UTC">
+    </div>
+    <div class="cs-row">
+      <div class="cs-label">Stage 3 (EXFIL) time</div>
+      <input class="cs-input" placeholder="HH:MM:SS UTC">
+    </div>
+    <div class="cs-row">
+      <div class="cs-label">Stage 4 (VALIDATE) time</div>
+      <input class="cs-input" placeholder="HH:MM:SS UTC">
+    </div>
+    <div class="cs-row">
+      <div class="cs-label">Total elapsed (Stage 1 → 4)</div>
+      <input class="cs-input" placeholder="__ seconds">
+    </div>
+    <div class="cs-row">
+      <div class="cs-label">Same file path in Stage 2 and Stage 3?</div>
+      <input class="cs-input" placeholder="YES / NO">
+    </div>
+    <div class="cs-row">
+      <div class="cs-label">Same host across all stages?</div>
+      <input class="cs-input" placeholder="YES / NO">
+    </div>
+  </div>
+
+  <div class="question">
+    <div class="question-label">Q15</div>
+    <div class="question-text">In one sentence: describe the complete attack chain.</div>
+  </div>
+  <div class="callout success">
+    The attacker used C2 access to scan the developer server for AI credential files, extracted Anthropic and OpenAI API keys from a <code>.env</code> file using grep, exfiltrated both keys via HTTPS POST, and validated the stolen Anthropic key by making a test API call — all within approximately 10 seconds of the initial discovery command.
+  </div>
+
+  <!-- PART 5 — DETECTION GAP -->
+  <h2 id="part5">Part 5 — The detection gap</h2>
+  <p>This attack chain has a fundamental problem for standard SOC tooling: almost none of it triggers existing high-severity rules.</p>
+
+  <table class="gap-table">
+    <thead><tr><th>Event</th><th>Standard SIEM response</th><th>Why it fails</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><code>.env</code> file read</td>
+        <td><span class="gap-tag gap-miss">MISS</span> Not monitored</td>
+        <td>FIM typically watches system files, not app configs</td>
+      </tr>
+      <tr>
+        <td><code>grep ANTHROPIC_API_KEY</code></td>
+        <td><span class="gap-tag gap-miss">MISS</span> No rule exists</td>
+        <td>No standard ruleset has AI key extraction patterns</td>
+      </tr>
+      <tr>
+        <td>POST to <code>httpbin.org</code></td>
+        <td><span class="gap-tag gap-partial">PARTIAL</span> Informational</td>
+        <td>Clean destination, no threat intel match</td>
+      </tr>
+      <tr>
+        <td>UA: <code>python-anthropic/0.40.0</code></td>
+        <td><span class="gap-tag gap-miss">MISS</span> No rule exists</td>
+        <td>Legitimate SDK — not on any blocklist</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="question">
+    <div class="question-label">Q16</div>
+    <div class="question-text">In your SOC today, would this attack have been caught by any existing automated rule?</div>
+  </div>
+  <div class="callout danger">
+    Almost certainly not. There are no standard Wazuh or Suricata rulesets for AI API key theft. This is a genuine detection gap in most organisations — and it is widening as AI adoption accelerates.
+  </div>
+  <div class="question">
+    <div class="question-label">Q17</div>
+    <div class="question-text">In plain English, describe a Wazuh rule that would catch Stage 2 reliably without flooding with false positives from legitimate developer activity.</div>
+  </div>
+  <div class="callout purple">
+    Fire when: a <code>grep</code> or <code>cat</code> command runs against a file named <code>.env</code> or <code>*api_key*</code> <strong>AND</strong> the output contains a string matching <code>sk-</code>, <code>sk-ant-</code>, <code>hf_</code>, or <code>AIzaSy</code> <strong>AND</strong> the process is NOT running in an interactive shell <strong>AND</strong> the event is outside business hours. The combination of conditions (b) and (c) separates attacker activity from developer activity.
+  </div>
+
+  <!-- PART 6 — IR -->
+  <h2 id="part6">Part 6 — Incident response: what's different about AI key theft</h2>
+  <p>Every previous lab ended with "isolate the host" or "remove the persistence." AI key theft is different. <strong>Once a key is stolen, isolating the host does nothing.</strong> The attacker already has it and can use it from anywhere in the world.</p>
+
+  <div class="callout danger">
+    The correct response to a confirmed AI key theft is not containment — it is <strong>rotation</strong>. The key must be invalidated before the attacker can use it further.
+  </div>
+
+  <div class="ir-section">
+    <div class="ir-header">Immediate actions — complete within 15 minutes</div>
+    <div class="ir-body">
+      <div class="ir-items">
+        <label class="ir-item">
+          <input type="checkbox">
+          <div class="ir-box"><svg width="12" height="10" viewBox="0 0 12 10"><polyline points="1,5 4,8 11,1" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+          <div>
+            <div class="ir-head">Rotate every exposed key immediately</div>
+            <div class="ir-sub">Anthropic: <code>console.anthropic.com</code> → API Keys → Revoke + Regenerate<br>
+            OpenAI: <code>platform.openai.com</code> → API Keys → Delete + Create new<br>
+            HuggingFace: <code>huggingface.co</code> → Settings → Access Tokens → Revoke</div>
+          </div>
+        </label>
+        <label class="ir-item">
+          <input type="checkbox">
+          <div class="ir-box"><svg width="12" height="10" viewBox="0 0 12 10"><polyline points="1,5 4,8 11,1" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+          <div>
+            <div class="ir-head">Check usage dashboards for anomalous activity</div>
+            <div class="ir-sub">Look for API calls from unknown IPs, unusual model endpoints, or billing spikes in the last 24 hours. Has the key already been used since it was stolen?</div>
+          </div>
+        </label>
+        <label class="ir-item">
+          <input type="checkbox">
+          <div class="ir-box"><svg width="12" height="10" viewBox="0 0 12 10"><polyline points="1,5 4,8 11,1" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+          <div>
+            <div class="ir-head">Check git history for committed keys</div>
+            <div class="ir-sub">If the <code>.env</code> was ever committed to a repo, the key lives in git history — even if removed in a later commit.<br>
+            <code>git log --all -S "sk-ant-" --source</code></div>
+          </div>
+        </label>
+        <label class="ir-item">
+          <input type="checkbox">
+          <div class="ir-box"><svg width="12" height="10" viewBox="0 0 12 10"><polyline points="1,5 4,8 11,1" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+          <div>
+            <div class="ir-head">Audit all hosts with access to the same <code>.env</code></div>
+            <div class="ir-sub">If the file was on a shared server or network drive, the same key may have been accessible from other machines. Check every host that could have read it.</div>
+          </div>
+        </label>
+        <label class="ir-item">
+          <input type="checkbox">
+          <div class="ir-box"><svg width="12" height="10" viewBox="0 0 12 10"><polyline points="1,5 4,8 11,1" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+          <div>
+            <div class="ir-head">Trace back to the initial access — Lab 1</div>
+            <div class="ir-sub">The attacker is here because SSH password login was permitted. Close the initial access vector: disable password auth, enforce key-only SSH, enable rate limiting.</div>
+          </div>
+        </label>
+      </div>
+    </div>
+  </div>
+
+  <!-- PART 7 — THEHIVE -->
+  <h2 id="part7">Part 7 — TheHive case</h2>
+  <ul>
+    <li><strong>Title:</strong> <code>AI API key exfiltration: s[N]-lab-target — [today's date]</code></li>
+    <li><strong>Severity:</strong> Critical</li>
+    <li><strong>Tags:</strong> <code>T1083</code> <code>T1552.001</code> <code>T1041</code> <code>T1071.001</code></li>
+  </ul>
+
+  <table class="obs-table">
+    <thead><tr><th>Observable</th><th>Type</th><th>Notes</th></tr></thead>
+    <tbody>
+      <tr><td><code>sk-ant-DECOY-api03-...</code></td><td><span class="obs-type">Other</span></td><td>Stolen Anthropic key prefix</td></tr>
+      <tr><td><code>sk-proj-DECOY...</code></td><td><span class="obs-type">Other</span></td><td>Stolen OpenAI key prefix</td></tr>
+      <tr><td><code>/tmp/lab7-llm-exfil/app/.env</code></td><td><span class="obs-type">Filename</span></td><td>Source credential file</td></tr>
+      <tr><td><code>httpbin.org</code></td><td><span class="obs-type">Domain</span></td><td>Exfiltration and validation destination</td></tr>
+      <tr><td><code>python-anthropic/0.40.0</code></td><td><span class="obs-type">Other</span></td><td>SDK User-Agent used for validation</td></tr>
+      <tr><td>grep command string</td><td><span class="obs-type">Other</span></td><td>Exact grep from syslog Stage 2</td></tr>
+    </tbody>
+  </table>
+
+  <div class="thehive-checklist">
+    <label class="thc-item">
+      <input type="checkbox">
+      <div class="thc-box"><svg width="12" height="10" viewBox="0 0 12 10"><polyline points="1,5 4,8 11,1" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+      <div><div class="thc-head">Set verdict: True Positive — Confirmed AI Credential Theft</div>
+        <div class="thc-sub">Keys were extracted, exfiltrated, and validated. This is confirmed.</div></div>
+    </label>
+    <label class="thc-item">
+      <input type="checkbox">
+      <div class="thc-box"><svg width="12" height="10" viewBox="0 0 12 10"><polyline points="1,5 4,8 11,1" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+      <div><div class="thc-head">Set TLP: TLP:RED</div>
+        <div class="thc-sub">Active credential compromise — do not share externally.</div></div>
+    </label>
+    <label class="thc-item">
+      <input type="checkbox">
+      <div class="thc-box"><svg width="12" height="10" viewBox="0 0 12 10"><polyline points="1,5 4,8 11,1" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+      <div><div class="thc-head">Write closing summary</div>
+        <div class="thc-sub">What was stolen · from where · how detected · whether keys have been rotated · link to Lab 5 (supply chain) and Lab 6 (C2 beacon) cases as the access vector.</div></div>
+    </label>
+    <label class="thc-item">
+      <input type="checkbox">
+      <div class="thc-box"><svg width="12" height="10" viewBox="0 0 12 10"><polyline points="1,5 4,8 11,1" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+      <div><div class="thc-head">Close the case</div>
+        <div class="thc-sub">Mark all tasks complete. Set resolution date. This closes the kill chain that started in Lab 1.</div></div>
+    </label>
+  </div>
+
+  <!-- CLEANUP -->
+  <hr>
+  <h2>Cleanup</h2>
+  <pre>ssh victim@s[N]-lab-target
+/tmp/lab7-llm-key-exfil-sim.sh --cleanup
+exit</pre>
+
+  <!-- TAKEAWAYS -->
+  <h2 id="takeaways">Key takeaways</h2>
+  <ul class="takeaways">
+    <li><strong>AI API keys are the new crown jewels.</strong> A stolen Anthropic or OpenAI key can be monetised immediately — sold underground, used to run AI services at the victim's expense, or used to train models on paid compute. They are as valuable as AWS credentials and far less protected.</li>
+    <li><strong>Detection requires cross-source correlation.</strong> File access alone is not suspicious. The grep alone is not suspicious. The POST alone is not suspicious. The chain — discovery → grep for key prefix → POST → API validation, all within 10 seconds — is unambiguous. No single source sees the full picture.</li>
+    <li><strong>Key prefixes are stable, documented IOCs.</strong> <code>sk-ant-</code>, <code>sk-</code>, <code>hf_</code>, <code>AIzaSy</code> appearing in process commands, log files, or network traffic are high-confidence indicators. Build detection rules around them.</li>
+    <li><strong>This is a genuine detection gap today.</strong> No standard Wazuh or Suricata ruleset has rules for AI key theft. Most organisations have no FIM on their <code>.env</code> files. This attack is happening in the wild right now, against real targets, with no automated detection in place at most organisations.</li>
+    <li><strong>The response is rotation, not isolation.</strong> Isolating the host after a key is stolen is irrelevant — the attacker has the key and can use it from anywhere. The only effective response is immediate key rotation combined with usage log audit.</li>
+    <li><strong>This is the end of one kill chain.</strong> Labs 1–7 traced a single attacker from a brute-force SSH login to AI credential theft. Every technique in between was a building block. The adversary who reached Lab 7 did not need to be sophisticated. They needed to be patient, systematic, and invisible. That is the adversary you will face.</li>
+  </ul>
+
+
+  <!-- SOC TOOLS DASHBOARD -->
+  <hr>
+  <h2 id="dashboard">SOC Tools Dashboard</h2>
+  <p>You were introduced to this tool at the end of Lab 6. Now that you have completed the full curriculum, it is worth revisiting as a triage shortcut you can use in any future investigation.</p>
+  <p style="margin-top:12px"><a href="http://localhost/tools/" target="_blank"><strong>http://localhost/tools/</strong></a> &mdash; select your seat number at the top to scope all queries to your target.</p>
+
+  <table style="margin-top:16px">
+    <thead><tr><th>Tab</th><th>Useful for</th></tr></thead>
+    <tbody>
+      <tr><td><strong>Events</strong></td><td>Quick OpenSearch query without navigating the full Wazuh UI</td></tr>
+      <tr><td><strong>Alerts</strong></td><td>Fast severity-filtered view of recent activity on your agent</td></tr>
+      <tr><td><strong>IOC Lookup</strong></td><td>AbuseIPDB / VirusTotal / Shodan on any IP or domain in one click</td></tr>
+      <tr><td><strong>Cases</strong></td><td>Review all your TheHive cases across the seven labs</td></tr>
+    </tbody>
+  </table>
+
+  <p style="margin-top:16px"><strong>Things to try with Lab 7 data:</strong></p>
+  <ul style="margin-top:8px">
+    <li><strong>Events tab:</strong> query <code>full_log: *lab7*</code> to pull up the full simulation event chain in one view &mdash; compare it against the four kill chain stages</li>
+    <li><strong>IOC Lookup tab:</strong> run VirusTotal on <code>httpbin.org</code> &mdash; the exfil destination &mdash; and compare the result to what Cortex returned during the lab</li>
+    <li><strong>Cases tab:</strong> look at all your open cases from Labs 1&ndash;7 side by side &mdash; the full kill chain should be documented from brute force through to credential theft</li>
+  </ul>
+
+  <div class="callout" style="margin-top:16px">
+    This dashboard queries the same underlying data as Wazuh and TheHive. Think of it as a first-pass triage layer &mdash; fast to reach, useful for quick lookups, but not a replacement for the SIEM when you need to do a thorough investigation. Real-world SOC analysts move between both constantly.
+  </div>
+
+</div>
+</body>
+</html>

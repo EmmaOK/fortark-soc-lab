@@ -1,0 +1,924 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Lab 5 — Supply Chain Attack | Fortark SOC Labs</title>
+<style>
+  :root {
+    --bg:#0d1117; --bg2:#161b22; --bg3:#21262d; --border:#30363d;
+    --text:#e6edf3; --muted:#8b949e;
+    --accent:#58a6ff; --accent2:#3fb950; --warn:#d29922; --danger:#f85149;
+    --purple:#bc8cff; --teal:#2ea89f; --orange:#e8812a;
+    --code-bg:#1c2128; --tag-bg:#1f2a3d;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif;
+    background:var(--bg);color:var(--text);line-height:1.7;font-size:16px;}
+
+  .header{background:var(--bg2);border-bottom:1px solid var(--border);
+    padding:16px 0;position:sticky;top:0;z-index:100;}
+  .header-inner{max-width:860px;margin:0 auto;padding:0 24px;
+    display:flex;align-items:center;gap:12px;}
+  .logo{font-size:13px;font-weight:600;color:var(--muted);letter-spacing:.08em;}
+  .logo span{color:var(--accent);}
+  .lab-badge{padding:4px 12px;background:rgba(210,153,34,.12);
+    border:1px solid rgba(210,153,34,.35);border-radius:20px;
+    font-size:12px;font-weight:700;color:var(--warn);}
+  .container{max-width:860px;margin:0 auto;padding:40px 24px 80px;}
+  h1{font-size:30px;font-weight:800;letter-spacing:-.02em;line-height:1.2;margin-bottom:12px;}
+  h2{font-size:22px;font-weight:700;margin:40px 0 16px;
+    padding-bottom:10px;border-bottom:1px solid var(--border);}
+  h3{font-size:17px;font-weight:700;margin:28px 0 12px;}
+  p{margin-bottom:14px;}
+  hr{border:none;border-top:1px solid var(--border);margin:32px 0;}
+  strong{color:var(--text);}
+  ul{margin:12px 0 16px 20px;line-height:1.9;font-size:15px;}
+  code{font-family:'SF Mono','Fira Mono',monospace;font-size:13px;
+    background:var(--bg3);border:1px solid var(--border);
+    border-radius:4px;padding:1px 6px;color:var(--accent2);}
+  pre{background:var(--code-bg);border:1px solid var(--border);border-radius:8px;
+    padding:18px 20px;margin:16px 0;overflow-x:auto;
+    font-family:'SF Mono','Fira Mono',monospace;font-size:13px;
+    line-height:1.8;color:#a9b7c6;}
+
+  .meta-strip{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:28px;
+    padding-bottom:20px;border-bottom:1px solid var(--border);}
+  .meta-chip{display:flex;align-items:center;gap:6px;
+    background:var(--bg2);border:1px solid var(--border);border-radius:20px;
+    padding:5px 14px;font-size:13px;color:var(--muted);}
+  .meta-chip strong{color:var(--text);}
+
+  .mitre-table{width:100%;border-collapse:collapse;margin:16px 0;font-size:14px;}
+  .mitre-table th{background:var(--bg3);border:1px solid var(--border);
+    padding:10px 14px;text-align:left;font-size:11px;font-weight:700;
+    letter-spacing:.08em;text-transform:uppercase;color:var(--muted);}
+  .mitre-table td{border:1px solid var(--border);padding:10px 14px;vertical-align:top;line-height:1.5;}
+  .mitre-table tr:nth-child(even) td{background:rgba(33,38,45,.5);}
+  .mitre-badge{display:inline-block;padding:2px 8px;
+    background:rgba(188,140,255,.12);border:1px solid rgba(188,140,255,.3);
+    border-radius:4px;font-size:11px;font-weight:700;color:var(--purple);
+    font-family:monospace;white-space:nowrap;}
+  .tactic-badge{display:inline-block;padding:2px 8px;
+    background:rgba(210,153,34,.1);border:1px solid rgba(210,153,34,.25);
+    border-radius:4px;font-size:11px;font-weight:700;color:var(--warn);}
+
+  .part-nav{display:flex;flex-wrap:wrap;gap:8px;margin:24px 0;
+    padding:16px 20px;background:var(--bg2);
+    border:1px solid var(--border);border-radius:8px;}
+  .part-chip{padding:5px 14px;border-radius:20px;font-size:12px;font-weight:600;
+    color:var(--muted);border:1px solid var(--border);background:var(--bg3);
+    cursor:pointer;text-decoration:none;transition:all .2s;}
+  .part-chip:hover{background:rgba(210,153,34,.1);
+    border-color:rgba(210,153,34,.4);color:var(--warn);}
+
+  /* ── SCENARIO ── */
+  .scenario-box{background:var(--bg2);border-left:4px solid var(--warn);
+    border-radius:0 8px 8px 0;padding:20px 24px;margin:20px 0;}
+  .scenario-box p{margin-bottom:10px;}
+  .scenario-box p:last-child{margin-bottom:0;}
+
+  /* ── COMPARISON TABLE ── */
+  .diff-table{width:100%;border-collapse:collapse;margin:16px 0;font-size:14px;}
+  .diff-table th{background:var(--bg3);border:1px solid var(--border);
+    padding:10px 14px;text-align:left;font-size:11px;font-weight:700;
+    letter-spacing:.08em;text-transform:uppercase;color:var(--muted);}
+  .diff-table td{border:1px solid var(--border);padding:10px 14px;vertical-align:top;}
+  .diff-table tr:nth-child(even) td{background:rgba(33,38,45,.5);}
+  .diff-table td:first-child{color:var(--muted);font-weight:600;white-space:nowrap;}
+
+  /* ── THREE ALERT CARDS ── */
+  .alert-cards{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin:20px 0;}
+  .alert-card{background:var(--bg2);border:1px solid var(--border);
+    border-radius:10px;overflow:hidden;}
+  .ac-header{padding:10px 14px;font-size:11px;font-weight:700;
+    letter-spacing:.08em;text-transform:uppercase;
+    border-bottom:1px solid var(--border);}
+  .ac-header.fim{background:rgba(88,166,255,.06);color:var(--accent);}
+  .ac-header.suricata{background:rgba(232,129,42,.06);color:var(--orange);}
+  .ac-header.syslog{background:rgba(210,153,34,.06);color:var(--warn);}
+  .ac-body{padding:14px;}
+  .ac-title{font-size:13px;font-weight:700;margin-bottom:6px;color:var(--text);}
+  .ac-detail{font-size:12px;color:var(--muted);line-height:1.6;font-family:monospace;}
+  .ac-sev{display:inline-block;padding:2px 8px;border-radius:10px;
+    font-size:10px;font-weight:700;margin-top:8px;}
+  .ac-sev.low{background:rgba(63,185,80,.12);color:var(--accent2);border:1px solid rgba(63,185,80,.3);}
+  .ac-sev.info{background:rgba(139,148,158,.12);color:var(--muted);border:1px solid var(--border);}
+  .ac-sev.medium{background:rgba(210,153,34,.12);color:var(--warn);border:1px solid rgba(210,153,34,.3);}
+
+  /* ── ATTACK CHAIN DIAGRAM ── */
+  .chain{display:flex;align-items:center;overflow-x:auto;
+    gap:0;margin:20px 0;padding:4px 0;}
+  .chain-node{
+    flex-shrink:0;background:var(--bg2);border:1px solid var(--border);
+    border-radius:8px;padding:12px 14px;text-align:center;min-width:130px;
+  }
+  .chain-node.install{border-color:rgba(88,166,255,.35);}
+  .chain-node.drop{border-color:rgba(210,153,34,.35);}
+  .chain-node.callback{border-color:rgba(232,129,42,.35);}
+  .chain-node.persist{border-color:rgba(248,81,73,.35);}
+  .cn-icon{font-size:22px;margin-bottom:6px;}
+  .cn-stage{font-size:10px;font-weight:700;letter-spacing:.1em;
+    text-transform:uppercase;margin-bottom:4px;}
+  .chain-node.install .cn-stage{color:var(--accent);}
+  .chain-node.drop .cn-stage{color:var(--warn);}
+  .chain-node.callback .cn-stage{color:var(--orange);}
+  .chain-node.persist .cn-stage{color:var(--danger);}
+  .cn-label{font-size:12px;color:var(--text);font-weight:600;line-height:1.4;}
+  .cn-src{font-size:10px;color:var(--muted);margin-top:4px;}
+  .chain-arrow{flex-shrink:0;padding:0 8px;
+    font-size:18px;color:var(--border);}
+
+  /* ── STUDENT TABLE ── */
+  .student-table{width:100%;border-collapse:collapse;margin:16px 0;font-size:14px;}
+  .student-table th{background:var(--bg3);border:1px solid var(--border);
+    padding:10px 14px;text-align:left;font-size:11px;font-weight:700;
+    letter-spacing:.08em;text-transform:uppercase;color:var(--muted);}
+  .student-table td{border:1px solid var(--border);padding:10px 14px;}
+
+  /* ── PREFLIGHT ── */
+  .preflight{display:flex;flex-direction:column;gap:12px;margin:16px 0;}
+  .preflight-item{display:flex;align-items:flex-start;gap:14px;
+    padding:14px 18px;background:var(--bg2);
+    border:1px solid var(--border);border-radius:8px;}
+  .pf-num{width:28px;height:28px;border-radius:50%;flex-shrink:0;
+    background:var(--bg3);border:1px solid var(--border);
+    display:flex;align-items:center;justify-content:center;
+    font-weight:800;font-size:13px;color:var(--muted);}
+  .pf-body .pf-head{font-size:14px;font-weight:700;margin-bottom:4px;}
+  .pf-body .pf-sub{font-size:13px;color:var(--muted);line-height:1.5;}
+
+  /* ── STAGE CARDS ── */
+  .stage-card{background:var(--bg2);border:1px solid var(--border);
+    border-radius:10px;overflow:hidden;margin:20px 0;}
+  .stage-header{padding:14px 20px;display:flex;align-items:center;gap:12px;
+    border-bottom:1px solid var(--border);}
+  .stage-header.install{background:rgba(88,166,255,.06);border-bottom-color:rgba(88,166,255,.2);}
+  .stage-header.drop{background:rgba(210,153,34,.06);border-bottom-color:rgba(210,153,34,.2);}
+  .stage-header.callback{background:rgba(232,129,42,.06);border-bottom-color:rgba(232,129,42,.2);}
+  .stage-header.persist{background:rgba(248,81,73,.06);border-bottom-color:rgba(248,81,73,.2);}
+  .stage-icon{font-size:20px;}
+  .stage-title-wrap .stage-num-label{font-size:11px;font-weight:700;
+    letter-spacing:.1em;text-transform:uppercase;margin-bottom:2px;}
+  .stage-header.install .stage-num-label{color:var(--accent);}
+  .stage-header.drop .stage-num-label{color:var(--warn);}
+  .stage-header.callback .stage-num-label{color:var(--orange);}
+  .stage-header.persist .stage-num-label{color:var(--danger);}
+  .stage-title-wrap .stage-name{font-size:16px;font-weight:700;}
+  .stage-mitre{margin-left:auto;}
+  .stage-body{padding:20px;}
+
+  /* ── QUESTION ── */
+  .question{display:flex;gap:14px;align-items:flex-start;
+    padding:16px 18px;margin:14px 0;
+    background:var(--bg3);border:1px solid var(--border);border-radius:8px;}
+  .question-label{font-size:11px;font-weight:800;letter-spacing:.1em;
+    text-transform:uppercase;color:var(--warn);flex-shrink:0;width:36px;}
+  .question-text{font-size:15px;font-weight:600;line-height:1.5;}
+
+  /* ── CALLOUT ── */
+  .callout{background:rgba(88,166,255,.06);border-left:3px solid var(--accent);
+    border-radius:0 8px 8px 0;padding:14px 18px;margin:14px 0;
+    font-size:14px;color:var(--muted);line-height:1.7;}
+  .callout strong{color:var(--text);}
+  .callout.warn{background:rgba(210,153,34,.06);border-left-color:var(--warn);}
+  .callout.danger{background:rgba(248,81,73,.06);border-left-color:var(--danger);}
+  .callout.orange{background:rgba(232,129,42,.06);border-left-color:var(--orange);}
+  .callout.success{background:rgba(63,185,80,.06);border-left-color:var(--accent2);}
+  .callout.purple{background:rgba(188,140,255,.06);border-left-color:var(--purple);}
+
+  /* ── CORRELATION GRID ── */
+  .corr-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:20px 0;}
+  .corr-cell{background:var(--bg2);border:1px solid var(--border);
+    border-radius:8px;padding:14px;text-align:center;}
+  .corr-label{font-size:10px;font-weight:700;letter-spacing:.1em;
+    text-transform:uppercase;color:var(--muted);margin-bottom:8px;}
+  .corr-val{background:var(--bg3);border:1px solid var(--border);
+    border-radius:6px;padding:6px 10px;font-family:monospace;font-size:13px;
+    color:var(--text);min-height:32px;display:flex;align-items:center;justify-content:center;}
+  .corr-input{background:transparent;border:none;border-bottom:2px solid var(--border);
+    color:var(--text);font-family:monospace;font-size:12px;padding:2px 4px;
+    outline:none;width:100%;text-align:center;transition:border-color .2s;}
+  .corr-input:focus{border-bottom-color:var(--warn);}
+  .corr-input::placeholder{color:var(--muted);}
+
+  /* ── OBSERVABLE TABLE ── */
+  .obs-table{width:100%;border-collapse:collapse;margin:16px 0;font-size:14px;}
+  .obs-table th{background:var(--bg3);border:1px solid var(--border);
+    padding:10px 14px;text-align:left;font-size:11px;font-weight:700;
+    letter-spacing:.08em;text-transform:uppercase;color:var(--muted);}
+  .obs-table td{border:1px solid var(--border);padding:10px 14px;vertical-align:top;}
+  .obs-table tr:nth-child(even) td{background:rgba(33,38,45,.5);}
+  .obs-type{display:inline-block;padding:2px 8px;border-radius:4px;
+    font-size:11px;font-weight:700;background:var(--bg3);
+    border:1px solid var(--border);color:var(--muted);}
+
+  /* ── THEHIVE CHECKLIST ── */
+  .thehive-checklist{display:flex;flex-direction:column;gap:12px;margin:20px 0;}
+  .thc-item{display:flex;align-items:flex-start;gap:14px;
+    padding:16px 18px;background:var(--bg2);
+    border:1px solid var(--border);border-radius:8px;
+    cursor:pointer;transition:border-color .2s,background .2s;}
+  .thc-item input[type="checkbox"]{display:none;}
+  .thc-box{width:20px;height:20px;border-radius:5px;flex-shrink:0;
+    border:2px solid var(--border);margin-top:2px;
+    display:flex;align-items:center;justify-content:center;
+    transition:all .2s;background:var(--bg3);}
+  .thc-box svg{display:none;}
+  .thc-item:has(input:checked){border-color:rgba(63,185,80,.4);background:rgba(63,185,80,.04);}
+  .thc-item:has(input:checked) .thc-box{background:var(--accent2);border-color:var(--accent2);}
+  .thc-item:has(input:checked) .thc-box svg{display:block;}
+  .thc-item:has(input:checked) .thc-head{text-decoration:line-through;color:var(--muted);}
+  .thc-item:hover:not(:has(input:checked)){border-color:var(--muted);}
+  .thc-head{font-size:14px;font-weight:700;margin-bottom:4px;color:var(--text);}
+  .thc-sub{font-size:13px;color:var(--muted);line-height:1.5;}
+
+  /* ── SOAR QUESTION ── */
+  .soar-callout{background:var(--bg2);border:1px solid rgba(188,140,255,.3);
+    border-radius:10px;padding:20px 24px;margin:20px 0;}
+  .soar-callout .sc-label{font-size:11px;font-weight:700;letter-spacing:.1em;
+    text-transform:uppercase;color:var(--purple);margin-bottom:10px;}
+  .soar-callout p{font-size:14px;color:var(--muted);line-height:1.7;margin-bottom:10px;}
+  .soar-callout p:last-child{margin-bottom:0;}
+  .soar-callout strong{color:var(--text);}
+
+  /* ── TAKEAWAYS ── */
+  .takeaways{list-style:none;margin:16px 0;padding:0;}
+  .takeaways li{padding:14px 0;border-bottom:1px solid var(--border);
+    padding-left:20px;position:relative;font-size:15px;line-height:1.6;}
+  .takeaways li:last-child{border-bottom:none;}
+  .takeaways li::before{content:'→';position:absolute;left:0;
+    color:var(--warn);font-weight:700;}
+  .takeaways li strong{color:var(--text);}
+
+  @media(max-width:640px){
+    .alert-cards{grid-template-columns:1fr;}
+    .corr-grid{grid-template-columns:1fr 1fr;}
+    .chain{flex-direction:column;align-items:flex-start;}
+    .chain-arrow{transform:rotate(90deg);}
+  }
+
+  /* ── CONCEPT BOX ── */
+  .concept-box{background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:24px 28px;margin:20px 0;}
+  .cb-title{font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;margin-bottom:20px;}
+  .concept-terms{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;margin-bottom:20px;}
+  .ct-card{background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:16px 18px;}
+  .ct-card .ct-term{font-size:15px;font-weight:800;margin-bottom:6px;}
+  .ct-card .ct-def{font-size:13px;color:var(--muted);line-height:1.6;}
+  .concept-loop{display:flex;align-items:center;background:var(--bg3);border:1px solid var(--border);border-radius:8px;overflow:hidden;margin-bottom:16px;}
+  .cl-step{flex:1;padding:14px 12px;text-align:center;border-right:1px solid var(--border);}
+  .cl-step:last-child{border-right:none;}
+  .cl-step .cl-icon{font-size:20px;margin-bottom:6px;}
+  .cl-step .cl-label{font-size:10px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-bottom:4px;}
+  .cl-step .cl-desc{font-size:11px;color:var(--text);line-height:1.4;}
+  .cl-arrow{font-size:14px;color:var(--border);padding:0 2px;flex-shrink:0;align-self:center;}
+  .concept-analogy{border-radius:0 6px 6px 0;padding:12px 16px;font-size:13px;color:var(--muted);line-height:1.6;}
+  .concept-analogy strong{color:var(--text);}
+
+  .access-box{background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:20px 24px;margin:20px 0 0;}
+  .access-box-title{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:12px;}
+  .access-table{width:100%;border-collapse:collapse;}
+  .access-table th{background:var(--bg3);color:var(--muted);font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;padding:8px 12px;text-align:left;border-bottom:1px solid var(--border);}
+  .access-table td{padding:9px 12px;border-bottom:1px solid var(--border);font-size:13px;vertical-align:middle;}
+  .access-table tr:last-child td{border-bottom:none;}
+  .access-table td:first-child{font-weight:600;color:var(--text);white-space:nowrap;}
+  .access-table a{color:var(--accent);text-decoration:none;font-family:monospace;font-size:12px;}
+  .access-table a:hover{text-decoration:underline;}
+  .access-cred{font-family:monospace;font-size:12px;background:var(--bg3);padding:2px 6px;border-radius:4px;}
+  .access-note{font-size:12px;color:var(--muted);margin-top:10px;padding:8px 12px;background:var(--bg3);border-radius:6px;border-left:3px solid var(--accent);}
+</style>
+</head>
+<body>
+
+<header class="header">
+  <div class="header-inner">
+    <div class="logo">FORTARK <span>SOC LABS</span></div>
+    <div class="lab-badge">LAB 5</div>
+  </div>
+</header>
+
+<div class="container">
+
+  <h1>Supply Chain Attack<br><span style="color:var(--muted);font-weight:400;font-size:22px;">The Threat That Came with the Package</span></h1>
+
+  <div class="meta-strip">
+    <div class="meta-chip">⏱ <strong>60 minutes</strong></div>
+    <div class="meta-chip">⚡ <strong>Intermediate</strong> — builds on Labs 1–4</div>
+    <div class="meta-chip">🛠 <strong>Wazuh · Suricata · TheHive · Cortex</strong></div>
+  </div>
+
+  <table class="mitre-table">
+    <thead><tr><th>Tactic</th><th>Technique</th><th>What it means</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><span class="tactic-badge">Initial Access</span></td>
+        <td><span class="mitre-badge">T1195.001</span><br>Supply Chain Compromise</td>
+        <td>Attacker hides malicious code inside a legitimate-looking Python package</td>
+      </tr>
+      <tr>
+        <td><span class="tactic-badge">Execution</span></td>
+        <td><span class="mitre-badge">T1059.004</span><br>Unix Shell</td>
+        <td>Package post-install hook runs a shell command that drops a payload</td>
+      </tr>
+      <tr>
+        <td><span class="tactic-badge">C2</span></td>
+        <td><span class="mitre-badge">T1071.001</span><br>Web Protocols</td>
+        <td>Payload calls back to the attacker's server over HTTPS, using a pip User-Agent</td>
+      </tr>
+      <tr>
+        <td><span class="tactic-badge">Persistence</span></td>
+        <td><span class="mitre-badge">T1053.003</span><br>Cron</td>
+        <td>A cron job is installed so the payload runs every 5 minutes, permanently</td>
+      </tr>
+    </tbody>
+  </table>
+
+
+  <!-- ACCESS -->
+  <h2 id="access">Platform Access</h2>
+  <div class="access-box">
+    <div class="access-box-title">Open these in separate browser tabs before starting</div>
+    <table class="access-table">
+      <thead><tr><th>Tool</th><th>URL</th><th>Login</th></tr></thead>
+      <tbody>
+        <tr><td>Wazuh (SIEM)</td><td><a href="http://localhost" target="_blank">http://localhost</a></td><td><span class="access-cred">admin</span> / <span class="access-cred">S0cPlatf0rm!e0d085fd</span></td></tr>
+        <tr><td>TheHive (cases)</td><td><a href="http://localhost/thehive/" target="_blank">http://localhost/thehive/</a></td><td><span class="access-cred">studentN@thehive.local</span> / <span class="access-cred">FortarkLabs1!</span></td></tr>
+      </tbody>
+    </table>
+    <div class="access-note"><strong>N</strong> = your seat number (1–5).</div>
+  </div>
+
+  <!-- CONCEPT -->
+  <h2 id="concept">What is a supply chain attack?</h2>
+
+  <div class="concept-box">
+    <div class="cb-title" style="color:var(--warn)">Two terms you need to understand first</div>
+
+    <div class="concept-terms">
+      <div class="ct-card">
+        <div class="ct-term" style="color:var(--warn)">Supply Chain</div>
+        <div class="ct-def">Every application depends on dozens — sometimes hundreds — of external libraries written by other people. This web of dependencies is the supply chain. When a developer runs <code>pip install something</code>, they are trusting everyone who wrote that library and everyone who has ever had access to publish it. A supply chain attack hides malicious code inside one of those trusted packages.</div>
+      </div>
+      <div class="ct-card">
+        <div class="ct-term" style="color:var(--orange)">Post-Install Hook</div>
+        <div class="ct-def">A script that runs automatically when a software package is installed. Normally used for legitimate setup steps. In a supply chain attack, the attacker adds a malicious step here: write a file to disk, make an outbound network call, install a cron job — all silently, inside what looks like a perfectly normal install log, while the developer watches and sees nothing unusual.</div>
+      </div>
+    </div>
+
+    <div class="concept-loop">
+      <div class="cl-step">
+        <div class="cl-icon">📦</div>
+        <div class="cl-label">pip install</div>
+        <div class="cl-desc">Developer runs a routine package update</div>
+      </div>
+      <div class="cl-arrow">→</div>
+      <div class="cl-step">
+        <div class="cl-icon">🪝</div>
+        <div class="cl-label">Hook runs</div>
+        <div class="cl-desc">post-install script executes silently</div>
+      </div>
+      <div class="cl-arrow">→</div>
+      <div class="cl-step">
+        <div class="cl-icon">💾</div>
+        <div class="cl-label">Payload dropped</div>
+        <div class="cl-desc">Malicious script written to disk + calls home</div>
+      </div>
+      <div class="cl-arrow">→</div>
+      <div class="cl-step">
+        <div class="cl-icon">⏰</div>
+        <div class="cl-label">Cron installed</div>
+        <div class="cl-desc">Runs every 5 minutes, forever</div>
+      </div>
+    </div>
+
+    <div class="concept-analogy" style="background:rgba(210,153,34,.05);border-left:3px solid var(--warn)">
+      <strong>Analogy:</strong> Imagine a restaurant that gets vegetables delivered every morning. One day, a supplier's warehouse is secretly compromised. The crates still look the same, the labels are correct, and the food tastes fine. But hidden inside one crate is a small device that unlocks the restaurant's back door. The manager never checked inside the crates — why would they? They trusted the supplier. That trust is the vulnerability.
+    </div>
+  </div>
+
+  <div class="part-nav">
+    <a class="part-chip" href="#access">Platform Access</a>
+    <a class="part-chip" href="#concept">What is supply chain?</a>
+    <a class="part-chip" href="#scenario">Scenario</a>
+    <a class="part-chip" href="#alerts">The 3 alerts</a>
+    <a class="part-chip" href="#part1">Part 1 — Setup</a>
+    <a class="part-chip" href="#part2">Part 2 — Trigger</a>
+    <a class="part-chip" href="#part3">Part 3 — Hunt</a>
+    <a class="part-chip" href="#part4">Part 4 — Correlate</a>
+    <a class="part-chip" href="#part5">Part 5 — Enrich</a>
+    <a class="part-chip" href="#part6">Part 6 — SOAR gap</a>
+    <a class="part-chip" href="#part7">Part 7 — Close</a>
+    <a class="part-chip" href="#takeaways">Takeaways</a>
+  </div>
+
+  <!-- SCENARIO -->
+  <h2 id="scenario">The scenario</h2>
+  <div class="scenario-box">
+    <p>Nobody ran Hydra this time. Nobody brute-forced a password. The attacker never directly touched your server.</p>
+    <p>A developer on your team installed a Python package three days ago. It looked legitimate — a popular data utilities library with thousands of downloads. They ran <code>pip install fortark-utils==2.1.4</code> during a routine dependency update. The terminal showed a normal install log. Everything looked fine.</p>
+    <p>What the developer did not see: three weeks before this install, the original author's PyPI account was compromised. The attacker published version 2.1.4 — a version that did not exist before. The package still worked exactly as advertised. But the <code>setup.py</code> post-install hook ran an extra step: it silently wrote a file to disk, executed it, phoned home, and installed a cron entry that will run every 5 minutes until someone finds and removes it.</p>
+    <p>This is a <strong>supply chain attack</strong>. The attacker never needed credentials, never triggered a failed login, never appeared in your auth logs. They arrived in a legitimate package, carried by a legitimate user, from a legitimate source.</p>
+    <p>Your dashboard is showing three alerts that fired within 2 minutes of each other. None crossed your high-severity threshold. None are individually alarming. Together, they tell a completely different story.</p>
+  </div>
+
+  <!-- WHAT MAKES IT DIFFERENT -->
+  <h2>What makes supply chain attacks different</h2>
+  <table class="diff-table">
+    <thead><tr><th></th><th>Previous labs</th><th>Supply chain</th></tr></thead>
+    <tbody>
+      <tr>
+        <td>Initial access</td>
+        <td>SSH brute force — loud, visible</td>
+        <td>Package install — silent, looks legitimate</td>
+      </tr>
+      <tr>
+        <td>Who triggers it</td>
+        <td>External attacker</td>
+        <td>The victim themselves</td>
+      </tr>
+      <tr>
+        <td>Auth logs</td>
+        <td>Hundreds of failed logins</td>
+        <td>Zero authentication events</td>
+      </tr>
+      <tr>
+        <td>Network traffic</td>
+        <td>Attacker IP connecting inbound</td>
+        <td>Outbound only — target calls the attacker</td>
+      </tr>
+      <tr>
+        <td>Detection difficulty</td>
+        <td>Medium — alert volume is obvious</td>
+        <td>High — each alert is low-severity in isolation</td>
+      </tr>
+    </tbody>
+  </table>
+  <p>The skill this lab teaches is <strong>correlation</strong>: taking three unrelated-looking alerts from three different sources and recognising they belong to the same attack chain.</p>
+
+  <!-- THE THREE ALERTS -->
+  <h2 id="alerts">The three alerts you will find</h2>
+  <p>Here is what your SOC dashboard shows after the simulation. Read them as if you have no context about what ran:</p>
+
+  <div class="alert-cards">
+    <div class="alert-card">
+      <div class="ac-header fim">Wazuh FIM</div>
+      <div class="ac-body">
+        <div class="ac-title">Alert A — New file created</div>
+        <div class="ac-detail">/tmp/lab5-supply-chain/<br>update_checker.py</div>
+        <div><span class="ac-sev low">LOW</span></div>
+      </div>
+    </div>
+    <div class="alert-card">
+      <div class="ac-header suricata">Suricata + Syslog</div>
+      <div class="ac-body">
+        <div class="ac-title">Alert B — Outbound POST</div>
+        <div class="ac-detail">https://httpbin.org/post<br>User-Agent: pip/23.0</div>
+        <div><span class="ac-sev info">INFORMATIONAL</span></div>
+      </div>
+    </div>
+    <div class="alert-card">
+      <div class="ac-header syslog">Wazuh Syslog</div>
+      <div class="ac-body">
+        <div class="ac-title">Alert C — Crontab modified</div>
+        <div class="ac-detail">*/5 * * * * python3<br>/tmp/lab5-supply-chain/...</div>
+        <div><span class="ac-sev medium">MEDIUM</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="callout warn">
+    Three separate alerts. Three different sources. Three different severities. But they all fired within the same 2-minute window, on the same host, and they form a coherent sequence: <strong>drop file → execute it → install persistence</strong>. That is not coincidence. That is a playbook.
+  </div>
+
+  <!-- ATTACK CHAIN DIAGRAM -->
+  <h3>The attack chain</h3>
+  <div class="chain">
+    <div class="chain-node install">
+      <div class="cn-icon">📦</div>
+      <div class="cn-stage">Stage 1</div>
+      <div class="cn-label">Package install<br>post-install hook fires</div>
+      <div class="cn-src">Syslog</div>
+    </div>
+    <div class="chain-arrow">→</div>
+    <div class="chain-node drop">
+      <div class="cn-icon">📄</div>
+      <div class="cn-stage">Stage 2</div>
+      <div class="cn-label">Payload dropped<br>to /tmp/</div>
+      <div class="cn-src">Wazuh FIM</div>
+    </div>
+    <div class="chain-arrow">→</div>
+    <div class="chain-node callback">
+      <div class="cn-icon">📡</div>
+      <div class="cn-stage">Stage 3</div>
+      <div class="cn-label">C2 callback<br>to httpbin.org</div>
+      <div class="cn-src">Suricata</div>
+    </div>
+    <div class="chain-arrow">→</div>
+    <div class="chain-node persist">
+      <div class="cn-icon">⏱️</div>
+      <div class="cn-stage">Stage 4</div>
+      <div class="cn-label">Cron persistence<br>every 5 minutes</div>
+      <div class="cn-src">Syslog + FIM</div>
+    </div>
+  </div>
+
+  <!-- STUDENTS -->
+  <h2>Your student details</h2>
+  <table class="student-table">
+    <thead><tr><th>Student</th><th>Target</th><th>Wazuh filter</th></tr></thead>
+    <tbody>
+      <tr><td>Student 1</td><td><code>ssh victim@lab-target</code></td><td><code>agent.name: lab-target</code></td></tr>
+      <tr><td>Student 2</td><td><code>ssh victim@lab-target</code></td><td><code>agent.name: lab-target</code></td></tr>
+      <tr><td>Student 3</td><td><code>ssh victim@lab-target</code></td><td><code>agent.name: lab-target</code></td></tr>
+      <tr><td>Student 4</td><td><code>ssh victim@lab-target</code></td><td><code>agent.name: lab-target</code></td></tr>
+      <tr><td>Student 5</td><td><code>ssh victim@lab-target</code></td><td><code>agent.name: lab-target</code></td></tr>
+    </tbody>
+  </table>
+
+  <!-- PRE-FLIGHT -->
+  <h2>Pre-flight check</h2>
+  <div class="preflight">
+    <div class="preflight-item">
+      <div class="pf-num">1</div>
+      <div class="pf-body">
+        <div class="pf-head">Wazuh dashboard loads</div>
+        <div class="pf-sub">Open <code>http://localhost</code> — confirm you see the dashboard.</div>
+      </div>
+    </div>
+    <div class="preflight-item">
+      <div class="pf-num">2</div>
+      <div class="pf-body">
+        <div class="pf-head">Your agent is active</div>
+        <div class="pf-sub">Agents → <code>s[N]-lab-target</code> → status: Active (green).</div>
+      </div>
+    </div>
+    <div class="preflight-item">
+      <div class="pf-num">3</div>
+      <div class="pf-body">
+        <div class="pf-head">Kali terminal loads</div>
+        <div class="pf-sub">Open <code>http://localhost/attacker/</code> — <code>student@kali</code> prompt.</div>
+      </div>
+    </div>
+    <div class="preflight-item">
+      <div class="pf-num">4</div>
+      <div class="pf-body">
+        <div class="pf-head">TheHive loads</div>
+        <div class="pf-sub">Navigate to TheHive from the sidebar. Login: <code>shuffle@soc.local</code> / <code>FortarkLabs1!</code></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- PART 1 -->
+  <h2 id="part1">Part 1 — Set up your monitoring tabs</h2>
+  <p>Before running the simulation, open three Wazuh tabs — one for each detection source. You want to watch all three in real time.</p>
+
+  <p><strong>Tab A — File activity (FIM):</strong></p>
+  <pre>agent.name: s[N]-lab-target AND rule.groups: syscheck</pre>
+
+  <p><strong>Tab B — Syslog events:</strong></p>
+  <pre>agent.name: s[N]-lab-target AND full_log: *lab5-supply-chain*</pre>
+
+  <p><strong>Tab C — Suricata network:</strong></p>
+  <pre>agent.name: s[N]-lab-target AND rule.groups: suricata</pre>
+
+  <p>Set all three to time range: <strong>Last 15 minutes</strong>.</p>
+
+  <div class="question">
+    <div class="question-label">Q1</div>
+    <div class="question-text">Before the simulation runs, how many alerts appear across all three tabs combined?</div>
+  </div>
+  <div class="callout">
+    That zero baseline is what you are protecting. After the simulation, you will see alerts appear across all three tabs — but they will arrive at different times and look disconnected unless you know what to look for.
+  </div>
+
+  <!-- PART 2 -->
+  <h2 id="part2">Part 2 — Trigger the simulation</h2>
+  <p>The simulation recreates a malicious package post-install hook. It runs as the <code>victim</code> user — exactly how a real package install would run.</p>
+  <p>In the Kali terminal, SSH in and run:</p>
+  <pre>ssh victim@s[N]-lab-target
+# password: password123
+
+/tmp/lab5-supply-chain-sim.sh</pre>
+
+  <p>Watch the terminal output. The script simulates a real pip install log, then silently executes each stage. When it finishes, type <code>exit</code>.</p>
+
+  <div class="question">
+    <div class="question-label">Q2</div>
+    <div class="question-text">How long did the complete attack chain take from package install to persistence installed?<br>
+      <span style="font-size:13px;color:var(--muted);font-weight:400;">(Note the time between the first and last line of terminal output)</span>
+    </div>
+  </div>
+  <div class="callout warn">
+    In a real supply chain attack, the entire post-install hook runs synchronously during <code>pip install</code>. The user sees a normal install log and a successful completion message. The payload runs and installs persistence <strong>before the user has finished reading the terminal output.</strong>
+  </div>
+
+  <!-- PART 3 — HUNT -->
+  <h2 id="part3">Part 3 — Hunt the four stages</h2>
+  <p>Work through each stage in order. Use the filters provided but read the actual alert content. Your job is to find the evidence as if you had no idea what the script did.</p>
+
+  <!-- Stage 1 -->
+  <div class="stage-card">
+    <div class="stage-header install">
+      <div class="stage-icon">📦</div>
+      <div class="stage-title-wrap">
+        <div class="stage-num-label">Stage 1</div>
+        <div class="stage-name">Package Install</div>
+      </div>
+      <div class="stage-mitre"><span class="mitre-badge">T1195.001</span></div>
+    </div>
+    <div class="stage-body">
+      <p>The simulated package install logged its activity to syslog.</p>
+      <pre>agent.name: s[N]-lab-target AND full_log: *STAGE:INSTALL*</pre>
+      <div class="question">
+        <div class="question-label">Q3</div>
+        <div class="question-text">What package name and version did the simulation install?</div>
+      </div>
+      <div class="question">
+        <div class="question-label">Q4</div>
+        <div class="question-text">What technique did the attacker use to make the malicious package look legitimate?</div>
+      </div>
+      <div class="callout">
+        <strong>Typosquatting</strong> — registering a package name one character off from a popular package, or publishing a new version of a real package after compromising the author's account. The XZ Utils backdoor (CVE-2024-3094) used a multi-year social engineering campaign: the attacker spent two years becoming a trusted contributor before inserting the backdoor in a release.
+      </div>
+    </div>
+  </div>
+
+  <!-- Stage 2 -->
+  <div class="stage-card">
+    <div class="stage-header drop">
+      <div class="stage-icon">📄</div>
+      <div class="stage-title-wrap">
+        <div class="stage-num-label">Stage 2</div>
+        <div class="stage-name">Payload Drop</div>
+      </div>
+      <div class="stage-mitre"><span class="mitre-badge">T1059.004</span></div>
+    </div>
+    <div class="stage-body">
+      <p>After the install hook fires, a payload file appears on disk.</p>
+      <pre>agent.name: s[N]-lab-target AND rule.groups: syscheck</pre>
+      <p>Look for a file creation event in <code>/tmp/lab5-supply-chain/</code>.</p>
+      <div class="question">
+        <div class="question-label">Q5</div>
+        <div class="question-text">What is the full path of the payload file?</div>
+      </div>
+      <div class="question">
+        <div class="question-label">Q6</div>
+        <div class="question-text">What filename did the attacker choose, and why is it deliberately hard to notice?</div>
+      </div>
+      <div class="callout warn">
+        <code>update_checker.py</code> — the name sounds like a legitimate package utility. Attackers name their payloads to blend in with the tools that are supposed to be there. On a developer machine running many Python packages, this raises no immediate suspicion.
+      </div>
+      <div class="question">
+        <div class="question-label">Q7</div>
+        <div class="question-text">The FIM alert shows this file as "new file created." Why would a junior analyst dismiss this alert on its own?</div>
+      </div>
+      <div class="callout">
+        New files in <code>/tmp/</code> are among the most common FIM events — build tools, package managers, compilers, and IDEs all create temporary files there constantly. A single low-severity alert for a new Python file would be lost in the noise. The signal only becomes visible when you notice it arrived at the same time as the other alerts.
+      </div>
+    </div>
+  </div>
+
+  <!-- Stage 3 -->
+  <div class="stage-card">
+    <div class="stage-header callback">
+      <div class="stage-icon">📡</div>
+      <div class="stage-title-wrap">
+        <div class="stage-num-label">Stage 3</div>
+        <div class="stage-name">C2 Callback</div>
+      </div>
+      <div class="stage-mitre"><span class="mitre-badge">T1071.001</span></div>
+    </div>
+    <div class="stage-body">
+      <p>The payload executes and phones home to the attacker.</p>
+      <p><strong>Syslog filter:</strong></p>
+      <pre>agent.name: s[N]-lab-target AND full_log: *STAGE:CALLBACK*</pre>
+      <p><strong>Suricata filter:</strong></p>
+      <pre>agent.name: s[N]-lab-target AND rule.groups: suricata</pre>
+      <div class="question">
+        <div class="question-label">Q8</div>
+        <div class="question-text">What destination did the payload call back to?</div>
+      </div>
+      <div class="question">
+        <div class="question-label">Q9</div>
+        <div class="question-text">What User-Agent did the callback use, and why does that matter?</div>
+      </div>
+      <div class="callout orange">
+        The User-Agent is <code>pip/23.0</code> — making the outbound HTTPS POST look identical to a normal pip package manager request. Most firewalls and proxy logs show this as routine package management. An analyst reviewing network logs without context would classify it as noise.
+      </div>
+      <div class="question">
+        <div class="question-label">Q10</div>
+        <div class="question-text">Is httpbin.org flagged by any threat intelligence feed? What does that tell you?</div>
+      </div>
+      <div class="callout danger">
+        httpbin.org is a legitimate developer testing service — clean on AbuseIPDB, VirusTotal, and Shodan. Attackers deliberately use legitimate infrastructure because these domains are whitelisted on nearly every corporate firewall. <strong>This is why IP reputation cannot catch this class of attack.</strong> Behavioural detection — watching what a host does, not where it sends traffic — is the only approach that works.
+      </div>
+    </div>
+  </div>
+
+  <!-- Stage 4 -->
+  <div class="stage-card">
+    <div class="stage-header persist">
+      <div class="stage-icon">⏱️</div>
+      <div class="stage-title-wrap">
+        <div class="stage-num-label">Stage 4</div>
+        <div class="stage-name">Persistence</div>
+      </div>
+      <div class="stage-mitre"><span class="mitre-badge">T1053.003</span></div>
+    </div>
+    <div class="stage-body">
+      <p>The final stage: the payload installs a cron job so it runs every 5 minutes, permanently.</p>
+      <pre>agent.name: s[N]-lab-target AND full_log: *STAGE:PERSIST*</pre>
+      <div class="question">
+        <div class="question-label">Q11</div>
+        <div class="question-text">What is the exact cron entry that was installed?</div>
+      </div>
+      <div class="question">
+        <div class="question-label">Q12</div>
+        <div class="question-text">What does the schedule <code>*/5 * * * *</code> mean in plain English?</div>
+      </div>
+      <div class="question">
+        <div class="question-label">Q13</div>
+        <div class="question-text">Why is the persistence stage often the last alert to fire — and the most critical to find?</div>
+      </div>
+      <div class="callout danger">
+        File drops and network callbacks happen immediately on install. The cron entry creates a repeating beacon that <strong>survives reboots</strong>, survives deletion of the original payload file (the cron reinstalls it), and continues calling back to the attacker every 5 minutes indefinitely. In real incidents, the cron entry is often discovered days or weeks after the initial infection — long after the original alerts were forgotten.
+      </div>
+    </div>
+  </div>
+
+  <!-- PART 4 — CORRELATE -->
+  <h2 id="part4">Part 4 — Connect the dots</h2>
+  <p>Finding four alerts individually is not the same as understanding the attack as a whole. Prove these four events belong to the same chain by filling in the correlation table below.</p>
+
+  <div class="corr-grid">
+    <div class="corr-cell">
+      <div class="corr-label">Stage 1 Time</div>
+      <div class="corr-val"><input class="corr-input" placeholder="HH:MM:SS"></div>
+    </div>
+    <div class="corr-cell">
+      <div class="corr-label">Stage 2 Time</div>
+      <div class="corr-val"><input class="corr-input" placeholder="HH:MM:SS"></div>
+    </div>
+    <div class="corr-cell">
+      <div class="corr-label">Stage 3 Time</div>
+      <div class="corr-val"><input class="corr-input" placeholder="HH:MM:SS"></div>
+    </div>
+    <div class="corr-cell">
+      <div class="corr-label">Stage 4 Time</div>
+      <div class="corr-val"><input class="corr-input" placeholder="HH:MM:SS"></div>
+    </div>
+  </div>
+
+  <div class="question">
+    <div class="question-label">Q14</div>
+    <div class="question-text">Does the same file path (<code>/tmp/lab5-supply-chain/update_checker.py</code>) appear in the FIM alert, the callback syslog, AND the cron persistence entry?</div>
+  </div>
+  <div class="question">
+    <div class="question-label">Q15</div>
+    <div class="question-text">In one sentence: describe the complete attack chain.</div>
+  </div>
+  <div class="callout success">
+    A typosquatted Python package ran a post-install hook that dropped <code>update_checker.py</code> to disk, executed it to beacon out to <code>httpbin.org</code> with system information, and installed a cron job to repeat the beacon every 5 minutes. The attacker gained persistent remote access to a developer machine without ever establishing a direct inbound connection.
+  </div>
+
+  <!-- PART 5 — ENRICH -->
+  <h2 id="part5">Part 5 — Enrich the IOCs</h2>
+  <p>Open TheHive and create a new case:</p>
+  <ul>
+    <li><strong>Title:</strong> <code>Supply chain compromise: s[N]-lab-target — [today's date]</code></li>
+    <li><strong>Severity:</strong> High</li>
+    <li><strong>Tags:</strong> <code>T1195.001</code> <code>T1059.004</code> <code>T1071.001</code> <code>T1053.003</code></li>
+  </ul>
+
+  <h3>Observables to add</h3>
+  <table class="obs-table">
+    <thead><tr><th>Observable</th><th>Type</th><th>Notes</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><code>fortark-utils==2.1.4</code></td>
+        <td><span class="obs-type">Other</span></td>
+        <td>Malicious package name + version</td>
+      </tr>
+      <tr>
+        <td><code>/tmp/lab5-supply-chain/update_checker.py</code></td>
+        <td><span class="obs-type">Filename</span></td>
+        <td>Dropped payload file</td>
+      </tr>
+      <tr>
+        <td><code>httpbin.org</code></td>
+        <td><span class="obs-type">Domain</span></td>
+        <td>C2 callback destination</td>
+      </tr>
+      <tr>
+        <td><code>pip/23.0</code></td>
+        <td><span class="obs-type">Other</span></td>
+        <td>Spoofed User-Agent used for the callback</td>
+      </tr>
+      <tr>
+        <td>Cron entry string</td>
+        <td><span class="obs-type">Other</span></td>
+        <td>Full persistence command from Q11</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <p>Run <strong>Cortex enrichment</strong> on <code>httpbin.org</code>.</p>
+
+  <div class="question">
+    <div class="question-label">Q16</div>
+    <div class="question-text">What do AbuseIPDB, VirusTotal, and Shodan return for httpbin.org?</div>
+  </div>
+  <div class="question">
+    <div class="question-label">Q17</div>
+    <div class="question-text">A junior analyst says: "httpbin.org is clean, so the callback wasn't malicious." What is wrong with that reasoning?</div>
+  </div>
+  <div class="callout warn">
+    The destination being clean does not mean the traffic is benign. The malicious behaviour is: a Python file that was silently dropped by a package post-install hook is beaconing system information (hostname, username, OS version) to an external server. <strong>The choice of destination is irrelevant to the malicious intent.</strong> Attackers choose clean destinations precisely because analysts make this mistake.
+  </div>
+
+  <!-- PART 6 — SOAR GAP -->
+  <h2 id="part6">Part 6 — The SOAR gap</h2>
+  <div class="soar-callout">
+    <div class="sc-label">Lab 3 connection — why SOAR did not catch this</div>
+    <p>Lab 3 showed SOAR automating case creation for brute force attacks using rule 40112 — which requires a failed login sequence followed by a successful authentication. Supply chain attacks produce <strong>zero authentication events</strong>. The attacker never logged in. The SOAR automation from Lab 3 would never fire.</p>
+    <p>SOAR automations only catch what they are explicitly programmed to detect — and most rules are written for known attack patterns. Supply chain attacks exploit the gaps between those patterns.</p>
+  </div>
+
+  <div class="question">
+    <div class="question-label">Q18</div>
+    <div class="question-text">Why would the Lab 3 SOAR automation NOT have caught this attack?</div>
+  </div>
+  <div class="question">
+    <div class="question-label">Q19</div>
+    <div class="question-text">What Wazuh alert pattern could you use to build a SOAR automation that would catch this type of attack in the future?</div>
+  </div>
+  <div class="callout purple">
+    A composite rule that fires when: (1) a new Python or shell script appears in <code>/tmp/</code> <strong>AND</strong> (2) within 60 seconds, that file is executed <strong>AND</strong> (3) within 60 seconds, there is an outbound POST request from the same host. None of these three events individually triggers high severity. The correlation across all three, within a time window, is the trigger. Writing effective correlation rules is one of the hardest ongoing problems in detection engineering — it requires understanding the attack before you can define the rule that catches it.
+  </div>
+
+  <!-- PART 7 — CLOSE -->
+  <h2 id="part7">Part 7 — Close the case</h2>
+  <div class="thehive-checklist">
+    <label class="thc-item">
+      <input type="checkbox">
+      <div class="thc-box"><svg width="12" height="10" viewBox="0 0 12 10"><polyline points="1,5 4,8 11,1" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+      <div>
+        <div class="thc-head">Set verdict: True Positive — Supply Chain Compromise</div>
+        <div class="thc-sub">The malicious package ran. Persistent access was established. This is confirmed.</div>
+      </div>
+    </label>
+    <label class="thc-item">
+      <input type="checkbox">
+      <div class="thc-box"><svg width="12" height="10" viewBox="0 0 12 10"><polyline points="1,5 4,8 11,1" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+      <div>
+        <div class="thc-head">Set TLP: TLP:AMBER</div>
+        <div class="thc-sub">Confidential — share with your security team and the affected vendor only.</div>
+      </div>
+    </label>
+    <label class="thc-item">
+      <input type="checkbox">
+      <div class="thc-box"><svg width="12" height="10" viewBox="0 0 12 10"><polyline points="1,5 4,8 11,1" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+      <div>
+        <div class="thc-head">Write closing summary</div>
+        <div class="thc-sub">Package name + version that was compromised; what the payload did (beacon + cron persistence); how it was detected (FIM + syslog correlation); what was remediated.</div>
+      </div>
+    </label>
+    <label class="thc-item">
+      <input type="checkbox">
+      <div class="thc-box"><svg width="12" height="10" viewBox="0 0 12 10"><polyline points="1,5 4,8 11,1" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+      <div>
+        <div class="thc-head">Add remediation steps as case tasks</div>
+        <div class="thc-sub">Remove cron entry · delete payload · audit all hosts that installed this package version · rotate credentials · report malicious version to PyPI security team</div>
+      </div>
+    </label>
+    <label class="thc-item">
+      <input type="checkbox">
+      <div class="thc-box"><svg width="12" height="10" viewBox="0 0 12 10"><polyline points="1,5 4,8 11,1" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+      <div>
+        <div class="thc-head">Close the case</div>
+        <div class="thc-sub">Mark all tasks complete. Set resolution date.</div>
+      </div>
+    </label>
+  </div>
+
+  <!-- CLEANUP -->
+  <hr>
+  <h2>Cleanup</h2>
+  <pre>ssh victim@s[N]-lab-target
+/tmp/lab5-supply-chain-sim.sh --cleanup
+exit</pre>
+
+  <!-- TAKEAWAYS -->
+  <h2 id="takeaways">Key takeaways</h2>
+  <ul class="takeaways">
+    <li><strong>Supply chain attacks bypass every perimeter control.</strong> The attacker never needed a password, never triggered a failed login, never appeared in auth logs. They arrived in a legitimate package carried by a legitimate user from a legitimate registry.</li>
+    <li><strong>Three low-severity alerts can equal one critical incident.</strong> No individual alert in this lab crossed the high-severity threshold. The file drop, the callback, and the cron modification each looked routine in isolation. The attack is only visible when you look at all three together, in the same time window, on the same host.</li>
+    <li><strong>IP reputation cannot catch this class of attack.</strong> The beacon went to httpbin.org — a clean, legitimate service. Attackers deliberately use trusted infrastructure because analysts rely on blocklists. Behavioural detection is the only approach that works.</li>
+    <li><strong>Persistence is the goal, not the initial infection.</strong> The payload drop and callback are one-time events. The cron entry gives the attacker ongoing access. Removing the payload file without removing the cron entry solves nothing — the cron reinstalls it.</li>
+    <li><strong>SOAR automation has blind spots.</strong> The Lab 3 automation caught brute force. It would never fire here. SOAR rules are written for known attack patterns. Supply chain attacks are effective precisely because they exploit the gaps between those patterns.</li>
+    <li><strong>The developer was not at fault.</strong> The package looked legitimate, came from a trusted registry, and installed without errors. The defence is verification: package signing, hash pinning, and Software Bill of Materials (SBOM) — tools that let you verify what you are installing before you install it.</li>
+  </ul>
+
+</div>
+</body>
+</html>

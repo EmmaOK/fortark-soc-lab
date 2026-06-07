@@ -1,0 +1,44 @@
+# Windows / WSL2 override — apply with:
+#   docker compose -f docker-compose.yml -f docker-compose.win.yml up -d
+#
+# Suricata is disabled: WSL2 virtual NIC doesn't support AF_PACKET or reliable pcap.
+# Students will still see SSH brute-force alerts from Wazuh (auth.log monitoring works fine).
+# Cortex jobs path uses a Windows-style absolute path under WSL2.
+
+services:
+  opensearch:
+    environment:
+      - "OPENSEARCH_JAVA_OPTS=-Xms1g -Xmx1g"
+
+  thehive-db:
+    environment:
+      - CASSANDRA_CLUSTER_NAME=soc-thehive
+      - CASSANDRA_DC=dc1
+      - HEAP_NEWSIZE=64M
+      - MAX_HEAP_SIZE=256M
+
+  suricata:
+    entrypoint: ["sh", "-c", "echo 'Suricata disabled on Windows/WSL2' && sleep infinity"]
+    healthcheck:
+      test: ["CMD", "true"]
+
+  filebeat:
+    entrypoint: ["sh", "-c", "echo 'Filebeat disabled (no Suricata on Windows)' && sleep infinity"]
+    healthcheck:
+      test: ["CMD", "true"]
+
+  cortex:
+    volumes:
+      - ${CORTEX_JOBS_PATH}:${CORTEX_JOBS_PATH}
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ./platform/cortex/config/application.conf:/etc/cortex/application.conf:ro
+
+  shuffle-orborus:
+    environment:
+      - ENVIRONMENT_NAME=Shuffle
+      - BASE_URL=http://shuffle-backend:5001
+      - DOCKER_API_VERSION=1.44
+      - CLEANUP=false
+      - SHUFFLE_WORKER_IMAGE=ghcr.io/shuffle/shuffle-worker:latest
+      - SHUFFLE_WORKER_NETWORK=fortark-soc-lab_soc-internal
+      - SHUFFLE_BASE_IMAGE_NAME=shuffle-worker

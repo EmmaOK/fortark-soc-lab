@@ -1,0 +1,46 @@
+# macOS override — apply with:
+#   docker compose -f docker-compose.yml -f docker-compose.mac.yml up -d
+#
+# Reduces heap sizes to fit in 16 GB RAM.
+# Suricata runs in pcap mode (captures bridge traffic only — no host net on macOS).
+# Cortex jobs path must be identical on host and in container so Docker Desktop
+# can share it with analyser sub-containers.
+
+services:
+  opensearch:
+    environment:
+      - "OPENSEARCH_JAVA_OPTS=-Xms1g -Xmx1g"
+
+  thehive-db:
+    environment:
+      - CASSANDRA_CLUSTER_NAME=soc-thehive
+      - CASSANDRA_DC=dc1
+      - HEAP_NEWSIZE=64M
+      - MAX_HEAP_SIZE=256M
+
+  suricata:
+    network_mode: bridge
+    cap_add: []
+    environment:
+      - SURICATA_OPTIONS=--pcap=eth0
+    volumes:
+      - ./platform/suricata/config/suricata.mac.yaml:/etc/suricata/suricata.yaml:ro
+      - ./platform/suricata/rules/local.rules:/var/lib/suricata/rules/local.rules:ro
+      - ./platform/suricata/threshold.config:/etc/suricata/threshold.config:ro
+      - suricata-logs:/var/log/suricata
+
+  cortex:
+    volumes:
+      - ${CORTEX_JOBS_PATH}:${CORTEX_JOBS_PATH}
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ./platform/cortex/config/application.conf:/etc/cortex/application.conf:ro
+
+  shuffle-orborus:
+    environment:
+      - ENVIRONMENT_NAME=Shuffle
+      - BASE_URL=http://shuffle-backend:5001
+      - DOCKER_API_VERSION=1.44
+      - CLEANUP=false
+      - SHUFFLE_WORKER_IMAGE=ghcr.io/shuffle/shuffle-worker:latest
+      - SHUFFLE_WORKER_NETWORK=fortark-soc-lab_soc-internal
+      - SHUFFLE_BASE_IMAGE_NAME=shuffle-worker

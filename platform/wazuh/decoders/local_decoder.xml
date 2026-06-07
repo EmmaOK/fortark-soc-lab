@@ -1,0 +1,13 @@
+<decoder name="suricata-eve">
+  <prematch>{"timestamp"</prematch>
+  <regex>"event_type":"(.+)"</regex>
+  <order>event_type</order>
+</decoder>
+
+<decoder name="suricata-eve-alert">
+  <parent>suricata-eve</parent>
+  <use_own_name>yes</use_own_name>
+  <prematch>"event_type":"alert"</prematch>
+  <regex>"src_ip":"(.+)"</regex>
+  <order>srcip</order>
+</decoder>

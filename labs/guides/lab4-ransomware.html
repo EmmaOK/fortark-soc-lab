@@ -1,0 +1,1115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Lab 4 — Ransomware Detection | Fortark SOC Labs</title>
+<style>
+  :root {
+    --bg:#0d1117; --bg2:#161b22; --bg3:#21262d; --border:#30363d;
+    --text:#e6edf3; --muted:#8b949e;
+    --accent:#58a6ff; --accent2:#3fb950; --warn:#d29922; --danger:#f85149;
+    --purple:#bc8cff; --teal:#2ea89f; --orange:#e8812a;
+    --code-bg:#1c2128; --tag-bg:#1f2a3d;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif;
+    background:var(--bg);color:var(--text);line-height:1.7;font-size:16px;}
+
+  /* ── HEADER ── */
+  .header{background:var(--bg2);border-bottom:1px solid var(--border);
+    padding:16px 0;position:sticky;top:0;z-index:100;}
+  .header-inner{max-width:860px;margin:0 auto;padding:0 24px;
+    display:flex;align-items:center;gap:12px;}
+  .logo{font-size:13px;font-weight:600;color:var(--muted);letter-spacing:.08em;}
+  .logo span{color:var(--accent);}
+  .lab-badge{padding:4px 12px;background:rgba(248,81,73,.12);
+    border:1px solid rgba(248,81,73,.35);border-radius:20px;
+    font-size:12px;font-weight:700;color:var(--danger);}
+  .container{max-width:860px;margin:0 auto;padding:40px 24px 80px;}
+  h1{font-size:30px;font-weight:800;letter-spacing:-.02em;line-height:1.2;margin-bottom:12px;}
+  h2{font-size:22px;font-weight:700;margin:40px 0 16px;
+    padding-bottom:10px;border-bottom:1px solid var(--border);}
+  h3{font-size:17px;font-weight:700;margin:28px 0 12px;}
+  p{margin-bottom:14px;}
+  hr{border:none;border-top:1px solid var(--border);margin:32px 0;}
+  strong{color:var(--text);}
+  code{font-family:'SF Mono','Fira Mono',monospace;font-size:13px;
+    background:var(--bg3);border:1px solid var(--border);
+    border-radius:4px;padding:1px 6px;color:var(--accent2);}
+  pre{background:var(--code-bg);border:1px solid var(--border);border-radius:8px;
+    padding:18px 20px;margin:16px 0;overflow-x:auto;
+    font-family:'SF Mono','Fira Mono',monospace;font-size:13px;
+    line-height:1.8;color:#a9b7c6;}
+
+  /* ── META ── */
+  .meta-strip{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:28px;
+    padding-bottom:20px;border-bottom:1px solid var(--border);}
+  .meta-chip{display:flex;align-items:center;gap:6px;
+    background:var(--bg2);border:1px solid var(--border);border-radius:20px;
+    padding:5px 14px;font-size:13px;color:var(--muted);}
+  .meta-chip strong{color:var(--text);}
+
+  /* ── MITRE TABLE ── */
+  .mitre-table{width:100%;border-collapse:collapse;margin:16px 0;font-size:14px;}
+  .mitre-table th{background:var(--bg3);border:1px solid var(--border);
+    padding:10px 14px;text-align:left;font-size:11px;font-weight:700;
+    letter-spacing:.08em;text-transform:uppercase;color:var(--muted);}
+  .mitre-table td{border:1px solid var(--border);padding:10px 14px;vertical-align:top;line-height:1.5;}
+  .mitre-table tr:nth-child(even) td{background:rgba(33,38,45,.5);}
+  .mitre-badge{display:inline-block;padding:2px 8px;
+    background:rgba(188,140,255,.12);border:1px solid rgba(188,140,255,.3);
+    border-radius:4px;font-size:11px;font-weight:700;color:var(--purple);
+    font-family:monospace;white-space:nowrap;}
+  .tactic-badge{display:inline-block;padding:2px 8px;
+    background:rgba(248,81,73,.1);border:1px solid rgba(248,81,73,.25);
+    border-radius:4px;font-size:11px;font-weight:700;color:var(--danger);}
+
+  /* ── PART NAV ── */
+  .part-nav{display:flex;flex-wrap:wrap;gap:8px;margin:24px 0;
+    padding:16px 20px;background:var(--bg2);
+    border:1px solid var(--border);border-radius:8px;}
+  .part-chip{padding:5px 14px;border-radius:20px;font-size:12px;font-weight:600;
+    color:var(--muted);border:1px solid var(--border);background:var(--bg3);
+    cursor:pointer;text-decoration:none;transition:all .2s;}
+  .part-chip:hover,.part-chip.active{background:rgba(248,81,73,.1);
+    border-color:rgba(248,81,73,.4);color:var(--danger);}
+
+  /* ── SCENARIO ── */
+  .scenario-box{background:var(--bg2);border-left:4px solid var(--danger);
+    border-radius:0 8px 8px 0;padding:20px 24px;margin:20px 0;}
+  .scenario-box p{margin-bottom:10px;}
+  .scenario-box p:last-child{margin-bottom:0;}
+
+  /* ── DETECTION COVERAGE TABLE ── */
+  .detect-table{width:100%;border-collapse:collapse;margin:16px 0;font-size:13px;}
+  .detect-table th{background:var(--bg3);border:1px solid var(--border);
+    padding:10px 14px;text-align:left;font-size:11px;font-weight:700;
+    letter-spacing:.08em;text-transform:uppercase;color:var(--muted);}
+  .detect-table td{border:1px solid var(--border);padding:10px 14px;vertical-align:top;line-height:1.5;}
+  .detect-table tr:nth-child(even) td{background:rgba(33,38,45,.5);}
+  .src-badge{display:inline-block;padding:2px 8px;border-radius:4px;
+    font-size:11px;font-weight:700;font-family:monospace;white-space:nowrap;}
+  .src-fim{background:rgba(88,166,255,.12);border:1px solid rgba(88,166,255,.3);color:var(--accent);}
+  .src-syslog{background:rgba(210,153,34,.12);border:1px solid rgba(210,153,34,.3);color:var(--warn);}
+  .stage-num{display:inline-flex;align-items:center;justify-content:center;
+    width:22px;height:22px;border-radius:50%;
+    background:rgba(248,81,73,.15);color:var(--danger);
+    font-size:11px;font-weight:800;margin-right:6px;flex-shrink:0;}
+
+  /* ── VOLUME COMPARISON ── */
+  .volume-compare{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:20px 0;}
+  .vol-card{background:var(--bg2);border:1px solid var(--border);
+    border-radius:10px;padding:20px;text-align:center;}
+  .vol-card.normal{border-color:rgba(63,185,80,.3);}
+  .vol-card.attack{border-color:rgba(248,81,73,.3);}
+  .vol-label{font-size:11px;font-weight:700;letter-spacing:.08em;
+    text-transform:uppercase;margin-bottom:12px;}
+  .vol-card.normal .vol-label{color:var(--accent2);}
+  .vol-card.attack .vol-label{color:var(--danger);}
+  .vol-bar-wrap{height:80px;display:flex;align-items:flex-end;
+    justify-content:center;margin-bottom:10px;}
+  .vol-bar{width:48px;border-radius:6px 6px 0 0;transition:height .3s;}
+  .vol-card.normal .vol-bar{background:linear-gradient(180deg,var(--accent2),rgba(63,185,80,.3));height:6%;}
+  .vol-card.attack .vol-bar{background:linear-gradient(180deg,var(--danger),rgba(248,81,73,.3));height:100%;}
+  .vol-count{font-size:28px;font-weight:800;line-height:1;}
+  .vol-card.normal .vol-count{color:var(--accent2);}
+  .vol-card.attack .vol-count{color:var(--danger);}
+  .vol-unit{font-size:12px;color:var(--muted);margin-top:4px;}
+
+  /* ── STUDENT TABLE ── */
+  .student-table{width:100%;border-collapse:collapse;margin:16px 0;font-size:14px;}
+  .student-table th{background:var(--bg3);border:1px solid var(--border);
+    padding:10px 14px;text-align:left;font-size:11px;font-weight:700;
+    letter-spacing:.08em;text-transform:uppercase;color:var(--muted);}
+  .student-table td{border:1px solid var(--border);padding:10px 14px;}
+
+  /* ── PREFLIGHT ── */
+  .preflight{display:flex;flex-direction:column;gap:12px;margin:16px 0;}
+  .preflight-item{display:flex;align-items:flex-start;gap:14px;
+    padding:14px 18px;background:var(--bg2);
+    border:1px solid var(--border);border-radius:8px;}
+  .pf-num{width:28px;height:28px;border-radius:50%;flex-shrink:0;
+    background:var(--bg3);border:1px solid var(--border);
+    display:flex;align-items:center;justify-content:center;
+    font-weight:800;font-size:13px;color:var(--muted);}
+  .pf-body .pf-head{font-size:14px;font-weight:700;margin-bottom:4px;}
+  .pf-body .pf-sub{font-size:13px;color:var(--muted);line-height:1.5;}
+
+  /* ── STEP LIST ── */
+  .step-list{display:flex;flex-direction:column;gap:12px;margin:16px 0;}
+  .step-item{display:flex;align-items:flex-start;gap:14px;
+    padding:14px 18px;background:var(--bg2);
+    border:1px solid var(--border);border-radius:8px;}
+  .step-num{width:28px;height:28px;border-radius:50%;flex-shrink:0;
+    background:rgba(248,81,73,.15);border:1px solid rgba(248,81,73,.3);
+    display:flex;align-items:center;justify-content:center;
+    font-weight:800;font-size:13px;color:var(--danger);}
+  .step-body{font-size:14px;line-height:1.6;}
+
+  /* ── STAGE HUNT CARDS ── */
+  .stage-card{background:var(--bg2);border:1px solid var(--border);
+    border-radius:10px;overflow:hidden;margin:20px 0;}
+  .stage-header{padding:14px 20px;display:flex;align-items:center;gap:12px;
+    border-bottom:1px solid var(--border);}
+  .stage-header.discovery{background:rgba(210,153,34,.06);border-bottom-color:rgba(210,153,34,.2);}
+  .stage-header.staging{background:rgba(88,166,255,.06);border-bottom-color:rgba(88,166,255,.2);}
+  .stage-header.encrypt{background:rgba(248,81,73,.06);border-bottom-color:rgba(248,81,73,.2);}
+  .stage-header.ransom{background:rgba(188,140,255,.06);border-bottom-color:rgba(188,140,255,.2);}
+  .stage-header.inhibit{background:rgba(232,129,42,.06);border-bottom-color:rgba(232,129,42,.2);}
+  .stage-icon{font-size:20px;}
+  .stage-title-wrap .stage-num-label{font-size:11px;font-weight:700;
+    letter-spacing:.1em;text-transform:uppercase;margin-bottom:2px;}
+  .stage-header.discovery .stage-num-label{color:var(--warn);}
+  .stage-header.staging .stage-num-label{color:var(--accent);}
+  .stage-header.encrypt .stage-num-label{color:var(--danger);}
+  .stage-header.ransom .stage-num-label{color:var(--purple);}
+  .stage-header.inhibit .stage-num-label{color:var(--orange);}
+  .stage-title-wrap .stage-name{font-size:16px;font-weight:700;}
+  .stage-mitre{margin-left:auto;}
+  .stage-body{padding:20px;}
+
+  /* ── QUESTION ── */
+  .question{display:flex;gap:14px;align-items:flex-start;
+    padding:16px 18px;margin:14px 0;
+    background:var(--bg3);border:1px solid var(--border);border-radius:8px;}
+  .question-label{font-size:11px;font-weight:800;letter-spacing:.1em;
+    text-transform:uppercase;color:var(--danger);flex-shrink:0;width:36px;}
+  .question-text{font-size:15px;font-weight:600;line-height:1.5;}
+
+  /* ── CALLOUT ── */
+  .callout{background:rgba(88,166,255,.06);border-left:3px solid var(--accent);
+    border-radius:0 8px 8px 0;padding:14px 18px;margin:14px 0;
+    font-size:14px;color:var(--muted);line-height:1.7;}
+  .callout strong{color:var(--text);}
+  .callout.warn{background:rgba(210,153,34,.06);border-left-color:var(--warn);}
+  .callout.danger{background:rgba(248,81,73,.06);border-left-color:var(--danger);}
+  .callout.purple{background:rgba(188,140,255,.06);border-left-color:var(--purple);}
+  .callout.success{background:rgba(63,185,80,.06);border-left-color:var(--accent2);}
+  .callout.orange{background:rgba(232,129,42,.06);border-left-color:var(--orange);}
+
+  /* ── FIM RULES TABLE ── */
+  .fim-table{width:100%;border-collapse:collapse;margin:16px 0;font-size:14px;}
+  .fim-table th{background:var(--bg3);border:1px solid var(--border);
+    padding:10px 14px;text-align:left;font-size:11px;font-weight:700;
+    letter-spacing:.08em;text-transform:uppercase;color:var(--muted);}
+  .fim-table td{border:1px solid var(--border);padding:10px 14px;vertical-align:top;}
+  .fim-table tr:nth-child(even) td{background:rgba(33,38,45,.5);}
+  .rule-id{font-family:monospace;font-size:15px;font-weight:800;color:var(--accent);}
+
+  /* ── CONTAINMENT DECISION ── */
+  .contain-block{background:var(--bg2);border:1px solid var(--border);
+    border-radius:10px;overflow:hidden;margin:20px 0;}
+  .contain-header{padding:16px 20px;background:rgba(248,81,73,.06);
+    border-bottom:1px solid rgba(248,81,73,.2);
+    font-size:14px;font-weight:700;color:var(--danger);}
+  .contain-body{padding:20px;}
+  .contain-q{font-size:16px;font-weight:600;margin-bottom:14px;}
+  .co-options{display:flex;flex-direction:column;gap:10px;}
+  .co-opt{display:flex;align-items:flex-start;gap:12px;
+    padding:14px 16px;background:var(--bg3);border:2px solid var(--border);
+    border-radius:8px;cursor:pointer;transition:all .2s;}
+  .co-opt input[type="radio"]{display:none;}
+  .co-radio{width:18px;height:18px;border-radius:50%;border:2px solid var(--border);
+    flex-shrink:0;margin-top:2px;transition:all .2s;background:var(--bg);}
+  .co-opt-text{font-size:14px;line-height:1.5;}
+  .co-opt-text strong{display:block;font-size:14px;margin-bottom:2px;}
+  .co-opt-text span{font-size:13px;color:var(--muted);}
+  /* Isolate — danger */
+  .co-isolate:has(input:checked){border-color:rgba(248,81,73,.5);background:rgba(248,81,73,.06);}
+  .co-isolate:has(input:checked) .co-radio{border-color:var(--danger);background:var(--danger);}
+  .co-isolate:has(input:checked) strong{color:var(--danger);}
+  /* Monitor — warn */
+  .co-monitor:has(input:checked){border-color:rgba(210,153,34,.5);background:rgba(210,153,34,.06);}
+  .co-monitor:has(input:checked) .co-radio{border-color:var(--warn);background:var(--warn);}
+  .co-monitor:has(input:checked) strong{color:var(--warn);}
+  /* Escalate — purple */
+  .co-escalate:has(input:checked){border-color:rgba(188,140,255,.5);background:rgba(188,140,255,.06);}
+  .co-escalate:has(input:checked) .co-radio{border-color:var(--purple);background:var(--purple);}
+  .co-escalate:has(input:checked) strong{color:var(--purple);}
+
+  /* ── KILL CHAIN TIMELINE ── */
+  .killchain{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin:20px 0;}
+  .kc-card{background:var(--bg2);border:1px solid var(--border);
+    border-radius:10px;padding:16px;text-align:center;position:relative;}
+  .kc-card.active{border-color:rgba(248,81,73,.4);background:rgba(248,81,73,.04);}
+  .kc-num{font-size:22px;font-weight:800;margin-bottom:6px;}
+  .kc-card:not(.active) .kc-num{color:var(--muted);}
+  .kc-card.active .kc-num{color:var(--danger);}
+  .kc-lab{font-size:10px;font-weight:700;letter-spacing:.1em;
+    text-transform:uppercase;margin-bottom:8px;}
+  .kc-card:not(.active) .kc-lab{color:var(--muted);}
+  .kc-card.active .kc-lab{color:var(--danger);}
+  .kc-event{font-size:12px;color:var(--muted);line-height:1.5;}
+  .kc-connector{position:absolute;right:-8px;top:50%;transform:translateY(-50%);
+    width:16px;height:2px;background:var(--border);}
+  .kc-connector::after{content:'▶';position:absolute;right:-10px;top:-7px;
+    font-size:12px;color:var(--border);}
+
+  /* ── OBSERVABLE TABLE ── */
+  .obs-table{width:100%;border-collapse:collapse;margin:16px 0;font-size:14px;}
+  .obs-table th{background:var(--bg3);border:1px solid var(--border);
+    padding:10px 14px;text-align:left;font-size:11px;font-weight:700;
+    letter-spacing:.08em;text-transform:uppercase;color:var(--muted);}
+  .obs-table td{border:1px solid var(--border);padding:10px 14px;vertical-align:top;}
+  .obs-table tr:nth-child(even) td{background:rgba(33,38,45,.5);}
+  .obs-type{display:inline-block;padding:2px 8px;border-radius:4px;
+    font-size:11px;font-weight:700;background:var(--bg3);
+    border:1px solid var(--border);color:var(--muted);}
+
+  /* ── THEHIVE CHECKLIST ── */
+  .thehive-checklist{display:flex;flex-direction:column;gap:12px;margin:20px 0;}
+  .thc-item{display:flex;align-items:flex-start;gap:14px;
+    padding:16px 18px;background:var(--bg2);
+    border:1px solid var(--border);border-radius:8px;
+    cursor:pointer;transition:border-color .2s,background .2s;}
+  .thc-item input[type="checkbox"]{display:none;}
+  .thc-box{width:20px;height:20px;border-radius:5px;flex-shrink:0;
+    border:2px solid var(--border);margin-top:2px;
+    display:flex;align-items:center;justify-content:center;
+    transition:all .2s;background:var(--bg3);}
+  .thc-box svg{display:none;}
+  .thc-item:has(input:checked){border-color:rgba(63,185,80,.4);background:rgba(63,185,80,.04);}
+  .thc-item:has(input:checked) .thc-box{background:var(--accent2);border-color:var(--accent2);}
+  .thc-item:has(input:checked) .thc-box svg{display:block;}
+  .thc-item:has(input:checked) .thc-head{text-decoration:line-through;color:var(--muted);}
+  .thc-item:hover:not(:has(input:checked)){border-color:var(--muted);}
+  .thc-head{font-size:14px;font-weight:700;margin-bottom:4px;color:var(--text);}
+  .thc-sub{font-size:13px;color:var(--muted);line-height:1.5;}
+
+  /* ── RECOVERY CARDS ── */
+  .recovery-cards{display:flex;flex-direction:column;gap:16px;margin:20px 0;}
+  .rec-card{background:var(--bg2);border:1px solid var(--border);
+    border-radius:10px;overflow:hidden;}
+  .rec-header{padding:14px 20px;display:flex;align-items:center;gap:12px;
+    border-bottom:1px solid var(--border);}
+  .rec-num{width:30px;height:30px;border-radius:50%;flex-shrink:0;
+    background:rgba(248,81,73,.15);border:1px solid rgba(248,81,73,.3);
+    display:flex;align-items:center;justify-content:center;
+    font-weight:800;font-size:14px;color:var(--danger);}
+  .rec-title{font-size:15px;font-weight:700;}
+  .rec-body{padding:20px;font-size:14px;line-height:1.7;}
+  .rec-body p{margin-bottom:10px;}
+  .rec-body p:last-child{margin-bottom:0;}
+
+  /* ── EXECUTIVE BRIEF ── */
+  .exec-brief{background:var(--bg2);border:1px solid var(--border);
+    border-radius:10px;padding:24px;margin:20px 0;}
+  .exec-brief .eb-label{font-size:11px;font-weight:700;letter-spacing:.1em;
+    text-transform:uppercase;color:var(--muted);margin-bottom:10px;}
+  .exec-brief textarea{width:100%;min-height:120px;background:var(--bg3);
+    border:1px solid var(--border);border-radius:8px;padding:12px 14px;
+    color:var(--text);font-family:inherit;font-size:14px;line-height:1.7;
+    resize:vertical;outline:none;transition:border-color .2s;}
+  .exec-brief textarea:focus{border-color:var(--danger);}
+  .exec-brief textarea::placeholder{color:var(--muted);}
+
+  /* ── TAKEAWAYS ── */
+  .takeaways{list-style:none;margin:16px 0;padding:0;}
+  .takeaways li{padding:14px 0;border-bottom:1px solid var(--border);
+    padding-left:20px;position:relative;font-size:15px;line-height:1.6;}
+  .takeaways li:last-child{border-bottom:none;}
+  .takeaways li::before{content:'→';position:absolute;left:0;
+    color:var(--danger);font-weight:700;}
+  .takeaways li strong{color:var(--text);}
+
+  @media(max-width:600px){
+    .volume-compare{grid-template-columns:1fr;}
+    .killchain{grid-template-columns:1fr 1fr;}
+    .kc-connector{display:none;}
+  }
+
+  /* ── CONCEPT BOX ── */
+  .concept-box{background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:24px 28px;margin:20px 0;}
+  .cb-title{font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;margin-bottom:20px;}
+  .concept-terms{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;margin-bottom:20px;}
+  .ct-card{background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:16px 18px;}
+  .ct-card .ct-term{font-size:15px;font-weight:800;margin-bottom:6px;}
+  .ct-card .ct-def{font-size:13px;color:var(--muted);line-height:1.6;}
+  .concept-loop{display:flex;align-items:center;background:var(--bg3);border:1px solid var(--border);border-radius:8px;overflow:hidden;margin-bottom:16px;}
+  .cl-step{flex:1;padding:14px 12px;text-align:center;border-right:1px solid var(--border);}
+  .cl-step:last-child{border-right:none;}
+  .cl-step .cl-icon{font-size:20px;margin-bottom:6px;}
+  .cl-step .cl-label{font-size:10px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-bottom:4px;}
+  .cl-step .cl-desc{font-size:11px;color:var(--text);line-height:1.4;}
+  .cl-arrow{font-size:14px;color:var(--border);padding:0 2px;flex-shrink:0;align-self:center;}
+  .concept-analogy{border-radius:0 6px 6px 0;padding:12px 16px;font-size:13px;color:var(--muted);line-height:1.6;}
+  .concept-analogy strong{color:var(--text);}
+
+  .access-box{background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:20px 24px;margin:20px 0 0;}
+  .access-box-title{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:12px;}
+  .access-table{width:100%;border-collapse:collapse;}
+  .access-table th{background:var(--bg3);color:var(--muted);font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;padding:8px 12px;text-align:left;border-bottom:1px solid var(--border);}
+  .access-table td{padding:9px 12px;border-bottom:1px solid var(--border);font-size:13px;vertical-align:middle;}
+  .access-table tr:last-child td{border-bottom:none;}
+  .access-table td:first-child{font-weight:600;color:var(--text);white-space:nowrap;}
+  .access-table a{color:var(--accent);text-decoration:none;font-family:monospace;font-size:12px;}
+  .access-table a:hover{text-decoration:underline;}
+  .access-cred{font-family:monospace;font-size:12px;background:var(--bg3);padding:2px 6px;border-radius:4px;}
+  .access-note{font-size:12px;color:var(--muted);margin-top:10px;padding:8px 12px;background:var(--bg3);border-radius:6px;border-left:3px solid var(--accent);}
+</style>
+</head>
+<body>
+
+<header class="header">
+  <div class="header-inner">
+    <div class="logo">FORTARK <span>SOC LABS</span></div>
+    <div class="lab-badge">LAB 4</div>
+  </div>
+</header>
+
+<div class="container">
+
+  <h1>Ransomware Detection<br><span style="color:var(--muted);font-weight:400;font-size:22px;">The Files Are Changing</span></h1>
+
+  <div class="meta-strip">
+    <div class="meta-chip">⏱ <strong>75 minutes</strong></div>
+    <div class="meta-chip">⚡ <strong>Intermediate</strong> — builds on Labs 1–3</div>
+    <div class="meta-chip">🛠 <strong>Wazuh · TheHive · Shuffle</strong></div>
+  </div>
+
+  <!-- MITRE -->
+  <table class="mitre-table">
+    <thead>
+      <tr>
+        <th>Tactic</th>
+        <th>Technique</th>
+        <th>What it means</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="tactic-badge">Discovery</span></td>
+        <td><span class="mitre-badge">T1083</span><br>File and Directory Discovery</td>
+        <td>Ransomware scans the filesystem to find files worth encrypting</td>
+      </tr>
+      <tr>
+        <td><span class="tactic-badge">Impact</span></td>
+        <td><span class="mitre-badge">T1486</span><br>Data Encrypted for Impact</td>
+        <td>Files are renamed to <code>.locked</code> — inaccessible without the decryption key</td>
+      </tr>
+      <tr>
+        <td><span class="tactic-badge">Impact</span></td>
+        <td><span class="mitre-badge">T1490</span><br>Inhibit System Recovery</td>
+        <td>Ransomware sweeps for backup files and tries to destroy them</td>
+      </tr>
+      <tr>
+        <td><span class="tactic-badge">Impact</span></td>
+        <td><span class="mitre-badge">T1491.001</span><br>Internal Defacement</td>
+        <td>A ransom note is dropped in every directory the ransomware touched</td>
+      </tr>
+    </tbody>
+  </table>
+
+
+  <!-- ACCESS -->
+  <h2 id="access">Platform Access</h2>
+  <div class="access-box">
+    <div class="access-box-title">Open these in separate browser tabs before starting</div>
+    <table class="access-table">
+      <thead><tr><th>Tool</th><th>URL</th><th>Login</th></tr></thead>
+      <tbody>
+        <tr><td>Wazuh (SIEM)</td><td><a href="http://localhost" target="_blank">http://localhost</a></td><td><span class="access-cred">admin</span> / <span class="access-cred">S0cPlatf0rm!e0d085fd</span></td></tr>
+        <tr><td>TheHive (cases)</td><td><a href="http://localhost/thehive/" target="_blank">http://localhost/thehive/</a></td><td><span class="access-cred">studentN@thehive.local</span> / <span class="access-cred">FortarkLabs1!</span></td></tr>
+      </tbody>
+    </table>
+    <div class="access-note"><strong>N</strong> = your seat number (1–5).</div>
+  </div>
+
+  <!-- CONCEPT -->
+  <h2 id="concept">What is ransomware?</h2>
+
+  <div class="concept-box">
+    <div class="cb-title" style="color:var(--danger)">Two terms you need to understand first</div>
+
+    <div class="concept-terms">
+      <div class="ct-card">
+        <div class="ct-term" style="color:var(--danger)">Ransomware</div>
+        <div class="ct-def">Malicious software that encrypts your files — scrambles them mathematically so they cannot be opened — then demands a payment for the key to unscramble them. Encryption itself is legitimate technology. Ransomware weaponises it: the attacker holds the decryption key, you hold encrypted files you can no longer read. Without backups, you pay or you lose the data permanently.</div>
+      </div>
+      <div class="ct-card">
+        <div class="ct-term" style="color:var(--warn)">FIM — File Integrity Monitoring</div>
+        <div class="ct-def">A security control that watches files and directories and fires an alert whenever something changes — a file is created, renamed, modified, or deleted. Against ransomware, FIM becomes the primary detector: when ransomware renames hundreds of files from <code>.docx</code> to <code>.locked</code> in under 10 seconds, FIM fires hundreds of alerts in rapid succession. That storm is the signature.</div>
+      </div>
+    </div>
+
+    <div class="concept-loop">
+      <div class="cl-step">
+        <div class="cl-icon">💀</div>
+        <div class="cl-label">Ransomware starts</div>
+        <div class="cl-desc">Scans filesystem for files to encrypt</div>
+      </div>
+      <div class="cl-arrow">→</div>
+      <div class="cl-step">
+        <div class="cl-icon">🔒</div>
+        <div class="cl-label">Files renamed</div>
+        <div class="cl-desc">report.docx → report.locked (×40 files)</div>
+      </div>
+      <div class="cl-arrow">→</div>
+      <div class="cl-step">
+        <div class="cl-icon">📊</div>
+        <div class="cl-label">Alert storm</div>
+        <div class="cl-desc">80+ FIM events in under 5 seconds</div>
+      </div>
+      <div class="cl-arrow">→</div>
+      <div class="cl-step">
+        <div class="cl-icon">📝</div>
+        <div class="cl-label">Ransom note</div>
+        <div class="cl-desc">HOW_TO_DECRYPT.txt appears in /tmp</div>
+      </div>
+    </div>
+
+    <div class="concept-analogy" style="background:rgba(248,81,73,.05);border-left:3px solid var(--danger)">
+      <strong>Analogy:</strong> Imagine a locksmith breaks into a building and starts swapping every lock in every room. One changed lock might go unnoticed. But a building manager watching a security panel that lights up every time a lock changes would see 40 lights flash in 10 seconds and know something is catastrophically wrong. FIM is that panel. Ransomware is the locksmith who cannot help but trigger every light.
+    </div>
+  </div>
+
+  <!-- PART NAV -->
+  <div class="part-nav">
+    <a class="part-chip" href="#access">Platform Access</a>
+    <a class="part-chip" href="#concept">What is ransomware?</a>
+    <a class="part-chip" href="#scenario">Scenario</a>
+    <a class="part-chip" href="#pipeline">Detection</a>
+    <a class="part-chip" href="#part1">Part 1 — FIM</a>
+    <a class="part-chip" href="#part2">Part 2 — Trigger</a>
+    <a class="part-chip" href="#part3">Part 3 — Hunt</a>
+    <a class="part-chip" href="#part4">Part 4 — Ransom note</a>
+    <a class="part-chip" href="#part5">Part 5 — Containment</a>
+    <a class="part-chip" href="#part6">Part 6 — TheHive</a>
+    <a class="part-chip" href="#part7">Part 7 — Recovery</a>
+    <a class="part-chip" href="#takeaways">Takeaways</a>
+  </div>
+
+  <!-- SCENARIO -->
+  <h2 id="scenario">The scenario</h2>
+  <div class="scenario-box">
+    <p>The attacker from Labs 1–3 did not leave empty-handed. Before exiting, they planted a ransomware payload — a dormant script timed to activate when the target's defenses are quiet.</p>
+    <p>You are opening your morning shift. Your SOC dashboard starts showing something unusual: a flood of File Integrity Monitoring alerts, all from the same host, all inside a 30-second window. Files are being deleted. New files are appearing with extensions you don't recognise — <code>.locked</code> where there used to be <code>.docx</code>, <code>.csv</code>, <code>.sql</code>. And then you see it in <code>/tmp/</code>:</p>
+    <p style="font-family:monospace;font-size:15px;color:var(--danger);font-weight:700;">HOW_TO_DECRYPT.txt</p>
+    <p>The previous labs asked you to detect and document. This lab asks you to do something harder: <strong>decide</strong>. The encryption may still be running. Every second of delay is another file gone.</p>
+  </div>
+
+  <!-- DETECTION PIPELINE -->
+  <h2 id="pipeline">How ransomware is detected</h2>
+  <p>Ransomware leaves a signature across five phases. Each phase is visible in your SOC tooling — but only if you know where to look:</p>
+
+  <table class="detect-table">
+    <thead>
+      <tr>
+        <th>Stage</th>
+        <th>What the ransomware does</th>
+        <th>Where it shows up</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="stage-num">1</span> Discovery</td>
+        <td>Scans filesystem for target files</td>
+        <td><span class="src-badge src-syslog">Wazuh syslog</span> STAGE:DISCOVERY tag</td>
+      </tr>
+      <tr>
+        <td><span class="stage-num">2</span> Staging</td>
+        <td>Creates victim file set in working directory</td>
+        <td><span class="src-badge src-fim">Wazuh FIM</span> Rule 554 — files added</td>
+      </tr>
+      <tr>
+        <td><span class="stage-num">3</span> Encryption</td>
+        <td>Renames every file to <code>.locked</code></td>
+        <td><span class="src-badge src-fim">Wazuh FIM</span> Rule 553 + 554 — delete + add per file</td>
+      </tr>
+      <tr>
+        <td><span class="stage-num">4</span> Ransom note</td>
+        <td>Drops <code>HOW_TO_DECRYPT.txt</code> in each directory</td>
+        <td><span class="src-badge src-fim">Wazuh FIM</span> Rule 554 — new file in monitored path</td>
+      </tr>
+      <tr>
+        <td><span class="stage-num">5</span> Inhibit</td>
+        <td>Sweeps for backup files to delete</td>
+        <td><span class="src-badge src-syslog">Wazuh syslog</span> STAGE:INHIBIT tag</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <p>The key signature is not any single alert — it is the <strong>pattern</strong>: dozens of FIM events from the same host in a tight time window, alternating between deletions and additions, ending with a ransom note filename.</p>
+
+  <div class="volume-compare">
+    <div class="vol-card normal">
+      <div class="vol-label">Normal server</div>
+      <div class="vol-bar-wrap"><div class="vol-bar"></div></div>
+      <div class="vol-count">2–5</div>
+      <div class="vol-unit">FIM alerts / hour</div>
+    </div>
+    <div class="vol-card attack">
+      <div class="vol-label">Ransomware</div>
+      <div class="vol-bar-wrap"><div class="vol-bar"></div></div>
+      <div class="vol-count">80+</div>
+      <div class="vol-unit">FIM alerts in 5 seconds</div>
+    </div>
+  </div>
+
+  <!-- STUDENTS -->
+  <h2>Your student details</h2>
+  <table class="student-table">
+    <thead>
+      <tr><th>Student</th><th>Target</th><th>Wazuh filter</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>Student 1</td><td><code>ssh victim@lab-target</code></td><td><code>agent.name: lab-target</code></td></tr>
+      <tr><td>Student 2</td><td><code>ssh victim@lab-target</code></td><td><code>agent.name: lab-target</code></td></tr>
+      <tr><td>Student 3</td><td><code>ssh victim@lab-target</code></td><td><code>agent.name: lab-target</code></td></tr>
+      <tr><td>Student 4</td><td><code>ssh victim@lab-target</code></td><td><code>agent.name: lab-target</code></td></tr>
+      <tr><td>Student 5</td><td><code>ssh victim@lab-target</code></td><td><code>agent.name: lab-target</code></td></tr>
+    </tbody>
+  </table>
+
+  <!-- PRE-FLIGHT -->
+  <h2>Pre-flight check</h2>
+  <div class="preflight">
+    <div class="preflight-item">
+      <div class="pf-num">1</div>
+      <div class="pf-body">
+        <div class="pf-head">Wazuh dashboard loads</div>
+        <div class="pf-sub">Open <code>http://localhost</code> — confirm you can see the dashboard.</div>
+      </div>
+    </div>
+    <div class="preflight-item">
+      <div class="pf-num">2</div>
+      <div class="pf-body">
+        <div class="pf-head">Your agent is active</div>
+        <div class="pf-sub">Agents → <code>s[N]-lab-target</code> → status: Active (green).</div>
+      </div>
+    </div>
+    <div class="preflight-item">
+      <div class="pf-num">3</div>
+      <div class="pf-body">
+        <div class="pf-head">Kali terminal loads</div>
+        <div class="pf-sub">Open <code>http://localhost/attacker/</code> — you should see the <code>student@kali</code> prompt.</div>
+      </div>
+    </div>
+    <div class="preflight-item">
+      <div class="pf-num">4</div>
+      <div class="pf-body">
+        <div class="pf-head">TheHive loads</div>
+        <div class="pf-sub">Navigate to TheHive from the sidebar. Login: <code>shuffle@soc.local</code> / <code>FortarkLabs1!</code></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- PART 1 -->
+  <h2 id="part1">Part 1 — Understand File Integrity Monitoring</h2>
+
+  <p>Before you trigger the attack, understand the detection mechanism so the alerts make sense when they flood in.</p>
+
+  <h3>What FIM does</h3>
+  <p>Wazuh watches specific directories on each host. Every file in those directories has a recorded checksum. When a file is created, renamed, or deleted, Wazuh fires an alert within seconds.</p>
+  <p>In a normal environment, a monitored directory might change a handful of times per day. Ransomware changes dozens of files per minute. That volume spike is the signature.</p>
+
+  <h3>Three FIM rules to know</h3>
+  <table class="fim-table">
+    <thead>
+      <tr><th>Rule</th><th>Meaning</th><th>What ransomware triggers it</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="rule-id">554</span></td>
+        <td>File <strong>added</strong> to monitored directory</td>
+        <td>Every <code>.locked</code> file created; ransom note created</td>
+      </tr>
+      <tr>
+        <td><span class="rule-id">553</span></td>
+        <td>File <strong>deleted</strong> from monitored directory</td>
+        <td>Every original file removed after encryption</td>
+      </tr>
+      <tr>
+        <td><span class="rule-id">550</span></td>
+        <td>File <strong>modified</strong> (content changed)</td>
+        <td>Files modified in-place during encryption</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <p>When ransomware renames 40 files to <code>.locked</code>, Wazuh sees two events per file: the original disappears (rule 553) and a new file appears (rule 554). 40 files = 80 FIM events.</p>
+
+  <p><strong>Before you run anything</strong>, open Wazuh and run this filter with time range <strong>Last 15 minutes</strong>:</p>
+  <pre>agent.name: s[N]-lab-target AND rule.groups: syscheck</pre>
+
+  <div class="question">
+    <div class="question-label">Q1</div>
+    <div class="question-text">How many FIM alerts does your target show right now, before the simulation?</div>
+  </div>
+  <div class="callout">
+    That quiet baseline — zero to a few alerts — is what makes the ransomware spike immediately obvious. When you return to this filter after triggering the simulation, the contrast will be striking.
+  </div>
+
+  <!-- PART 2 -->
+  <h2 id="part2">Part 2 — Trigger the ransomware simulation</h2>
+
+  <div class="step-list">
+    <div class="step-item">
+      <div class="step-num">1</div>
+      <div class="step-body">Open two browser tabs side by side:<br>
+        <strong>Tab A:</strong> Wazuh — filter <code>agent.name: s[N]-lab-target AND rule.groups: syscheck</code>, time Last 15 minutes<br>
+        <strong>Tab B:</strong> TheHive alerts list
+      </div>
+    </div>
+    <div class="step-item">
+      <div class="step-num">2</div>
+      <div class="step-body"><strong>Note the exact time.</strong> In the Kali terminal, SSH in and run the simulation:
+<pre>ssh victim@s[N]-lab-target
+# password: password123
+
+/tmp/lab4-ransomware-sim.sh</pre>
+      </div>
+    </div>
+    <div class="step-item">
+      <div class="step-num">3</div>
+      <div class="step-body">Watch your Wazuh tab while the script runs. You will see alerts fire for file creation (Stage 2), a burst during encryption (Stage 3), then the ransom note (Stage 4).</div>
+    </div>
+    <div class="step-item">
+      <div class="step-num">4</div>
+      <div class="step-body">The script prints each stage as it runs. Note the time when you see the encryption lines appear in the terminal.</div>
+    </div>
+    <div class="step-item">
+      <div class="step-num">5</div>
+      <div class="step-body">When the script finishes, type <code>exit</code> to leave the SSH session.</div>
+    </div>
+  </div>
+
+  <div class="question">
+    <div class="question-label">Q2</div>
+    <div class="question-text">How many total FIM alerts fired during the simulation?<br>
+      <span style="font-size:13px;color:var(--muted);font-weight:400;">(Set Wazuh time range to Last 15 minutes and count the syscheck alerts)</span>
+    </div>
+  </div>
+  <div class="callout danger">
+    The simulation creates 40 files, then renames each to <code>.locked</code>. Each rename triggers two FIM events (delete + add), plus two ransom note creation events. Expect <strong>approximately 80–85 FIM alerts in under 10 seconds</strong>. On a real file server with 100,000 documents, this number would be in the hundreds of thousands.
+  </div>
+
+  <!-- PART 3 — HUNT -->
+  <h2 id="part3">Part 3 — Hunt the attack stages</h2>
+  <p>The simulation logged five distinct stages. Your job is to find evidence of each one in Wazuh — as if you had no idea what the script did.</p>
+
+  <!-- Stage 1 -->
+  <div class="stage-card">
+    <div class="stage-header discovery">
+      <div class="stage-icon">🔍</div>
+      <div class="stage-title-wrap">
+        <div class="stage-num-label">Stage 1</div>
+        <div class="stage-name">Discovery</div>
+      </div>
+      <div class="stage-mitre"><span class="mitre-badge">T1083</span></div>
+    </div>
+    <div class="stage-body">
+      <p>The ransomware first scans the filesystem to find files worth encrypting. This is logged via syslog.</p>
+      <pre>agent.name: s[N]-lab-target AND full_log: *STAGE:DISCOVERY*</pre>
+      <div class="question">
+        <div class="question-label">Q3</div>
+        <div class="question-text">What directories did the ransomware scan during discovery?</div>
+      </div>
+      <div class="question">
+        <div class="question-label">Q4</div>
+        <div class="question-text">Why does ransomware bother with discovery before encrypting?</div>
+      </div>
+      <div class="callout warn">
+        Ransomware operators want to maximise the ransom. Encrypting system files breaks the OS — the victim can't pay from a machine that won't boot. Discovery lets the ransomware target only valuable data: documents, databases, spreadsheets. This is why Windows ransomware targets <code>C:\Users\</code> and mapped network drives, not <code>C:\Windows\System32</code>.
+      </div>
+    </div>
+  </div>
+
+  <!-- Stage 2 -->
+  <div class="stage-card">
+    <div class="stage-header staging">
+      <div class="stage-icon">📁</div>
+      <div class="stage-title-wrap">
+        <div class="stage-num-label">Stage 2</div>
+        <div class="stage-name">Staging</div>
+      </div>
+      <div class="stage-mitre"><span class="mitre-badge">T1074.001</span></div>
+    </div>
+    <div class="stage-body">
+      <p>Before encryption, the ransomware creates its working directory with the victim files. Look at the earliest FIM additions — before the encryption burst.</p>
+      <pre>agent.name: s[N]-lab-target AND rule.groups: syscheck AND rule.id: 554</pre>
+      <div class="question">
+        <div class="question-label">Q5</div>
+        <div class="question-text">What directory did the ransomware use as its working directory?</div>
+      </div>
+      <div class="question">
+        <div class="question-label">Q6</div>
+        <div class="question-text">What file types were in the victim file set?<br>
+          <span style="font-size:13px;color:var(--muted);font-weight:400;">(Look at the file extensions in the syscheck.path field)</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Stage 3 -->
+  <div class="stage-card">
+    <div class="stage-header encrypt">
+      <div class="stage-icon">🔒</div>
+      <div class="stage-title-wrap">
+        <div class="stage-num-label">Stage 3</div>
+        <div class="stage-name">Encryption</div>
+      </div>
+      <div class="stage-mitre"><span class="mitre-badge">T1486</span></div>
+    </div>
+    <div class="stage-body">
+      <p>The main event. The ransomware renames every file to <code>.locked</code>.</p>
+      <pre>agent.name: s[N]-lab-target AND rule.groups: syscheck AND syscheck.path: *.locked</pre>
+      <div class="question">
+        <div class="question-label">Q7</div>
+        <div class="question-text">How many <code>.locked</code> files appear in the FIM alerts?</div>
+      </div>
+      <div class="question">
+        <div class="question-label">Q8</div>
+        <div class="question-text">What is the time span between the first and last encryption event?<br>
+          <span style="font-size:13px;color:var(--muted);font-weight:400;">(Note the first and last timestamp in the filtered results)</span>
+        </div>
+      </div>
+      <div class="callout danger">
+        <strong>Speed is the defining characteristic of modern ransomware.</strong> The 40-file simulation completes in approximately 2 seconds. Real-world ransomware families like LockBit 3.0 have been benchmarked encrypting 100,000 files in under 4 minutes using multithreaded I/O. By the time most humans would notice and investigate, the encryption is finished.
+      </div>
+    </div>
+  </div>
+
+  <!-- Stage 4 -->
+  <div class="stage-card">
+    <div class="stage-header ransom">
+      <div class="stage-icon">📄</div>
+      <div class="stage-title-wrap">
+        <div class="stage-num-label">Stage 4</div>
+        <div class="stage-name">Ransom Note</div>
+      </div>
+      <div class="stage-mitre"><span class="mitre-badge">T1491.001</span></div>
+    </div>
+    <div class="stage-body">
+      <p>The ransom note is both a functional demand and a forensic artifact — it contains the wallet address, contact method, file count, and a precise encryption timestamp.</p>
+      <pre>agent.name: s[N]-lab-target AND rule.groups: syscheck AND syscheck.path: *DECRYPT*</pre>
+      <div class="question">
+        <div class="question-label">Q9</div>
+        <div class="question-text">What is the exact filename of the ransom note?</div>
+      </div>
+      <div class="question">
+        <div class="question-label">Q10</div>
+        <div class="question-text">In how many locations was the ransom note dropped?</div>
+      </div>
+      <div class="callout purple">
+        The number of ransom note locations tells you the minimum scope of the encryption — the ransomware touched at least that many directories. In a real incident, finding ransom notes on a shared network drive tells you the infection has spread beyond the initial host.
+      </div>
+    </div>
+  </div>
+
+  <!-- Stage 5 -->
+  <div class="stage-card">
+    <div class="stage-header inhibit">
+      <div class="stage-icon">🗑️</div>
+      <div class="stage-title-wrap">
+        <div class="stage-num-label">Stage 5</div>
+        <div class="stage-name">Inhibit Recovery</div>
+      </div>
+      <div class="stage-mitre"><span class="mitre-badge">T1490</span></div>
+    </div>
+    <div class="stage-body">
+      <p>After encrypting, the ransomware sweeps for backup files and attempts to destroy them.</p>
+      <pre>agent.name: s[N]-lab-target AND full_log: *STAGE:INHIBIT*</pre>
+      <div class="question">
+        <div class="question-label">Q11</div>
+        <div class="question-text">What types of backup files did the ransomware sweep for?</div>
+      </div>
+      <div class="question">
+        <div class="question-label">Q12</div>
+        <div class="question-text">Why is destroying backups the most dangerous part of a ransomware attack?</div>
+      </div>
+      <div class="callout orange">
+        Encrypted files without backups mean the only path to recovery is paying the ransom — which funds the attacker's next campaign and has no guarantee of working. Ransomware operators learned this quickly: organizations with good backups don't pay. This is why modern ransomware always targets backup infrastructure first. <strong>Offline, air-gapped backups — physically disconnected from any network</strong> — are the gold standard.
+      </div>
+    </div>
+  </div>
+
+  <!-- PART 4 — RANSOM NOTE -->
+  <h2 id="part4">Part 4 — Read the ransom note</h2>
+  <p>SSH back into your target and read the note the attacker left:</p>
+  <pre>ssh victim@s[N]-lab-target
+cat /tmp/HOW_TO_DECRYPT.txt
+exit</pre>
+
+  <div class="question">
+    <div class="question-label">Q13</div>
+    <div class="question-text">What Bitcoin address did the attacker provide?</div>
+  </div>
+  <div class="question">
+    <div class="question-label">Q14</div>
+    <div class="question-text">What contact method did the attacker use, and what does that tell you?</div>
+  </div>
+  <div class="callout">
+    The <code>.onion</code> domain means the attacker is routing their contact email through the Tor network — their server's real IP is hidden. This is standard practice for ransomware operators. Blockchain analytics firms can sometimes trace Bitcoin wallet activity, but the contact infrastructure is genuinely difficult to attribute. <strong>Both the wallet address and contact domain are IOCs — add them to your TheHive case.</strong>
+  </div>
+  <div class="question">
+    <div class="question-label">Q15</div>
+    <div class="question-text">What timestamp did the ransomware record for the encryption event?</div>
+  </div>
+
+  <!-- PART 5 — CONTAINMENT -->
+  <h2 id="part5">Part 5 — The containment decision</h2>
+  <p>This is the hardest moment in a ransomware incident. Isolating the host stops the ransomware from spreading — but also ends your ability to watch it phone home to a C2 server, potentially destroying evidence.</p>
+  <p>The correct decision depends on whether the ransomware is still running. Answer these questions first:</p>
+
+  <div class="contain-block">
+    <div class="contain-header">Q16 — Is the encryption still actively running?</div>
+    <div class="contain-body">
+      <div class="co-options">
+        <label class="co-opt co-isolate">
+          <input type="radio" name="q16" value="yes">
+          <div class="co-radio"></div>
+          <div class="co-opt-text">
+            <strong>Yes — FIM alerts are still firing in real time</strong>
+            <span>Isolate immediately — every second costs more files</span>
+          </div>
+        </label>
+        <label class="co-opt co-monitor">
+          <input type="radio" name="q16" value="no">
+          <div class="co-radio"></div>
+          <div class="co-opt-text">
+            <strong>No — FIM alerts have stopped; encryption completed</strong>
+            <span>You have time to gather more evidence before isolating</span>
+          </div>
+        </label>
+      </div>
+    </div>
+  </div>
+
+  <div class="question">
+    <div class="question-label">Q17</div>
+    <div class="question-text">Does this host have access to shared network drives or other servers?</div>
+  </div>
+  <div class="callout warn">
+    In this lab environment: no — student targets are isolated containers. In a real environment this is <strong>the critical question</strong>. A compromised host with write access to a shared file server can encrypt thousands of additional files without the ransomware ever touching those servers directly.
+  </div>
+
+  <div class="contain-block">
+    <div class="contain-header">Q18 — Your containment decision</div>
+    <div class="contain-body">
+      <div class="co-options">
+        <label class="co-opt co-isolate">
+          <input type="radio" name="q18" value="isolate">
+          <div class="co-radio"></div>
+          <div class="co-opt-text">
+            <strong>Isolate immediately</strong>
+            <span>Stop the spread even at the cost of ongoing investigation</span>
+          </div>
+        </label>
+        <label class="co-opt co-monitor">
+          <input type="radio" name="q18" value="monitor">
+          <div class="co-radio"></div>
+          <div class="co-opt-text">
+            <strong>Monitor and document</strong>
+            <span>Encryption has stopped — gather more evidence first</span>
+          </div>
+        </label>
+        <label class="co-opt co-escalate">
+          <input type="radio" name="q18" value="escalate">
+          <div class="co-radio"></div>
+          <div class="co-opt-text">
+            <strong>Escalate</strong>
+            <span>This decision needs a senior analyst or incident commander</span>
+          </div>
+        </label>
+      </div>
+    </div>
+  </div>
+
+  <div class="question">
+    <div class="question-label">Q19</div>
+    <div class="question-text">In a real production environment, what command would you run to isolate a Linux host?</div>
+  </div>
+  <div class="callout">
+    Block all traffic except your management connection using iptables:
+    <pre style="margin:10px 0 0;">iptables -I INPUT  1 -s &lt;YOUR_SOC_IP&gt; -j ACCEPT
+iptables -I OUTPUT 1 -d &lt;YOUR_SOC_IP&gt; -j ACCEPT
+iptables -A INPUT  -j DROP
+iptables -A OUTPUT -j DROP</pre>
+    <br>Or — if the host is a VM — <strong>pause it at the hypervisor level</strong>. That preserves memory state for forensics while stopping all network activity instantly.
+  </div>
+
+  <!-- PART 6 — THEHIVE -->
+  <h2 id="part6">Part 6 — Build the TheHive case</h2>
+
+  <p>Open TheHive and create a new case:</p>
+  <ul style="margin:12px 0 16px 20px;line-height:1.9;font-size:15px;">
+    <li><strong>Title:</strong> <code>Ransomware: s[N]-lab-target — [today's date]</code></li>
+    <li><strong>Severity:</strong> Critical</li>
+    <li><strong>Tags:</strong> <code>T1083</code> <code>T1486</code> <code>T1490</code> <code>T1491</code></li>
+  </ul>
+
+  <h3>Observables to add</h3>
+  <table class="obs-table">
+    <thead>
+      <tr><th>Observable</th><th>Type</th><th>Notes</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><code>1A1zP1eP5QGefi2D...</code></td>
+        <td><span class="obs-type">Other</span></td>
+        <td>Bitcoin wallet address from ransom note</td>
+      </tr>
+      <tr>
+        <td><code>darkmail.onion</code></td>
+        <td><span class="obs-type">Domain</span></td>
+        <td>Attacker contact domain from ransom note</td>
+      </tr>
+      <tr>
+        <td><code>/tmp/HOW_TO_DECRYPT.txt</code></td>
+        <td><span class="obs-type">Filename</span></td>
+        <td>Ransom note path</td>
+      </tr>
+      <tr>
+        <td><code>.locked</code></td>
+        <td><span class="obs-type">Other</span></td>
+        <td>Encryption extension used</td>
+      </tr>
+      <tr>
+        <td>Encryption timestamp</td>
+        <td><span class="obs-type">Other</span></td>
+        <td>From ransom note — precise time of encryption</td>
+      </tr>
+      <tr>
+        <td>Victim ID</td>
+        <td><span class="obs-type">Other</span></td>
+        <td>hostname + epoch string from ransom note</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <p>Run <strong>Cortex enrichment</strong> on the contact domain.</p>
+
+  <div class="question">
+    <div class="question-label">Q20</div>
+    <div class="question-text">What does Cortex return for the attacker's contact domain?</div>
+  </div>
+  <div class="callout purple">
+    The <code>.onion</code> domain is a Tor hidden service address — it resolves only inside the Tor network. Standard IP reputation tools (AbuseIPDB, Shodan) cannot reach it. In real ransomware investigations, attribution comes from blockchain analytics on the wallet address and OSINT on the ransom note's fingerprints — formatting style, grammar patterns, and operational security mistakes that link a note to a known ransomware family.
+  </div>
+
+  <!-- Close case checklist -->
+  <h3>Close the case</h3>
+  <div class="thehive-checklist">
+    <label class="thc-item">
+      <input type="checkbox">
+      <div class="thc-box"><svg width="12" height="10" viewBox="0 0 12 10"><polyline points="1,5 4,8 11,1" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+      <div>
+        <div class="thc-head">Set verdict: True Positive — Confirmed Ransomware</div>
+        <div class="thc-sub">The encryption happened. The files are gone. This is confirmed.</div>
+      </div>
+    </label>
+    <label class="thc-item">
+      <input type="checkbox">
+      <div class="thc-box"><svg width="12" height="10" viewBox="0 0 12 10"><polyline points="1,5 4,8 11,1" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+      <div>
+        <div class="thc-head">Set TLP: TLP:RED</div>
+        <div class="thc-sub">Active breach with credential and data exposure. Do not share externally.</div>
+      </div>
+    </label>
+    <label class="thc-item">
+      <input type="checkbox">
+      <div class="thc-box"><svg width="12" height="10" viewBox="0 0 12 10"><polyline points="1,5 4,8 11,1" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+      <div>
+        <div class="thc-head">Write closing summary</div>
+        <div class="thc-sub">2–3 sentences: what happened (brute force → ransomware payload), how it was detected (FIM storm + ransom note), what action was taken (containment decision).</div>
+      </div>
+    </label>
+    <label class="thc-item">
+      <input type="checkbox">
+      <div class="thc-box"><svg width="12" height="10" viewBox="0 0 12 10"><polyline points="1,5 4,8 11,1" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+      <div>
+        <div class="thc-head">Close the case</div>
+        <div class="thc-sub">Mark all tasks complete. Set resolution date.</div>
+      </div>
+    </label>
+  </div>
+
+  <!-- PART 7 — RECOVERY -->
+  <h2 id="part7">Part 7 — Recovery planning</h2>
+  <p>Detection and containment are the first half. Getting back to operational is the second half — and it takes longer.</p>
+
+  <div class="recovery-cards">
+    <div class="rec-card">
+      <div class="rec-header">
+        <div class="rec-num">1</div>
+        <div class="rec-title">Do you have clean backups?</div>
+      </div>
+      <div class="rec-body">
+        <p>Before anything else: when was the last backup taken? Are backups stored on a network share? (If yes — they may also be encrypted.) How long will restoration take?</p>
+        <p>In this lab, the victim files were generated by the simulation script. There are no backups. The realistic answer: <strong>those files are gone</strong>. Pay or rebuild from scratch.</p>
+      </div>
+    </div>
+    <div class="rec-card">
+      <div class="rec-header">
+        <div class="rec-num">2</div>
+        <div class="rec-title">Can you identify the initial access vector?</div>
+      </div>
+      <div class="rec-body">
+        <p>You can. The full kill chain for this curriculum:</p>
+        <div class="killchain">
+          <div class="kc-card">
+            <div class="kc-num">1</div>
+            <div class="kc-lab">Lab 1</div>
+            <div class="kc-event">Hydra brute-forces SSH. Attacker logs in as <code>victim</code>.</div>
+            <div class="kc-connector"></div>
+          </div>
+          <div class="kc-card">
+            <div class="kc-num">2</div>
+            <div class="kc-lab">Lab 2</div>
+            <div class="kc-event">Attacker exfiltrates <code>/etc/passwd</code>, SSH keys, network config.</div>
+            <div class="kc-connector"></div>
+          </div>
+          <div class="kc-card">
+            <div class="kc-num">3</div>
+            <div class="kc-lab">Lab 3</div>
+            <div class="kc-event">SOAR creates case automatically — but the payload is already planted.</div>
+            <div class="kc-connector"></div>
+          </div>
+          <div class="kc-card active">
+            <div class="kc-num">4</div>
+            <div class="kc-lab">Lab 4</div>
+            <div class="kc-event">Ransomware activates. 40 files encrypted in 2 seconds.</div>
+          </div>
+        </div>
+        <p>Enforcing SSH key authentication — disabling password login — would have broken the chain at Step 1 and prevented everything that follows.</p>
+      </div>
+    </div>
+    <div class="rec-card">
+      <div class="rec-header">
+        <div class="rec-num">3</div>
+        <div class="rec-title">What credentials are compromised?</div>
+      </div>
+      <div class="rec-body">
+        <p>The attacker in Lab 2 exfiltrated <code>/etc/passwd</code> (full user list) and the SSH key directory listing. Every user account on this host must be treated as compromised. Before this server returns to production: all credentials rotated, all SSH keys regenerated, all trusted hosts reviewed.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="exec-brief">
+    <div class="eb-label">Q21 — Executive briefing (write your own)</div>
+    <textarea placeholder="In your own words: what happened, what the impact is, and what needs to happen next. One paragraph. No jargon."></textarea>
+  </div>
+
+  <!-- CLEANUP -->
+  <hr>
+  <h2>Cleanup</h2>
+  <pre>ssh victim@s[N]-lab-target
+/tmp/lab4-ransomware-sim.sh --cleanup
+exit</pre>
+
+  <!-- TAKEAWAYS -->
+  <h2 id="takeaways">Key takeaways</h2>
+  <ul class="takeaways">
+    <li><strong>Volume is the signature.</strong> A single file change is noise. Eighty FIM events from the same host in 5 seconds is a pattern — and recognising patterns is the core analyst skill.</li>
+    <li><strong>Ransomware detection is a race.</strong> The 40 files in this simulation were gone in 2 seconds. Automated detection — not manual log review — is the only way to respond before the damage is done.</li>
+    <li><strong>Backups are the only reliable recovery.</strong> Decryption without the key is effectively impossible. Paying the ransom is a gamble, not a recovery plan. Air-gapped, tested, offline backups determine whether this is a 2-hour incident or a month-long crisis.</li>
+    <li><strong>The kill chain started in Lab 1.</strong> The ransomware was only possible because the SSH brute force succeeded. Every defence layer that could have stopped it — rate limiting, key-only SSH, network segmentation — would have broken the chain before this lab's events were possible.</li>
+    <li><strong>SOAR helped but did not stop it.</strong> Lab 3 created an automated case for the brute force. But the payload was already planted. Automation is not a substitute for fully investigating the initial alert — that case should have triggered a host inspection that would have found the payload before activation.</li>
+    <li><strong>Ransomware operators run businesses.</strong> The ransom note includes a wallet, a contact, a file count, a timestamp, and a victim ID. These are optimised through iteration. Understanding the operator's business model helps you predict their next move and find their infrastructure.</li>
+  </ul>
+
+</div>
+</body>
+</html>

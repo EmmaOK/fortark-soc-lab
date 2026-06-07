@@ -1,0 +1,42 @@
+<group name="local_fp_suppressions,">
+
+  <!-- Wazuh agent connection noise -->
+  <rule id="100001" level="0">
+    <if_sid>516</if_sid>
+    <description>Suppress: Wazuh agent started (routine)</description>
+  </rule>
+
+  <!-- Root PAM session open/close (cron, systemd) -->
+  <rule id="100002" level="0">
+    <if_sid>5501,5502</if_sid>
+    <user>root</user>
+    <description>Suppress: root PAM session (cron/systemd routine)</description>
+  </rule>
+
+  <!-- systemd service state changes -->
+  <rule id="100003" level="0">
+    <if_sid>591,592</if_sid>
+    <description>Suppress: systemd service state change (routine)</description>
+  </rule>
+
+  <!-- OpenSearch cluster health-check GETs -->
+  <rule id="100004" level="0">
+    <if_sid>31168</if_sid>
+    <url>/_cluster/health</url>
+    <description>Suppress: OpenSearch cluster health check (internal)</description>
+  </rule>
+
+  <!-- Docker overlay FS FIM events -->
+  <rule id="100005" level="0">
+    <if_sid>554</if_sid>
+    <field name="file">/var/lib/docker</field>
+    <description>Suppress: FIM alert in Docker overlay FS (expected)</description>
+  </rule>
+
+  <!-- Wazuh vulnerability DB update messages -->
+  <rule id="100008" level="0">
+    <if_sid>7702</if_sid>
+    <description>Suppress: Wazuh vulnerability DB fetch (routine)</description>
+  </rule>
+
+</group>

@@ -1,0 +1,197 @@
+<group name="custom_soc,lab_simulation,">
+
+  <!-- Brute force detection: 6+ failed SSH auths in 2 minutes -->
+  <rule id="100020" level="10" frequency="6" timeframe="120">
+    <if_matched_sid>5760</if_matched_sid>
+    <same_source_ip/>
+    <description>Brute force attack detected: $(data.srcip) → $(agent.name)</description>
+    <group>authentication_failures,pci_dss_11.4,gdpr_IV_35.7.d,</group>
+    <mitre>
+      <id>T1110</id>
+    </mitre>
+  </rule>
+
+  <!-- Suricata high-severity alert forwarded via Filebeat -->
+  <rule id="100030" level="8">
+    <if_sid>31100</if_sid>
+    <match>suricata</match>
+    <field name="alert.severity">1</field>
+    <description>Suricata high-severity IDS alert: $(alert.signature)</description>
+    <group>network_ids,suricata,</group>
+  </rule>
+
+  <!-- ── Lab 2: Post-exploitation sim ────────────────────────────────── -->
+
+  <rule id="100200" level="5">
+    <program_name>^lab2-attacker$</program_name>
+    <match>DISCOVERY</match>
+    <description>Lab 2 Sim: System discovery — attacker enumerating system information</description>
+    <mitre>
+      <id>T1082</id>
+      <id>T1033</id>
+    </mitre>
+    <group>lab2,discovery,attack_simulation,</group>
+  </rule>
+
+  <rule id="100201" level="5">
+    <program_name>^lab2-attacker$</program_name>
+    <match>RECON</match>
+    <description>Lab 2 Sim: Network reconnaissance — open connections and interfaces enumerated</description>
+    <mitre>
+      <id>T1049</id>
+      <id>T1016</id>
+    </mitre>
+    <group>lab2,recon,attack_simulation,</group>
+  </rule>
+
+  <!-- ── Lab 4: Ransomware sim ─────────────────────────────────────────── -->
+
+  <rule id="100400" level="6">
+    <program_name>^lab4-ransomware$</program_name>
+    <match>STAGE:DISCOVERY</match>
+    <description>Lab 4 Sim: Ransomware scanning filesystem for encryptable files</description>
+    <mitre>
+      <id>T1083</id>
+    </mitre>
+    <group>lab4,ransomware,discovery,attack_simulation,</group>
+  </rule>
+
+  <rule id="100401" level="8">
+    <program_name>^lab4-ransomware$</program_name>
+    <match>STAGE:ENCRYPT</match>
+    <description>Lab 4 Sim: Ransomware mass encryption started</description>
+    <mitre>
+      <id>T1486</id>
+    </mitre>
+    <group>lab4,ransomware,impact,attack_simulation,</group>
+  </rule>
+
+  <rule id="100402" level="10">
+    <program_name>^lab4-ransomware$</program_name>
+    <match>ENCRYPT:COMPLETE</match>
+    <description>Lab 4 Sim: Ransomware encryption complete — files locked</description>
+    <mitre>
+      <id>T1486</id>
+    </mitre>
+    <group>lab4,ransomware,impact,attack_simulation,</group>
+  </rule>
+
+  <rule id="100403" level="10">
+    <program_name>^lab4-ransomware$</program_name>
+    <match>RANSOM</match>
+    <description>Lab 4 Sim: Ransom note dropped to filesystem</description>
+    <mitre>
+      <id>T1491</id>
+    </mitre>
+    <group>lab4,ransomware,impact,attack_simulation,</group>
+  </rule>
+
+  <!-- ── Lab 5: Supply chain sim ─────────────────────────────────────── -->
+
+  <rule id="100500" level="7">
+    <program_name>^lab5-supply-chain$</program_name>
+    <match>STAGE:INSTALL</match>
+    <description>Lab 5 Sim: Malicious package install initiated</description>
+    <mitre>
+      <id>T1195.001</id>
+    </mitre>
+    <group>lab5,supply_chain,attack_simulation,</group>
+  </rule>
+
+  <rule id="100501" level="8">
+    <program_name>^lab5-supply-chain$</program_name>
+    <match>STAGE:DROPPER</match>
+    <description>Lab 5 Sim: Payload dropper written to filesystem</description>
+    <mitre>
+      <id>T1059</id>
+    </mitre>
+    <group>lab5,supply_chain,attack_simulation,</group>
+  </rule>
+
+  <rule id="100502" level="8">
+    <program_name>^lab5-supply-chain$</program_name>
+    <match>STAGE:CALLBACK</match>
+    <description>Lab 5 Sim: Outbound callback beacon sent to C2</description>
+    <mitre>
+      <id>T1071.001</id>
+    </mitre>
+    <group>lab5,supply_chain,c2,attack_simulation,</group>
+  </rule>
+
+  <rule id="100503" level="9">
+    <program_name>^lab5-supply-chain$</program_name>
+    <match>STAGE:PERSIST</match>
+    <description>Lab 5 Sim: Cron-based persistence installed</description>
+    <mitre>
+      <id>T1053.003</id>
+    </mitre>
+    <group>lab5,supply_chain,persistence,attack_simulation,</group>
+  </rule>
+
+  <!-- ── Lab 6: C2 beacon sim ──────────────────────────────────────────── -->
+
+  <rule id="100600" level="5">
+    <program_name>^lab6-c2-beacon$</program_name>
+    <match>STAGE:IMPLANT_START</match>
+    <description>Lab 6 Sim: C2 implant started — beaconing initiated</description>
+    <mitre>
+      <id>T1071.001</id>
+    </mitre>
+    <group>lab6,c2,attack_simulation,</group>
+  </rule>
+
+  <rule id="100601" level="5">
+    <program_name>^lab6-c2-beacon$</program_name>
+    <match>BEACON:</match>
+    <description>Lab 6 Sim: C2 beacon sent to remote host</description>
+    <mitre>
+      <id>T1071.001</id>
+      <id>T1573.001</id>
+    </mitre>
+    <group>lab6,c2,beacon,attack_simulation,</group>
+  </rule>
+
+  <!-- ── Lab 7: LLM key exfil sim ─────────────────────────────────────── -->
+
+  <rule id="100700" level="6">
+    <program_name>^lab7-key-exfil$</program_name>
+    <match>STAGE:DISCOVERY</match>
+    <description>Lab 7 Sim: Attacker scanning filesystem for AI credential files</description>
+    <mitre>
+      <id>T1552.001</id>
+      <id>T1083</id>
+    </mitre>
+    <group>lab7,credential_access,discovery,attack_simulation,</group>
+  </rule>
+
+  <rule id="100701" level="8">
+    <program_name>^lab7-key-exfil$</program_name>
+    <match>STAGE:EXTRACT</match>
+    <description>Lab 7 Sim: Attacker extracting AI API key from credential file</description>
+    <mitre>
+      <id>T1552.001</id>
+    </mitre>
+    <group>lab7,credential_access,attack_simulation,</group>
+  </rule>
+
+  <rule id="100702" level="10">
+    <program_name>^lab7-key-exfil$</program_name>
+    <match>EXTRACT:SUCCESS</match>
+    <description>Lab 7 Sim: AI API key successfully extracted — exfiltration imminent</description>
+    <mitre>
+      <id>T1552.001</id>
+    </mitre>
+    <group>lab7,credential_access,attack_simulation,</group>
+  </rule>
+
+  <rule id="100703" level="10">
+    <program_name>^lab7-key-exfil$</program_name>
+    <match>STAGE:EXFIL</match>
+    <description>Lab 7 Sim: AI API key being exfiltrated over HTTP</description>
+    <mitre>
+      <id>T1041</id>
+    </mitre>
+    <group>lab7,exfiltration,attack_simulation,</group>
+  </rule>
+
+</group>

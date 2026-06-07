@@ -1,0 +1,917 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Lab 6 — C2 Beaconing | Fortark SOC Labs</title>
+<style>
+  :root {
+    --bg:#0d1117; --bg2:#161b22; --bg3:#21262d; --border:#30363d;
+    --text:#e6edf3; --muted:#8b949e;
+    --accent:#58a6ff; --accent2:#3fb950; --warn:#d29922; --danger:#f85149;
+    --purple:#bc8cff; --teal:#2ea89f; --orange:#e8812a;
+    --code-bg:#1c2128;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif;
+    background:var(--bg);color:var(--text);line-height:1.7;font-size:16px;}
+
+  .header{background:var(--bg2);border-bottom:1px solid var(--border);
+    padding:16px 0;position:sticky;top:0;z-index:100;}
+  .header-inner{max-width:860px;margin:0 auto;padding:0 24px;
+    display:flex;align-items:center;gap:12px;}
+  .logo{font-size:13px;font-weight:600;color:var(--muted);letter-spacing:.08em;}
+  .logo span{color:var(--accent);}
+  .lab-badge{padding:4px 12px;background:rgba(188,140,255,.12);
+    border:1px solid rgba(188,140,255,.35);border-radius:20px;
+    font-size:12px;font-weight:700;color:var(--purple);}
+  .container{max-width:860px;margin:0 auto;padding:40px 24px 80px;}
+  h1{font-size:30px;font-weight:800;letter-spacing:-.02em;line-height:1.2;margin-bottom:12px;}
+  h2{font-size:22px;font-weight:700;margin:40px 0 16px;
+    padding-bottom:10px;border-bottom:1px solid var(--border);}
+  h3{font-size:17px;font-weight:700;margin:28px 0 12px;}
+  p{margin-bottom:14px;}
+  hr{border:none;border-top:1px solid var(--border);margin:32px 0;}
+  strong{color:var(--text);}
+  ul{margin:12px 0 16px 20px;line-height:1.9;font-size:15px;}
+  code{font-family:'SF Mono','Fira Mono',monospace;font-size:13px;
+    background:var(--bg3);border:1px solid var(--border);
+    border-radius:4px;padding:1px 6px;color:var(--accent2);}
+  pre{background:var(--code-bg);border:1px solid var(--border);border-radius:8px;
+    padding:18px 20px;margin:16px 0;overflow-x:auto;
+    font-family:'SF Mono','Fira Mono',monospace;font-size:13px;
+    line-height:1.8;color:#a9b7c6;}
+
+  .meta-strip{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:28px;
+    padding-bottom:20px;border-bottom:1px solid var(--border);}
+  .meta-chip{display:flex;align-items:center;gap:6px;
+    background:var(--bg2);border:1px solid var(--border);border-radius:20px;
+    padding:5px 14px;font-size:13px;color:var(--muted);}
+  .meta-chip strong{color:var(--text);}
+
+  .mitre-table{width:100%;border-collapse:collapse;margin:16px 0;font-size:14px;}
+  .mitre-table th{background:var(--bg3);border:1px solid var(--border);
+    padding:10px 14px;text-align:left;font-size:11px;font-weight:700;
+    letter-spacing:.08em;text-transform:uppercase;color:var(--muted);}
+  .mitre-table td{border:1px solid var(--border);padding:10px 14px;vertical-align:top;line-height:1.5;}
+  .mitre-table tr:nth-child(even) td{background:rgba(33,38,45,.5);}
+  .mitre-badge{display:inline-block;padding:2px 8px;
+    background:rgba(188,140,255,.12);border:1px solid rgba(188,140,255,.3);
+    border-radius:4px;font-size:11px;font-weight:700;color:var(--purple);
+    font-family:monospace;white-space:nowrap;}
+  .tactic-badge{display:inline-block;padding:2px 8px;
+    background:rgba(188,140,255,.1);border:1px solid rgba(188,140,255,.25);
+    border-radius:4px;font-size:11px;font-weight:700;color:var(--purple);}
+
+  .part-nav{display:flex;flex-wrap:wrap;gap:8px;margin:24px 0;
+    padding:16px 20px;background:var(--bg2);
+    border:1px solid var(--border);border-radius:8px;}
+  .part-chip{padding:5px 14px;border-radius:20px;font-size:12px;font-weight:600;
+    color:var(--muted);border:1px solid var(--border);background:var(--bg3);
+    cursor:pointer;text-decoration:none;transition:all .2s;}
+  .part-chip:hover{background:rgba(188,140,255,.1);
+    border-color:rgba(188,140,255,.4);color:var(--purple);}
+
+  /* ── CONCEPT BOX ── */
+  .concept-box{background:var(--bg2);border:1px solid var(--border);
+    border-radius:12px;padding:24px 28px;margin:20px 0;}
+  .concept-box .cb-title{font-size:11px;font-weight:700;letter-spacing:.12em;
+    text-transform:uppercase;color:var(--purple);margin-bottom:20px;}
+  .concept-terms{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px;}
+  .ct-card{background:var(--bg3);border:1px solid var(--border);
+    border-radius:8px;padding:16px 18px;}
+  .ct-card .ct-term{font-size:16px;font-weight:800;margin-bottom:6px;}
+  .ct-card.c2 .ct-term{color:var(--purple);}
+  .ct-card.beacon .ct-term{color:var(--orange);}
+  .ct-card .ct-def{font-size:13px;color:var(--muted);line-height:1.6;}
+  .concept-loop{display:flex;align-items:center;gap:0;
+    background:var(--bg3);border:1px solid var(--border);
+    border-radius:8px;overflow:hidden;margin-bottom:16px;}
+  .cl-step{flex:1;padding:14px 16px;text-align:center;border-right:1px solid var(--border);}
+  .cl-step:last-child{border-right:none;}
+  .cl-step .cl-icon{font-size:20px;margin-bottom:6px;}
+  .cl-step .cl-label{font-size:11px;font-weight:700;letter-spacing:.06em;
+    text-transform:uppercase;color:var(--muted);margin-bottom:4px;}
+  .cl-step .cl-desc{font-size:12px;color:var(--text);line-height:1.4;}
+  .cl-arrow{font-size:16px;color:var(--border);padding:0 4px;flex-shrink:0;
+    align-self:center;}
+  .concept-analogy{background:rgba(188,140,255,.05);border-left:3px solid var(--purple);
+    border-radius:0 6px 6px 0;padding:12px 16px;
+    font-size:13px;color:var(--muted);line-height:1.6;}
+  .concept-analogy strong{color:var(--text);}
+
+  /* ── SCENARIO ── */
+  .scenario-box{background:var(--bg2);border-left:4px solid var(--purple);
+    border-radius:0 8px 8px 0;padding:20px 24px;margin:20px 0;}
+  .scenario-box p{margin-bottom:10px;}
+  .scenario-box p:last-child{margin-bottom:0;}
+
+  /* ── BEACON TIMELINE ── */
+  .beacon-timeline{background:var(--bg2);border:1px solid rgba(188,140,255,.3);
+    border-radius:12px;padding:24px;margin:20px 0;overflow:hidden;}
+  .bt-label{font-size:11px;font-weight:700;letter-spacing:.12em;
+    text-transform:uppercase;color:var(--purple);margin-bottom:20px;}
+  .bt-axis{display:flex;align-items:flex-end;height:80px;
+    gap:0;border-bottom:1px solid var(--border);position:relative;margin-bottom:8px;}
+  .bt-tick{display:flex;flex-direction:column;align-items:center;
+    flex:1;height:100%;justify-content:flex-end;position:relative;}
+  .bt-tick.has-beacon::before{
+    content:'';position:absolute;bottom:0;
+    width:3px;border-radius:2px 2px 0 0;background:var(--purple);
+  }
+  /* each beacon a slightly different height for jitter feel */
+  .bt-tick:nth-child(1).has-beacon::before{height:60%;left:calc(15% + 0px);}
+  .bt-tick:nth-child(2).has-beacon::before{height:70%;left:calc(15% + 0px);}
+  .bt-tick:nth-child(3).has-beacon::before{height:55%;left:calc(15% + 0px);}
+  .bt-tick:nth-child(4).has-beacon::before{height:65%;left:calc(15% + 0px);}
+  .bt-tick:nth-child(5).has-beacon::before{height:72%;left:calc(15% + 0px);}
+  .bt-tick:nth-child(6).has-beacon::before{height:58%;left:calc(15% + 0px);}
+  .bt-tick:nth-child(7).has-beacon::before{height:68%;left:calc(15% + 0px);}
+  .bt-tick:nth-child(8).has-beacon::before{height:62%;left:calc(15% + 0px);}
+  .bt-tick.has-beacon .bt-dot{
+    width:8px;height:8px;border-radius:50%;
+    background:var(--purple);margin-bottom:0;
+    position:absolute;bottom:0;
+    box-shadow:0 0 8px rgba(188,140,255,.6);
+  }
+  .bt-tick .bt-time{font-size:9px;color:var(--muted);margin-top:6px;font-family:monospace;}
+  .bt-intervals{display:flex;justify-content:space-around;
+    margin-top:4px;padding-top:4px;}
+  .bt-interval{font-size:10px;color:var(--muted);text-align:center;flex:1;}
+  .bt-interval span{color:var(--purple);font-weight:700;}
+  .bt-note{font-size:12px;color:var(--muted);margin-top:16px;line-height:1.6;
+    border-top:1px solid var(--border);padding-top:12px;}
+
+  /* ── DIFF TABLE ── */
+  .diff-table{width:100%;border-collapse:collapse;margin:16px 0;font-size:14px;}
+  .diff-table th{background:var(--bg3);border:1px solid var(--border);
+    padding:10px 14px;text-align:left;font-size:11px;font-weight:700;
+    letter-spacing:.08em;text-transform:uppercase;color:var(--muted);}
+  .diff-table td{border:1px solid var(--border);padding:10px 14px;vertical-align:top;}
+  .diff-table tr:nth-child(even) td{background:rgba(33,38,45,.5);}
+  .diff-table td:first-child{color:var(--muted);font-weight:600;white-space:nowrap;}
+
+  /* ── JITTER EXPLAINER ── */
+  .jitter-box{background:var(--bg2);border:1px solid var(--border);
+    border-radius:10px;padding:20px 24px;margin:20px 0;}
+  .jitter-title{font-size:13px;font-weight:700;color:var(--purple);margin-bottom:14px;}
+  .jitter-row{display:flex;align-items:center;gap:10px;margin-bottom:10px;}
+  .jitter-label{font-size:12px;color:var(--muted);width:100px;flex-shrink:0;}
+  .jitter-track{flex:1;height:8px;background:var(--bg3);
+    border-radius:4px;position:relative;overflow:visible;}
+  .jitter-center{position:absolute;top:50%;transform:translateY(-50%);
+    width:2px;height:16px;background:var(--border);left:50%;}
+  .jitter-bar{position:absolute;top:0;height:8px;border-radius:4px;}
+  .jitter-val{font-size:12px;font-family:monospace;color:var(--purple);
+    width:60px;text-align:right;flex-shrink:0;}
+  .no-jitter .jitter-bar{left:50%;width:2px;background:var(--danger);}
+  .with-jitter .jitter-bar{left:calc(50% - 15%);width:30%;background:var(--purple);opacity:.7;}
+  .jitter-note{font-size:12px;color:var(--muted);margin-top:10px;line-height:1.6;}
+
+  /* ── STUDENT TABLE ── */
+  .student-table{width:100%;border-collapse:collapse;margin:16px 0;font-size:14px;}
+  .student-table th{background:var(--bg3);border:1px solid var(--border);
+    padding:10px 14px;text-align:left;font-size:11px;font-weight:700;
+    letter-spacing:.08em;text-transform:uppercase;color:var(--muted);}
+  .student-table td{border:1px solid var(--border);padding:10px 14px;}
+
+  /* ── PREFLIGHT ── */
+  .preflight{display:flex;flex-direction:column;gap:12px;margin:16px 0;}
+  .preflight-item{display:flex;align-items:flex-start;gap:14px;
+    padding:14px 18px;background:var(--bg2);
+    border:1px solid var(--border);border-radius:8px;}
+  .pf-num{width:28px;height:28px;border-radius:50%;flex-shrink:0;
+    background:var(--bg3);border:1px solid var(--border);
+    display:flex;align-items:center;justify-content:center;
+    font-weight:800;font-size:13px;color:var(--muted);}
+  .pf-body .pf-head{font-size:14px;font-weight:700;margin-bottom:4px;}
+  .pf-body .pf-sub{font-size:13px;color:var(--muted);line-height:1.5;}
+
+  /* ── QUESTION ── */
+  .question{display:flex;gap:14px;align-items:flex-start;
+    padding:16px 18px;margin:14px 0;
+    background:var(--bg3);border:1px solid var(--border);border-radius:8px;}
+  .question-label{font-size:11px;font-weight:800;letter-spacing:.1em;
+    text-transform:uppercase;color:var(--purple);flex-shrink:0;width:36px;}
+  .question-text{font-size:15px;font-weight:600;line-height:1.5;}
+
+  /* ── CALLOUT ── */
+  .callout{background:rgba(88,166,255,.06);border-left:3px solid var(--accent);
+    border-radius:0 8px 8px 0;padding:14px 18px;margin:14px 0;
+    font-size:14px;color:var(--muted);line-height:1.7;}
+  .callout strong{color:var(--text);}
+  .callout.warn{background:rgba(210,153,34,.06);border-left-color:var(--warn);}
+  .callout.danger{background:rgba(248,81,73,.06);border-left-color:var(--danger);}
+  .callout.purple{background:rgba(188,140,255,.06);border-left-color:var(--purple);}
+  .callout.success{background:rgba(63,185,80,.06);border-left-color:var(--accent2);}
+
+  /* ── INTERVAL WORKSHEET ── */
+  .interval-sheet{background:var(--bg2);border:1px solid rgba(188,140,255,.3);
+    border-radius:10px;padding:20px 24px;margin:20px 0;}
+  .is-title{font-size:12px;font-weight:700;letter-spacing:.1em;
+    text-transform:uppercase;color:var(--purple);margin-bottom:16px;}
+  .is-row{display:grid;grid-template-columns:120px 1fr 120px;
+    gap:10px;align-items:center;margin-bottom:12px;}
+  .is-label{font-size:13px;color:var(--muted);}
+  .is-input{background:var(--bg3);border:1px solid var(--border);
+    border-radius:6px;padding:8px 12px;color:var(--text);
+    font-family:'SF Mono','Fira Mono',monospace;font-size:13px;
+    outline:none;width:100%;transition:border-color .2s;}
+  .is-input:focus{border-color:var(--purple);}
+  .is-input::placeholder{color:var(--muted);}
+  .is-diff{font-size:13px;color:var(--purple);font-family:monospace;
+    font-weight:700;text-align:right;}
+
+  /* ── UA DECODE BOX ── */
+  .ua-box{background:var(--bg2);border:1px solid var(--border);
+    border-radius:10px;overflow:hidden;margin:20px 0;}
+  .ua-row{padding:14px 20px;border-bottom:1px solid var(--border);}
+  .ua-row:last-child{border-bottom:none;}
+  .ua-row-label{font-size:11px;font-weight:700;letter-spacing:.08em;
+    text-transform:uppercase;color:var(--muted);margin-bottom:6px;}
+  .ua-encoded{font-family:monospace;font-size:13px;color:var(--orange);
+    word-break:break-all;line-height:1.6;}
+  .ua-decode-input{background:var(--bg3);border:1px solid var(--border);
+    border-radius:6px;padding:8px 12px;color:var(--accent2);
+    font-family:'SF Mono','Fira Mono',monospace;font-size:13px;
+    outline:none;width:100%;transition:border-color .2s;}
+  .ua-decode-input:focus{border-color:var(--accent2);}
+  .ua-decode-input::placeholder{color:var(--muted);}
+
+  /* ── IMPLANT PROFILE ── */
+  .implant-profile{background:var(--bg2);border:1px solid rgba(188,140,255,.3);
+    border-radius:10px;padding:20px 24px;margin:20px 0;}
+  .ip-title{font-size:11px;font-weight:700;letter-spacing:.12em;
+    text-transform:uppercase;color:var(--purple);margin-bottom:16px;}
+  .ip-grid{display:grid;grid-template-columns:180px 1fr;gap:10px;}
+  .ip-key{font-size:13px;color:var(--muted);padding:6px 0;
+    border-bottom:1px solid var(--border);}
+  .ip-val{padding:4px 0;border-bottom:1px solid var(--border);}
+  .ip-val input{background:transparent;border:none;border-bottom:1px solid var(--border);
+    color:var(--purple);font-family:'SF Mono','Fira Mono',monospace;font-size:13px;
+    padding:2px 4px;outline:none;width:100%;transition:border-color .2s;}
+  .ip-val input:focus{border-bottom-color:var(--purple);}
+  .ip-val input::placeholder{color:var(--muted);}
+
+  /* ── SURICATA RULE ── */
+  .rule-box{background:var(--code-bg);border:1px solid rgba(188,140,255,.3);
+    border-radius:10px;overflow:hidden;margin:20px 0;}
+  .rule-header{padding:10px 16px;background:rgba(188,140,255,.06);
+    border-bottom:1px solid rgba(188,140,255,.2);
+    font-size:11px;font-weight:700;letter-spacing:.1em;
+    text-transform:uppercase;color:var(--purple);}
+  .rule-body{padding:18px 20px;font-family:'SF Mono','Fira Mono',monospace;
+    font-size:13px;line-height:2;color:#a9b7c6;overflow-x:auto;}
+  .rule-kw{color:var(--purple);}
+  .rule-str{color:var(--accent2);}
+  .rule-comment{color:var(--muted);font-style:italic;}
+  .rule-num{color:var(--warn);}
+
+  /* ── OBSERVABLE TABLE ── */
+  .obs-table{width:100%;border-collapse:collapse;margin:16px 0;font-size:14px;}
+  .obs-table th{background:var(--bg3);border:1px solid var(--border);
+    padding:10px 14px;text-align:left;font-size:11px;font-weight:700;
+    letter-spacing:.08em;text-transform:uppercase;color:var(--muted);}
+  .obs-table td{border:1px solid var(--border);padding:10px 14px;vertical-align:top;}
+  .obs-table tr:nth-child(even) td{background:rgba(33,38,45,.5);}
+  .obs-type{display:inline-block;padding:2px 8px;border-radius:4px;
+    font-size:11px;font-weight:700;background:var(--bg3);
+    border:1px solid var(--border);color:var(--muted);}
+
+  /* ── THEHIVE CHECKLIST ── */
+  .thehive-checklist{display:flex;flex-direction:column;gap:12px;margin:20px 0;}
+  .thc-item{display:flex;align-items:flex-start;gap:14px;
+    padding:16px 18px;background:var(--bg2);
+    border:1px solid var(--border);border-radius:8px;
+    cursor:pointer;transition:border-color .2s,background .2s;}
+  .thc-item input[type="checkbox"]{display:none;}
+  .thc-box{width:20px;height:20px;border-radius:5px;flex-shrink:0;
+    border:2px solid var(--border);margin-top:2px;
+    display:flex;align-items:center;justify-content:center;
+    transition:all .2s;background:var(--bg3);}
+  .thc-box svg{display:none;}
+  .thc-item:has(input:checked){border-color:rgba(63,185,80,.4);background:rgba(63,185,80,.04);}
+  .thc-item:has(input:checked) .thc-box{background:var(--accent2);border-color:var(--accent2);}
+  .thc-item:has(input:checked) .thc-box svg{display:block;}
+  .thc-item:has(input:checked) .thc-head{text-decoration:line-through;color:var(--muted);}
+  .thc-item:hover:not(:has(input:checked)){border-color:var(--muted);}
+  .thc-head{font-size:14px;font-weight:700;margin-bottom:4px;color:var(--text);}
+  .thc-sub{font-size:13px;color:var(--muted);line-height:1.5;}
+
+  /* ── TAKEAWAYS ── */
+  .takeaways{list-style:none;margin:16px 0;padding:0;}
+  .takeaways li{padding:14px 0;border-bottom:1px solid var(--border);
+    padding-left:20px;position:relative;font-size:15px;line-height:1.6;}
+  .takeaways li:last-child{border-bottom:none;}
+  .takeaways li::before{content:'→';position:absolute;left:0;
+    color:var(--purple);font-weight:700;}
+  .takeaways li strong{color:var(--text);}
+
+  @media(max-width:600px){
+    .is-row{grid-template-columns:1fr;}
+    .ip-grid{grid-template-columns:1fr;}
+  }
+
+  .access-box{background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:20px 24px;margin:20px 0 0;}
+  .access-box-title{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:12px;}
+  .access-table{width:100%;border-collapse:collapse;}
+  .access-table th{background:var(--bg3);color:var(--muted);font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;padding:8px 12px;text-align:left;border-bottom:1px solid var(--border);}
+  .access-table td{padding:9px 12px;border-bottom:1px solid var(--border);font-size:13px;vertical-align:middle;}
+  .access-table tr:last-child td{border-bottom:none;}
+  .access-table td:first-child{font-weight:600;color:var(--text);white-space:nowrap;}
+  .access-table a{color:var(--accent);text-decoration:none;font-family:monospace;font-size:12px;}
+  .access-table a:hover{text-decoration:underline;}
+  .access-cred{font-family:monospace;font-size:12px;background:var(--bg3);padding:2px 6px;border-radius:4px;}
+  .access-note{font-size:12px;color:var(--muted);margin-top:10px;padding:8px 12px;background:var(--bg3);border-radius:6px;border-left:3px solid var(--accent);}
+</style>
+</head>
+<body>
+
+<header class="header">
+  <div class="header-inner">
+    <div class="logo">FORTARK <span>SOC LABS</span></div>
+    <div class="lab-badge">LAB 6</div>
+  </div>
+</header>
+
+<div class="container">
+
+  <h1>C2 Beaconing<br><span style="color:var(--muted);font-weight:400;font-size:22px;">The Signal in the Noise</span></h1>
+
+  <div class="meta-strip">
+    <div class="meta-chip">⏱ <strong>60 minutes</strong></div>
+    <div class="meta-chip">⚡ <strong>Advanced</strong> — builds on Labs 1–5</div>
+    <div class="meta-chip">🛠 <strong>Wazuh · Suricata · TheHive · Cortex</strong></div>
+  </div>
+
+  <table class="mitre-table">
+    <thead><tr><th>Tactic</th><th>Technique</th><th>What it means</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><span class="tactic-badge">C2</span></td>
+        <td><span class="mitre-badge">T1071.001</span><br>Web Protocols</td>
+        <td>Implant calls home to attacker over HTTPS on a regular interval</td>
+      </tr>
+      <tr>
+        <td><span class="tactic-badge">C2</span></td>
+        <td><span class="mitre-badge">T1573.001</span><br>Encrypted Channel</td>
+        <td>HTTPS hides the beacon content from network inspection</td>
+      </tr>
+      <tr>
+        <td><span class="tactic-badge">Defense Evasion</span></td>
+        <td><span class="mitre-badge">T1001.001</span><br>Data Obfuscation</td>
+        <td>Hostname and username encoded in base64 inside the User-Agent</td>
+      </tr>
+      <tr>
+        <td><span class="tactic-badge">Defense Evasion</span></td>
+        <td><span class="mitre-badge">T1218</span><br>System Binary Proxy Execution</td>
+        <td><code>curl</code> — a legitimate system tool — makes the malicious network call</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="part-nav">
+    <a class="part-chip" href="#access">Platform Access</a>
+    <a class="part-chip" href="#concept">What is C2 beaconing?</a>
+    <a class="part-chip" href="#scenario">Scenario</a>
+    <a class="part-chip" href="#how">How it's different</a>
+    <a class="part-chip" href="#part1">Part 1 — Baseline</a>
+    <a class="part-chip" href="#part2">Part 2 — Start beacon</a>
+    <a class="part-chip" href="#part3">Part 3 — Pattern</a>
+    <a class="part-chip" href="#part4">Part 4 — Syslog</a>
+    <a class="part-chip" href="#part5">Part 5 — Decode UA</a>
+    <a class="part-chip" href="#part6">Part 6 — Profile</a>
+    <a class="part-chip" href="#part7">Part 7 — Detection rule</a>
+    <a class="part-chip" href="#part8">Part 8 — TheHive</a>
+    <a class="part-chip" href="#takeaways">Takeaways</a>
+    <a class="part-chip" href="#dashboard">SOC Tools</a>
+  </div>
+
+
+  <!-- ACCESS -->
+  <h2 id="access">Platform Access</h2>
+  <div class="access-box">
+    <div class="access-box-title">Open these in separate browser tabs before starting</div>
+    <table class="access-table">
+      <thead><tr><th>Tool</th><th>URL</th><th>Login</th></tr></thead>
+      <tbody>
+        <tr><td>Wazuh (SIEM)</td><td><a href="http://localhost" target="_blank">http://localhost</a></td><td><span class="access-cred">admin</span> / <span class="access-cred">S0cPlatf0rm!e0d085fd</span></td></tr>
+        <tr><td>TheHive (cases)</td><td><a href="http://localhost/thehive/" target="_blank">http://localhost/thehive/</a></td><td><span class="access-cred">studentN@thehive.local</span> / <span class="access-cred">FortarkLabs1!</span></td></tr>
+      </tbody>
+    </table>
+    <div class="access-note"><strong>N</strong> = your seat number (1–5).</div>
+  </div>
+
+  <!-- CONCEPT -->
+  <h2 id="concept">What is C2 beaconing?</h2>
+
+  <div class="concept-box">
+    <div class="cb-title">Two terms you need to understand first</div>
+
+    <div class="concept-terms">
+      <div class="ct-card c2">
+        <div class="ct-term">C2 — Command and Control</div>
+        <div class="ct-def">A communication channel between an attacker and a compromised machine. After breaking in, the attacker does not stay connected — they set up a channel that lets them send commands and receive results on demand. C2 is how the attacker <em>controls</em> a machine they already own.</div>
+      </div>
+      <div class="ct-card beacon">
+        <div class="ct-term">Beaconing</div>
+        <div class="ct-def">The compromised machine regularly "checking in" with the attacker's server — like a heartbeat. Every N seconds, it says: <em>"I'm here. I'm alive. Send me instructions."</em> The attacker reads the check-in and can reply with a command to run, a file to download, or nothing at all.</div>
+      </div>
+    </div>
+
+    <div class="concept-loop">
+      <div class="cl-step">
+        <div class="cl-icon">💻</div>
+        <div class="cl-label">Compromised host</div>
+        <div class="cl-desc">Implant wakes up on schedule</div>
+      </div>
+      <div class="cl-arrow">→</div>
+      <div class="cl-step">
+        <div class="cl-icon">📡</div>
+        <div class="cl-label">Beacon sent</div>
+        <div class="cl-desc">HTTPS request to attacker's server with victim ID</div>
+      </div>
+      <div class="cl-arrow">→</div>
+      <div class="cl-step">
+        <div class="cl-icon">🎯</div>
+        <div class="cl-label">C2 server</div>
+        <div class="cl-desc">Attacker reads the check-in, optionally sends a command back</div>
+      </div>
+      <div class="cl-arrow">→</div>
+      <div class="cl-step">
+        <div class="cl-icon">⏱️</div>
+        <div class="cl-label">Implant sleeps</div>
+        <div class="cl-desc">Waits the configured interval, then repeats</div>
+      </div>
+    </div>
+
+    <div class="concept-analogy">
+      <strong>Analogy:</strong> Imagine a spy who calls their handler every 20 minutes from a payphone. Each call is brief — "still here, nothing to report." The handler can say "do nothing" or "go to the embassy now." The spy does not stay on the line. They hang up, wait, and call again. Anyone watching sees a person making a routine phone call. Only someone tracking <em>all</em> the calls over time sees the pattern.
+    </div>
+  </div>
+
+  <p>In this lab, the "spy" is a <code>curl</code> process running from a cron job installed by the Lab 5 supply chain attack. The "handler" is <code>httpbin.org</code>. The call happens every ~20 seconds. Your job is to notice the pattern before the attacker sends their first real command.</p>
+
+  <!-- SCENARIO -->
+  <h2 id="scenario">The scenario</h2>
+  <div class="scenario-box">
+    <p>The cron job from Lab 5 is running. Every 20 seconds, a process on <code>s[N]-lab-target</code> wakes up, makes an HTTPS GET to an external host, and goes quiet again. Twenty seconds later, it happens again.</p>
+    <p>No files are being encrypted. No credentials are being stolen. No ransom note has appeared. Every individual request looks like a completely normal HTTPS connection. The User-Agent says <code>Mozilla/5.0 (compatible; SystemUpdater/...)</code>. The destination is <code>httpbin.org</code>. Clean. Routine. Invisible.</p>
+    <p>Except it has been happening every 20 seconds for the past 8 hours.</p>
+    <p>This is <strong>Command and Control beaconing</strong>. The compromised host is checking in with the attacker's server — waiting for instructions. The attacker is not in a hurry. They have time. They are already inside.</p>
+  </div>
+
+  <!-- HOW BEACONING WORKS -->
+  <h2 id="how">What makes beaconing different from every previous lab</h2>
+
+  <table class="diff-table">
+    <thead><tr><th></th><th>Labs 1–5</th><th>Lab 6 — Beaconing</th></tr></thead>
+    <tbody>
+      <tr><td>Detection unit</td><td>Single event (one alert)</td><td>Pattern across multiple events</td></tr>
+      <tr><td>Minimum data needed</td><td>1 alert</td><td>3+ beacons minimum</td></tr>
+      <tr><td>Alert severity</td><td>Medium to Critical</td><td>Informational (each request alone)</td></tr>
+      <tr><td>Time window</td><td>Seconds to minutes</td><td>Minutes to hours</td></tr>
+      <tr><td>What you're looking for</td><td>"Did this event happen?"</td><td>"Is this event happening regularly?"</td></tr>
+    </tbody>
+  </table>
+
+  <!-- BEACON TIMELINE VISUALIZATION -->
+  <h3>The pattern hidden in time</h3>
+  <p>Here is what eight beacons look like in your alert timeline. Each bar is one Suricata event. They arrive at irregular intervals — but they always arrive.</p>
+
+  <div class="beacon-timeline">
+    <div class="bt-label">Suricata events — httpbin.org — 4 minutes</div>
+    <div class="bt-axis">
+      <div class="bt-tick has-beacon"><div class="bt-dot"></div></div>
+      <div class="bt-tick"></div>
+      <div class="bt-tick has-beacon"><div class="bt-dot"></div></div>
+      <div class="bt-tick"></div>
+      <div class="bt-tick has-beacon"><div class="bt-dot"></div></div>
+      <div class="bt-tick"></div>
+      <div class="bt-tick has-beacon"><div class="bt-dot"></div></div>
+      <div class="bt-tick"></div>
+      <div class="bt-tick has-beacon"><div class="bt-dot"></div></div>
+      <div class="bt-tick"></div>
+      <div class="bt-tick has-beacon"><div class="bt-dot"></div></div>
+      <div class="bt-tick"></div>
+      <div class="bt-tick has-beacon"><div class="bt-dot"></div></div>
+      <div class="bt-tick"></div>
+      <div class="bt-tick has-beacon"><div class="bt-dot"></div></div>
+    </div>
+    <div class="bt-intervals">
+      <div class="bt-interval"><span>17s</span></div>
+      <div class="bt-interval"><span>23s</span></div>
+      <div class="bt-interval"><span>19s</span></div>
+      <div class="bt-interval"><span>24s</span></div>
+      <div class="bt-interval"><span>18s</span></div>
+      <div class="bt-interval"><span>22s</span></div>
+      <div class="bt-interval"><span>20s</span></div>
+    </div>
+    <div class="bt-note">
+      No two intervals are the same — the jitter is working. But zoom out and the pattern is unmistakable: something is calling home roughly every 20 seconds, from the same host, to the same destination. The content of each request reveals nothing. The <strong>rhythm</strong> reveals everything.
+    </div>
+  </div>
+
+  <!-- JITTER EXPLAINER -->
+  <h3>Why jitter exists</h3>
+  <div class="jitter-box">
+    <div class="jitter-title">Jitter: the attacker's counter-measure to timing-based rules</div>
+    <div class="jitter-row no-jitter">
+      <div class="jitter-label" style="font-size:12px;color:var(--danger);">No jitter</div>
+      <div class="jitter-track">
+        <div class="jitter-center"></div>
+        <div class="jitter-bar" style="left:50%;width:2px;background:var(--danger);height:8px;top:0;"></div>
+      </div>
+      <div class="jitter-val" style="color:var(--danger);">exactly 20s</div>
+    </div>
+    <div class="jitter-row with-jitter">
+      <div class="jitter-label" style="font-size:12px;color:var(--purple);">±5s jitter</div>
+      <div class="jitter-track">
+        <div class="jitter-center"></div>
+        <div class="jitter-bar" style="left:calc(50% - 25%);width:50%;background:rgba(188,140,255,.5);height:8px;top:0;border-radius:4px;"></div>
+      </div>
+      <div class="jitter-val">15–25s</div>
+    </div>
+    <div class="jitter-note">
+      A rule that fires on "exactly 20-second intervals" catches the first case and misses every real-world beacon. Detection requires <strong>threshold windows</strong> (count N events within X seconds) and <strong>frequency analysis</strong> (average interval across all events) — not exact timing.
+    </div>
+  </div>
+
+  <!-- STUDENTS -->
+  <h2>Your student details</h2>
+  <table class="student-table">
+    <thead><tr><th>Student</th><th>Target</th><th>Wazuh filter</th></tr></thead>
+    <tbody>
+      <tr><td>Student 1</td><td><code>ssh victim@lab-target</code></td><td><code>agent.name: lab-target</code></td></tr>
+      <tr><td>Student 2</td><td><code>ssh victim@lab-target</code></td><td><code>agent.name: lab-target</code></td></tr>
+      <tr><td>Student 3</td><td><code>ssh victim@lab-target</code></td><td><code>agent.name: lab-target</code></td></tr>
+      <tr><td>Student 4</td><td><code>ssh victim@lab-target</code></td><td><code>agent.name: lab-target</code></td></tr>
+      <tr><td>Student 5</td><td><code>ssh victim@lab-target</code></td><td><code>agent.name: lab-target</code></td></tr>
+    </tbody>
+  </table>
+
+  <!-- PRE-FLIGHT -->
+  <h2>Pre-flight check</h2>
+  <div class="preflight">
+    <div class="preflight-item">
+      <div class="pf-num">1</div>
+      <div class="pf-body">
+        <div class="pf-head">Wazuh dashboard loads</div>
+        <div class="pf-sub">Open <code>http://localhost</code> — confirm you see the dashboard.</div>
+      </div>
+    </div>
+    <div class="preflight-item">
+      <div class="pf-num">2</div>
+      <div class="pf-body">
+        <div class="pf-head">Your agent is active</div>
+        <div class="pf-sub">Agents → <code>s[N]-lab-target</code> → status: Active (green).</div>
+      </div>
+    </div>
+    <div class="preflight-item">
+      <div class="pf-num">3</div>
+      <div class="pf-body">
+        <div class="pf-head">Kali terminal loads</div>
+        <div class="pf-sub">Open <code>http://localhost/attacker/</code> — <code>student@kali</code> prompt.</div>
+      </div>
+    </div>
+    <div class="preflight-item">
+      <div class="pf-num">4</div>
+      <div class="pf-body">
+        <div class="pf-head">TheHive loads</div>
+        <div class="pf-sub">Navigate to TheHive from the sidebar. Login: <code>shuffle@soc.local</code> / <code>FortarkLabs1!</code></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- PART 1 -->
+  <h2 id="part1">Part 1 — Baseline the traffic</h2>
+  <p>Before running anything, establish what normal looks like. This is your zero line — any httpbin.org connections you see after the beacon starts are the attack.</p>
+  <p>Open Wazuh with this filter, time range <strong>Last 30 minutes</strong>:</p>
+  <pre>agent.name: s[N]-lab-target AND rule.groups: suricata</pre>
+
+  <div class="question">
+    <div class="question-label">Q1</div>
+    <div class="question-text">How many Suricata events does your target show right now?</div>
+  </div>
+  <div class="question">
+    <div class="question-label">Q2</div>
+    <div class="question-text">Are there any outbound connections to <code>httpbin.org</code> in the baseline?</div>
+  </div>
+
+  <!-- PART 2 -->
+  <h2 id="part2">Part 2 — Start the beacon</h2>
+  <p>This lab is different: you start the simulation and <strong>immediately switch to Wazuh to watch beacons arrive in real time.</strong> The simulation runs in the background while you investigate.</p>
+
+  <p><strong>Step 1.</strong> Note the exact time. In the Kali terminal, SSH in:</p>
+  <pre>ssh victim@s[N]-lab-target
+# password: password123</pre>
+
+  <p><strong>Step 2.</strong> Start the beacon in the background — <strong>note the PID</strong>:</p>
+  <pre>/tmp/lab6-c2-beacon-sim.sh &
+echo "Beacon PID: $!"</pre>
+
+  <p><strong>Step 3.</strong> You will see the first beacon fire in the terminal. After that, switch immediately to your Wazuh tabs. Do not wait — you want to watch the pattern emerge in real time.</p>
+
+  <div class="question">
+    <div class="question-label">Q3</div>
+    <div class="question-text">What was the beacon PID? (Write it down — you will need it to stop the beacon later)</div>
+  </div>
+  <div class="callout warn">
+    In a real C2 incident, the beacon has already been running for hours or days before it is discovered. You are compressing time — 15 beacons at 20-second intervals takes 5 minutes. The investigation skill is the same whether you are looking at 15 beacons or 15,000.
+  </div>
+
+  <!-- PART 3 -->
+  <h2 id="part3">Part 3 — Observe the pattern forming</h2>
+  <p>Set Wazuh time range to <strong>Last 15 minutes</strong> and enable auto-refresh (every 30 seconds). Use the Suricata filter. Watch the alert count — every ~20 seconds, a new event should appear.</p>
+  <pre>agent.name: s[N]-lab-target AND rule.groups: suricata</pre>
+
+  <div class="question">
+    <div class="question-label">Q4</div>
+    <div class="question-text">What is the destination of every beacon?</div>
+  </div>
+  <div class="question">
+    <div class="question-label">Q5</div>
+    <div class="question-text">How many beacons have arrived since you started the simulation?</div>
+  </div>
+
+  <h3>Measure the intervals</h3>
+  <p>Look at three consecutive Suricata events. Record their timestamps and calculate the gaps:</p>
+
+  <div class="interval-sheet">
+    <div class="is-title">Interval worksheet</div>
+    <div class="is-row">
+      <div class="is-label">Beacon 1 time</div>
+      <input class="is-input" placeholder="HH:MM:SS UTC">
+      <div class="is-diff"></div>
+    </div>
+    <div class="is-row">
+      <div class="is-label">Beacon 2 time</div>
+      <input class="is-input" placeholder="HH:MM:SS UTC">
+      <div class="is-diff" id="diff1" style="color:var(--purple);font-family:monospace;font-size:13px;font-weight:700;text-align:right;">↑ interval 1→2</div>
+    </div>
+    <div class="is-row">
+      <div class="is-label">Beacon 3 time</div>
+      <input class="is-input" placeholder="HH:MM:SS UTC">
+      <div class="is-diff" id="diff2" style="color:var(--purple);font-family:monospace;font-size:13px;font-weight:700;text-align:right;">↑ interval 2→3</div>
+    </div>
+  </div>
+
+  <div class="question">
+    <div class="question-label">Q6</div>
+    <div class="question-text">What is the approximate average interval across all beacons you have seen?</div>
+  </div>
+  <div class="question">
+    <div class="question-label">Q7</div>
+    <div class="question-text">Are the intervals perfectly regular? What does the variation tell you about the implant's design?</div>
+  </div>
+  <div class="callout purple">
+    <strong>The jitter is the tell.</strong> A normal software update check fires once a session. A cloud sync client might fire every few minutes. But an application that fires every ~20 seconds with a consistent interval distribution — no matter what else is happening on the system — is following a programmed loop, not responding to user activity.
+  </div>
+
+  <!-- PART 4 -->
+  <h2 id="part4">Part 4 — Find the beacon in syslog</h2>
+  <p>The beacon script logs its activity to syslog at each iteration. This gives you a second corroborating source — and reveals the implant's internal timing, not just when the network packet arrived.</p>
+  <pre>agent.name: s[N]-lab-target AND full_log: *lab6-c2-beacon*</pre>
+
+  <div class="question">
+    <div class="question-label">Q8</div>
+    <div class="question-text">What information does each syslog beacon entry contain?<br>
+      <span style="font-size:13px;color:var(--muted);font-weight:400;">(Look at the BEACON:N lines — what fields are logged?)</span>
+    </div>
+  </div>
+  <div class="question">
+    <div class="question-label">Q9</div>
+    <div class="question-text">Does the <code>next_in</code> field in syslog match the actual interval you calculated from Suricata timestamps?</div>
+  </div>
+  <div class="callout">
+    The syslog shows what the implant <em>planned</em> to wait. The Suricata timestamps show when the packet <em>actually</em> arrived. Comparing these two reveals the jitter: the implant chose a random value within its jitter range and slept exactly that long. This is the same internal timing you would see in a Cobalt Strike or Metasploit Meterpreter beacon log.
+  </div>
+
+  <!-- PART 5 -->
+  <h2 id="part5">Part 5 — Decode the implant ID</h2>
+  <p>Every beacon carries the victim's hostname and username, encoded in base64 inside the User-Agent header. Find a Suricata alert and look at the HTTP User-Agent field. It will look like this:</p>
+
+  <div class="ua-box">
+    <div class="ua-row">
+      <div class="ua-row-label">Full User-Agent (from Suricata alert)</div>
+      <div class="ua-encoded">Mozilla/5.0 (compatible; SystemUpdater/<span style="color:var(--orange);">dmljdGltQHMxLWxhYi10YXJnZXQ=</span>)</div>
+    </div>
+    <div class="ua-row">
+      <div class="ua-row-label">Encoded payload (the part after SystemUpdater/)</div>
+      <input class="ua-decode-input" placeholder="Paste the base64 string from your Suricata alert here">
+    </div>
+    <div class="ua-row">
+      <div class="ua-row-label">Decoded — run in Kali terminal: <code>echo "YOUR_BASE64" | base64 -d</code></div>
+      <input class="ua-decode-input" placeholder="Decoded result — hostname:username">
+    </div>
+  </div>
+
+  <div class="question">
+    <div class="question-label">Q10</div>
+    <div class="question-text">What information is encoded in the User-Agent?</div>
+  </div>
+  <div class="question">
+    <div class="question-label">Q11</div>
+    <div class="question-text">In a real C2 implant, why would the attacker encode victim data in the User-Agent rather than in the request body?</div>
+  </div>
+  <div class="callout warn">
+    The request body of an HTTPS connection is encrypted — Suricata cannot read it without TLS inspection. But many proxy servers and SIEMs log User-Agent headers. Embedding victim data in the UA is a trade-off the attacker has already calculated: the data is visible to a sophisticated defender who performs TLS termination, but it ensures the C2 server gets the victim ID even when the response is incomplete.
+  </div>
+
+  <!-- PART 6 -->
+  <h2 id="part6">Part 6 — Characterise the implant</h2>
+  <p>Fill in the complete implant profile from everything you have found:</p>
+
+  <div class="implant-profile">
+    <div class="ip-title">Implant profile</div>
+    <div class="ip-grid">
+      <div class="ip-key">Victim host</div>
+      <div class="ip-val"><input placeholder="hostname"></div>
+      <div class="ip-key">Victim user</div>
+      <div class="ip-val"><input placeholder="username"></div>
+      <div class="ip-key">C2 destination</div>
+      <div class="ip-val"><input placeholder="domain or IP"></div>
+      <div class="ip-key">Beacon method</div>
+      <div class="ip-val"><input placeholder="GET or POST"></div>
+      <div class="ip-key">Beacon path</div>
+      <div class="ip-val"><input placeholder="/path"></div>
+      <div class="ip-key">Approx. interval</div>
+      <div class="ip-val"><input placeholder="__ seconds"></div>
+      <div class="ip-key">Jitter range</div>
+      <div class="ip-val"><input placeholder="± __ seconds"></div>
+      <div class="ip-key">Implant ID</div>
+      <div class="ip-val"><input placeholder="decoded UA value"></div>
+      <div class="ip-key">Tool (LOLBin)</div>
+      <div class="ip-val"><input placeholder="process name"></div>
+      <div class="ip-key">Total beacons</div>
+      <div class="ip-val"><input placeholder="count"></div>
+    </div>
+  </div>
+
+  <div class="question">
+    <div class="question-label">Q12</div>
+    <div class="question-text">What real-world C2 framework does this beacon pattern most closely resemble?</div>
+  </div>
+  <div class="callout purple">
+    Fixed-interval + jitter, HTTPS to a clean destination, victim data encoded in headers, legitimate tool as transport — this is the structural pattern shared by Cobalt Strike Beacon (default 60s ± 20% jitter), Metasploit Meterpreter, Covenant, Sliver, and dozens of custom implants. The specific parameters vary; the architecture does not.
+  </div>
+
+  <!-- PART 7 -->
+  <h2 id="part7">Part 7 — Write the detection rule</h2>
+  <p>You understand the pattern well enough to write a Suricata rule that would catch it. Here is one that targets this specific implant:</p>
+
+  <div class="rule-box">
+    <div class="rule-header">Suricata rule — C2 beacon detection</div>
+    <div class="rule-body">
+<span class="rule-kw">alert</span> http $HOME_NET any -&gt; $EXTERNAL_NET any (<br>
+&nbsp;&nbsp;<span class="rule-kw">msg</span>:<span class="rule-str">"Potential C2 beacon — SystemUpdater encoded UA"</span>;<br>
+&nbsp;&nbsp;<span class="rule-kw">flow</span>:established,to_server;<br>
+&nbsp;&nbsp;<span class="rule-kw">http.user_agent</span>; <span class="rule-kw">content</span>:<span class="rule-str">"SystemUpdater/"</span>;<br>
+&nbsp;&nbsp;<span class="rule-kw">pcre</span>:<span class="rule-str">"/SystemUpdater\/[A-Za-z0-9+\/]{20,}/"</span>;<br>
+&nbsp;&nbsp;<span class="rule-comment">  <span style="color:var(--muted);">/* fire only after 3 matches from same source in 2 minutes */</span></span><br>
+&nbsp;&nbsp;<span class="rule-kw">threshold</span>:type both, track by_src,<br>
+&nbsp;&nbsp;&nbsp;&nbsp;count <span class="rule-num">3</span>, seconds <span class="rule-num">120</span>;<br>
+&nbsp;&nbsp;<span class="rule-kw">sid</span>:<span class="rule-num">9000006</span>; <span class="rule-kw">rev</span>:<span class="rule-num">1</span>;<br>
+)
+    </div>
+  </div>
+
+  <div class="question">
+    <div class="question-label">Q13</div>
+    <div class="question-text">What does the <code>threshold</code> clause do, and why is it critical for beaconing detection specifically?</div>
+  </div>
+  <div class="callout">
+    <code>threshold:type both, track by_src, count 3, seconds 120</code> fires the alert only when this pattern matches <strong>3 times from the same source within a 2-minute window</strong>. One matching request does not trigger it. Three does. This is the difference between a rule that fires on every pip update check and one that fires specifically on beaconing — it requires the repetition that defines the attack pattern.
+  </div>
+  <div class="question">
+    <div class="question-label">Q14</div>
+    <div class="question-text">What are the risks of setting the <code>count</code> too low (e.g., 2)?</div>
+  </div>
+
+  <!-- PART 8 -->
+  <h2 id="part8">Part 8 — TheHive case</h2>
+  <p>Once you have at least 5 beacon events, stop the simulation:</p>
+  <pre>kill &lt;BEACON_PID&gt;
+# Or wait for it to complete (15 beacons)
+exit</pre>
+
+  <p>Open TheHive and create a new case:</p>
+  <ul>
+    <li><strong>Title:</strong> <code>C2 beaconing: s[N]-lab-target — [today's date]</code></li>
+    <li><strong>Severity:</strong> High</li>
+    <li><strong>Tags:</strong> <code>T1071.001</code> <code>T1573.001</code> <code>T1001.001</code> <code>T1218</code></li>
+  </ul>
+
+  <table class="obs-table">
+    <thead><tr><th>Observable</th><th>Type</th><th>Notes</th></tr></thead>
+    <tbody>
+      <tr><td><code>httpbin.org</code></td><td><span class="obs-type">Domain</span></td><td>C2 callback destination</td></tr>
+      <tr><td>Decoded implant ID</td><td><span class="obs-type">Other</span></td><td>hostname:username from decoded UA</td></tr>
+      <tr><td><code>SystemUpdater</code></td><td><span class="obs-type">Other</span></td><td>Implant UA prefix</td></tr>
+      <tr><td><code>curl</code></td><td><span class="obs-type">Process</span></td><td>LOLBin used for beaconing</td></tr>
+      <tr><td>Beacon interval</td><td><span class="obs-type">Other</span></td><td>Approximate interval in seconds</td></tr>
+      <tr><td>First beacon timestamp</td><td><span class="obs-type">Other</span></td><td>From Suricata or syslog</td></tr>
+      <tr><td>Last beacon timestamp</td><td><span class="obs-type">Other</span></td><td>From Suricata or syslog</td></tr>
+    </tbody>
+  </table>
+
+  <div class="question">
+    <div class="question-label">Q15</div>
+    <div class="question-text">Run Cortex enrichment on <code>httpbin.org</code>. Is it flagged as malicious?</div>
+  </div>
+  <div class="question">
+    <div class="question-label">Q16</div>
+    <div class="question-text">Given that the destination is clean and the tool (<code>curl</code>) is legitimate, should the verdict be True Positive or False Positive?</div>
+  </div>
+  <div class="callout success">
+    <strong>True Positive — Active C2 Beaconing.</strong> The destination being clean and the tool being legitimate does not change the verdict. A <code>curl</code> process that fires every ~20 seconds to the same host, encodes victim credentials in the User-Agent, and was started from a cron entry installed by a malicious package is malicious by any reasonable definition of intent. <strong>The behaviour is the verdict, not the infrastructure.</strong>
+  </div>
+
+  <h3>Close the case</h3>
+  <div class="thehive-checklist">
+    <label class="thc-item">
+      <input type="checkbox">
+      <div class="thc-box"><svg width="12" height="10" viewBox="0 0 12 10"><polyline points="1,5 4,8 11,1" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+      <div>
+        <div class="thc-head">Set verdict: True Positive — Active C2 Beaconing</div>
+        <div class="thc-sub">The beacon was running. Victim data was being exfiltrated on every call.</div>
+      </div>
+    </label>
+    <label class="thc-item">
+      <input type="checkbox">
+      <div class="thc-box"><svg width="12" height="10" viewBox="0 0 12 10"><polyline points="1,5 4,8 11,1" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+      <div>
+        <div class="thc-head">Set TLP: TLP:RED</div>
+        <div class="thc-sub">Active C2 channel — do not share externally.</div>
+      </div>
+    </label>
+    <label class="thc-item">
+      <input type="checkbox">
+      <div class="thc-box"><svg width="12" height="10" viewBox="0 0 12 10"><polyline points="1,5 4,8 11,1" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+      <div>
+        <div class="thc-head">Write closing summary</div>
+        <div class="thc-sub">What the beacon was doing · how long it ran · how it was detected (Suricata + syslog pattern) · what the encoded UA revealed · link to Lab 5 cron persistence case</div>
+      </div>
+    </label>
+    <label class="thc-item">
+      <input type="checkbox">
+      <div class="thc-box"><svg width="12" height="10" viewBox="0 0 12 10"><polyline points="1,5 4,8 11,1" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+      <div>
+        <div class="thc-head">Close the case</div>
+        <div class="thc-sub">Mark all tasks complete. Set resolution date.</div>
+      </div>
+    </label>
+  </div>
+
+  <!-- CLEANUP -->
+  <hr>
+  <h2>Cleanup</h2>
+  <pre>ssh victim@s[N]-lab-target
+/tmp/lab6-c2-beacon-sim.sh --cleanup
+# Remove Lab 5 cron if still present:
+crontab -l | grep -v LAB5-SIM | crontab -
+exit</pre>
+
+  <!-- TAKEAWAYS -->
+  <h2 id="takeaways">Key takeaways</h2>
+  <ul class="takeaways">
+    <li><strong>The signal is the pattern, not the packet.</strong> Each individual beacon is an informational-severity event. Fifteen beacons on a 20-second interval is a confirmed C2 channel. The content reveals almost nothing — the rhythm reveals everything.</li>
+    <li><strong>You need at least three data points to see a pattern.</strong> One beacon is a coincidence. Two is suggestive. Three establishes the interval. This is why beaconing detection requires time windows, not single-event alerts.</li>
+    <li><strong>Jitter defeats exact-timing rules.</strong> Rules that fire on "exactly N-second intervals" miss every real-world beacon. Threshold windows and frequency analysis — not exact timing — are how you detect jittered beacons.</li>
+    <li><strong>Legitimate tools used maliciously are the hardest class of problem.</strong> You cannot block <code>curl</code>. You cannot alert on every curl connection. The detection is specific: <em>this tool</em>, <em>this destination</em>, <em>this interval</em>, <em>this User-Agent pattern</em>.</li>
+    <li><strong>Beaconing is the waiting phase, not the action phase.</strong> While this beacon runs, the attacker is doing nothing visible. The danger is what happens when they send their first command back — Lab 7 shows what that looks like.</li>
+    <li><strong>This lab sits between Labs 5 and 7 in the kill chain.</strong> The cron job from Lab 5 created this beacon. In Lab 7, the attacker uses that persistent access to exfiltrate API keys. This is the foothold that makes everything else possible.</li>
+  </ul>
+
+
+  <!-- SOC TOOLS DASHBOARD -->
+  <hr>
+  <h2 id="dashboard">SOC Tools Dashboard</h2>
+  <p>Throughout Labs 1&ndash;6 you have been using Wazuh, TheHive, and Cortex directly &mdash; navigating their UIs and building the muscle memory for each tool. That hands-on work is the point.</p>
+  <p style="margin-top:12px">Now that you have done it the manual way, there is a shortcut available for quick lookups: <a href="http://localhost/tools/" target="_blank"><strong>http://localhost/tools/</strong></a></p>
+  <p style="margin-top:8px">Select your seat number at the top and the dashboard scopes everything to your target automatically.</p>
+
+  <table style="margin-top:16px">
+    <thead><tr><th>Tab</th><th>What it does</th></tr></thead>
+    <tbody>
+      <tr><td><strong>Events</strong></td><td>Run a Wazuh / Suricata query directly against OpenSearch</td></tr>
+      <tr><td><strong>Alerts</strong></td><td>Fetch recent alerts for your agent by severity level</td></tr>
+      <tr><td><strong>IOC Lookup</strong></td><td>Run AbuseIPDB, VirusTotal, or Shodan on an IP or domain</td></tr>
+      <tr><td><strong>Cases</strong></td><td>View your TheHive cases and create new alerts</td></tr>
+    </tbody>
+  </table>
+
+  <p style="margin-top:16px"><strong>Things to try with Lab 6 data:</strong></p>
+  <ul style="margin-top:8px">
+    <li><strong>Events tab:</strong> query <code>full_log: *lab6-c2-beacon*</code> to pull up all your syslog beacon entries in one view</li>
+    <li><strong>IOC Lookup tab:</strong> run AbuseIPDB on <code>httpbin.org</code> &mdash; confirm what Cortex reports vs. what you expected</li>
+    <li><strong>Cases tab:</strong> verify your Lab 6 TheHive case appears with the right severity and tags</li>
+  </ul>
+
+  <div class="callout" style="margin-top:16px">
+    <strong>Note:</strong> The dashboard queries the same data you just analysed in Wazuh and TheHive. It does not replace those tools &mdash; it is a faster path to the same information once you already know what you are looking for. In a real SOC you would use something like this for triage lookups, then move to the full SIEM for deep investigation.
+  </div>
+
+</div>
+</body>
+</html>

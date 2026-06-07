@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Module 0 — How Attackers Think | Fortark SOC Labs</title>
+<style>
+  :root {
+    --bg: #0d1117; --bg2: #161b22; --bg3: #21262d; --border: #30363d;
+    --text: #e6edf3; --muted: #8b949e; --accent: #58a6ff; --accent2: #3fb950;
+    --warn: #d29922; --danger: #f85149; --code-bg: #1c2128; --tag-bg: #1f2a3d;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif; background: var(--bg); color: var(--text); line-height: 1.7; font-size: 16px; }
+  .header { background: var(--bg2); border-bottom: 1px solid var(--border); padding: 16px 0; position: sticky; top: 0; z-index: 100; }
+  .header-inner { max-width: 860px; margin: 0 auto; padding: 0 24px; display: flex; align-items: center; gap: 12px; }
+  .logo { font-size: 13px; font-weight: 600; color: var(--muted); letter-spacing: 0.08em; text-transform: uppercase; }
+  .logo span { color: var(--accent); }
+  .sep { color: var(--border); font-size: 18px; }
+  .module-badge { background: var(--bg3); color: var(--muted); border: 1px solid var(--border); border-radius: 4px; padding: 2px 8px; font-size: 12px; font-weight: 600; letter-spacing: 0.05em; }
+  .container { max-width: 860px; margin: 0 auto; padding: 48px 24px 80px; }
+  h1 { font-size: 28px; font-weight: 700; color: var(--text); margin-bottom: 8px; letter-spacing: -0.02em; }
+  .meta { display: flex; gap: 20px; flex-wrap: wrap; margin: 16px 0 32px; font-size: 14px; color: var(--muted); }
+  .meta-item { display: flex; align-items: center; gap: 6px; }
+  .meta-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--accent2); }
+  hr { border: none; border-top: 1px solid var(--border); margin: 40px 0; }
+  h2 { font-size: 20px; font-weight: 700; color: var(--text); margin: 40px 0 16px; padding-bottom: 8px; border-bottom: 1px solid var(--border); }
+  h3 { font-size: 16px; font-weight: 600; color: var(--accent); margin: 28px 0 12px; }
+  p { margin: 12px 0; }
+  strong { color: var(--text); }
+  pre { background: var(--code-bg); border: 1px solid var(--border); border-radius: 6px; padding: 16px 20px; overflow-x: auto; margin: 16px 0; font-family: 'SF Mono','Fira Mono','Cascadia Code','Consolas',monospace; font-size: 13px; line-height: 1.6; color: #a9b7c6; }
+  code { font-family: 'SF Mono','Fira Mono',monospace; font-size: 13px; background: var(--code-bg); border: 1px solid var(--border); border-radius: 3px; padding: 2px 6px; color: #a9b7c6; }
+  pre code { background: none; border: none; padding: 0; }
+  table { width: 100%; border-collapse: collapse; margin: 16px 0 24px; font-size: 14px; }
+  th { background: var(--bg3); color: var(--muted); text-align: left; padding: 10px 14px; font-weight: 600; font-size: 12px; letter-spacing: 0.06em; text-transform: uppercase; border: 1px solid var(--border); }
+  td { padding: 10px 14px; border: 1px solid var(--border); vertical-align: top; line-height: 1.5; }
+  tr:nth-child(even) td { background: var(--bg2); }
+  .callout { background: var(--bg3); border: 1px solid var(--border); border-left: 3px solid var(--accent2); border-radius: 6px; padding: 16px 20px; margin: 20px 0; font-size: 14px; color: var(--muted); line-height: 1.7; }
+  .callout strong { color: var(--text); }
+  .important { background: #1a1f00; border: 1px solid var(--warn); border-radius: 6px; padding: 16px 20px; margin: 20px 0; font-size: 14px; line-height: 1.7; }
+  .important strong { color: var(--warn); }
+  .scenario { background: var(--bg2); border: 1px solid var(--border); border-left: 3px solid var(--accent); border-radius: 6px; padding: 20px 24px; margin: 20px 0; font-style: italic; line-height: 1.8; }
+  .scenario .time { font-family: monospace; font-size: 13px; color: var(--warn); font-style: normal; font-weight: 600; display: block; margin-bottom: 8px; }
+  ul, ol { padding-left: 24px; margin: 12px 0; }
+  li { margin: 8px 0; line-height: 1.6; }
+  .takeaways { list-style: none; padding: 0; margin: 16px 0; }
+  .takeaways li { padding: 14px 0 14px 20px; border-bottom: 1px solid var(--border); position: relative; font-size: 15px; }
+  .takeaways li::before { content: ''; position: absolute; left: 0; top: 22px; width: 6px; height: 6px; border-radius: 50%; background: var(--accent2); }
+  .takeaways li:last-child { border-bottom: none; }
+  .next-btn { display: inline-block; margin-top: 24px; background: var(--accent); color: var(--bg); padding: 10px 20px; border-radius: 6px; font-weight: 700; font-size: 14px; text-decoration: none; }
+  .next-btn:hover { opacity: 0.85; }
+  @media (max-width: 600px) { h1 { font-size: 22px; } .container { padding: 24px 16px 60px; } }
+</style>
+</head>
+<body>
+
+<header class="header">
+  <div class="header-inner">
+    <div class="logo"><span>Fortark</span> SOC Labs</div>
+    <div class="sep">/</div>
+    <div class="module-badge">PRE-LAB &middot; MODULE 0 OF 3</div>
+  </div>
+</header>
+
+<div class="container">
+
+  <h1>How Attackers Think</h1>
+  <div class="meta">
+    <div class="meta-item"><div class="meta-dot"></div>20 minutes</div>
+    <div class="meta-item"><div class="meta-dot"></div>Foundational</div>
+    <div class="meta-item"><div class="meta-dot"></div>Read before Lab 1</div>
+  </div>
+
+  <h2>Before you touch a keyboard</h2>
+
+  <p>Every lab in this course puts you in the seat of a SOC analyst. But before you can defend against an attacker, you need to understand how an attacker thinks.</p>
+
+  <p>Not the Hollywood version — the hoodie, the green terminal, the dramatic music. The real version, which is far more mundane and far more dangerous.</p>
+
+  <hr>
+
+  <h2>Attackers are running a business</h2>
+
+  <p>The single most important thing to understand about modern cybercrime is this:</p>
+
+  <div class="important">
+    <strong>Most attacks are automated. Most attackers are not sitting at a keyboard. Most attacks are not personal.</strong>
+  </div>
+
+  <p>When a server gets hit with an SSH brute force attack at 3am, there is almost certainly no human watching it happen. There is a script — running on a compromised server somewhere, scanning millions of IP addresses, trying passwords from a list of 14 million real-world leaked credentials, logging any success, and moving on.</p>
+
+  <p>This changes how you think about detection. You are not trying to outwit a genius. You are trying to catch a pattern.</p>
+
+  <hr>
+
+  <h2>What attackers actually want</h2>
+
+  <p>Attackers break into systems for a small number of reasons:</p>
+
+  <h3>1. Data</h3>
+  <p>Customer records. Employee credentials. Intellectual property. Health records. Financial data. All of it has a market price. A database of 100,000 email addresses and password hashes sells for hundreds of dollars on dark web markets. Credit card numbers, significantly more.</p>
+
+  <h3>2. Access to sell</h3>
+  <p>A compromised server with persistent access — a "shell" — can be sold. Criminal groups buy access to corporate networks and then deploy ransomware, conduct espionage, or use it as a launchpad to attack other targets on the same internal network.</p>
+
+  <h3>3. Compute</h3>
+  <p>Cryptocurrency mining uses significant processing power. A compromised server quietly mining cryptocurrency costs the victim in electricity and cloud bills while generating income for the attacker. Often goes undetected for months.</p>
+
+  <h3>4. Ransomware deployment</h3>
+  <p>Get access &rarr; move laterally across the network &rarr; encrypt everything &rarr; demand payment. The average ransomware payment in 2024 was over $1 million. This is not opportunistic crime. It is organised, patient, and methodical.</p>
+
+  <div class="callout">
+    <strong>The attacker in Lab 1 wants credentials.</strong> They are trying to log into a Linux server via SSH. If they succeed, they have a foothold inside the network — from which they can do any of the above.
+  </div>
+
+  <hr>
+
+  <h2>Why SSH is a target</h2>
+
+  <p>SSH (Secure Shell) is how system administrators log into Linux servers remotely. Almost every Linux server in the world runs an SSH service. If you can log in via SSH, you have command-line access to the entire machine.</p>
+
+  <p>For an attacker, SSH is an attractive target because:</p>
+
+  <ul>
+    <li><strong>It is everywhere.</strong> Every Linux server, every cloud instance, every network device running Linux exposes SSH.</li>
+    <li><strong>It uses passwords.</strong> Many organisations never disable password authentication and rely on people choosing strong passwords. People do not always choose strong passwords.</li>
+    <li><strong>A successful login looks legitimate.</strong> SSH logins are normal administrative activity. A successful brute force login generates the same log entry as a legitimate administrator logging in.</li>
+  </ul>
+
+  <p>The last point is critical and explains why rule 40112 — the "brute force followed by successful login" rule — matters so much. The successful login alone does not tell you anything unusual happened. Only by correlating it with the preceding failures does the picture become clear.</p>
+
+  <hr>
+
+  <h2>The attack chain</h2>
+
+  <p>Attackers rarely do one thing. A brute force attack is almost never the end goal — it is the beginning. Once inside, a typical attacker moves through a predictable sequence:</p>
+
+<pre>Reconnaissance    →    discover the target exists, what services are running
+Initial Access    →    brute force SSH, exploit a vulnerability, phish a user
+Discovery         →    what machine is this? who else is here? what can I reach?
+Credential Access →    steal passwords, SSH keys, API tokens stored on the machine
+Lateral Movement  →    use stolen credentials to reach other machines on the network
+Collection        →    gather files, databases, anything valuable
+Exfiltration      →    send it all out over HTTPS to a server the attacker controls</pre>
+
+  <p>This sequence has a name: the <strong>attack lifecycle</strong> or <strong>kill chain</strong>. You will map real attacks to this chain in every lab in this course. Lab 1 covers the first two stages. Lab 2 covers everything after.</p>
+
+  <hr>
+
+  <h2>The economics of scale</h2>
+
+  <p>Here is a number that makes this concrete: <strong>there are over 20 million SSH brute force attacks per day</strong> across the public internet, detected by honeypot networks.</p>
+
+  <p>These attacks are not targeted at you specifically. They scan entire IP address ranges — every address on the internet — looking for anything that responds on port 22 (the default SSH port). When they find one, they try passwords. When they fail, they move on. When they succeed, they log the credential and continue.</p>
+
+  <p>The attack you will launch in Lab 1 against your own target is a single-threaded, deliberate, manual version of something that runs at a scale of millions of attempts per hour across the global internet.</p>
+
+  <p>The target you are attacking is publicly visible because its SSH port is exposed. Real servers in real organisations work the same way. The only things standing between them and a successful brute force are: strong passwords, MFA, and the SOC analysts watching the alerts.</p>
+
+  <hr>
+
+  <h2>What this means for you as an analyst</h2>
+
+  <p>When you see an SSH brute force alert, your first question should never be "who is this hacker?" Your first questions should be:</p>
+
+  <p><strong>Did they get in?</strong> — Everything else depends on this answer.</p>
+
+  <p><strong>Is the targeted account real?</strong> — An "invalid user" alert means they do not even have a valid username yet. A "failed password" alert means they do — and they just need to find the right password.</p>
+
+  <p><strong>Is this the only target?</strong> — A single IP hitting one server is routine noise. The same IP hitting 50 servers simultaneously is a coordinated attack requiring a different response.</p>
+
+  <p>These are the questions Lab 1 is designed to teach you to answer — fast, under pressure, with the evidence in front of you.</p>
+
+  <hr>
+
+  <h2>Key concepts from this module</h2>
+
+  <ul class="takeaways">
+    <li>Attacks are automated and impersonal — you are detecting a pattern, not outwitting a person</li>
+    <li>Attackers want data, access, compute, or ransom — SSH access is a means to those ends</li>
+    <li>The attack lifecycle is predictable — initial access is just the beginning</li>
+    <li>SSH is a universal target because it provides full command-line access to any Linux machine</li>
+    <li>The successful login alone looks legitimate — correlation with prior failures is what reveals the breach</li>
+  </ul>
+
+  <a href="/guides/module1.html" class="next-btn">Next: Logs, Events and Alerts &rarr;</a>
+
+</div>
+</body>
+</html>

@@ -1,0 +1,1569 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Lab 1 — SSH Brute Force | Fortark SOC Labs</title>
+<style>
+  :root {
+    --bg: #0d1117;
+    --bg2: #161b22;
+    --bg3: #21262d;
+    --border: #30363d;
+    --text: #e6edf3;
+    --muted: #8b949e;
+    --accent: #58a6ff;
+    --accent2: #3fb950;
+    --warn: #d29922;
+    --danger: #f85149;
+    --code-bg: #1c2128;
+    --tag-bg: #1f2a3d;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.7;
+    font-size: 16px;
+  }
+  .header {
+    background: var(--bg2);
+    border-bottom: 1px solid var(--border);
+    padding: 16px 0;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+  .header-inner {
+    max-width: 860px;
+    margin: 0 auto;
+    padding: 0 24px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .logo {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--muted);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+  .logo span { color: var(--accent); }
+  .sep { color: var(--border); font-size: 18px; }
+  .lab-badge {
+    background: var(--tag-bg);
+    color: var(--accent);
+    border: 1px solid var(--accent);
+    border-radius: 4px;
+    padding: 2px 8px;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+  }
+  .container {
+    max-width: 860px;
+    margin: 0 auto;
+    padding: 48px 24px 80px;
+  }
+  h1 {
+    font-size: 28px;
+    font-weight: 700;
+    color: var(--text);
+    margin-bottom: 8px;
+    letter-spacing: -0.02em;
+  }
+  .meta {
+    display: flex;
+    gap: 20px;
+    flex-wrap: wrap;
+    margin: 16px 0 32px;
+    font-size: 14px;
+    color: var(--muted);
+  }
+  .meta-item { display: flex; align-items: center; gap: 6px; }
+  .meta-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--accent2); }
+  .mitre-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 20px 0 32px;
+    font-size: 14px;
+  }
+  .mitre-table th {
+    background: var(--bg3);
+    color: var(--muted);
+    text-align: left;
+    padding: 10px 14px;
+    font-weight: 600;
+    font-size: 12px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    border: 1px solid var(--border);
+  }
+  .mitre-table td {
+    padding: 10px 14px;
+    border: 1px solid var(--border);
+    vertical-align: top;
+  }
+  .mitre-table tr:nth-child(even) td { background: var(--bg2); }
+  .mitre-tag {
+    font-family: 'SF Mono', 'Fira Mono', 'Cascadia Code', monospace;
+    font-size: 12px;
+    background: var(--tag-bg);
+    color: var(--accent);
+    padding: 2px 6px;
+    border-radius: 3px;
+    white-space: nowrap;
+  }
+  hr {
+    border: none;
+    border-top: 1px solid var(--border);
+    margin: 40px 0;
+  }
+  h2 {
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--text);
+    margin: 40px 0 16px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--border);
+  }
+  h3 {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--accent);
+    margin: 28px 0 12px;
+  }
+  p { margin: 12px 0; color: var(--text); }
+  .scenario-box {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--accent);
+    border-radius: 6px;
+    padding: 20px 24px;
+    margin: 20px 0;
+    font-style: italic;
+    color: var(--text);
+    line-height: 1.8;
+  }
+  .scenario-time {
+    font-family: 'SF Mono', 'Fira Mono', monospace;
+    font-size: 13px;
+    color: var(--warn);
+    font-style: normal;
+    font-weight: 600;
+    display: block;
+    margin-bottom: 8px;
+  }
+  pre {
+    background: var(--code-bg);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 16px 20px;
+    overflow-x: auto;
+    margin: 16px 0;
+    font-family: 'SF Mono', 'Fira Mono', 'Cascadia Code', 'Consolas', monospace;
+    font-size: 13px;
+    line-height: 1.6;
+    color: #a9b7c6;
+  }
+  pre .comment { color: #6a9955; }
+  pre .string { color: #ce9178; }
+  pre .keyword { color: #569cd6; }
+  code {
+    font-family: 'SF Mono', 'Fira Mono', 'Cascadia Code', 'Consolas', monospace;
+    font-size: 13px;
+    background: var(--code-bg);
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    padding: 2px 6px;
+    color: #a9b7c6;
+  }
+  pre code { background: none; border: none; padding: 0; font-size: inherit; }
+  .arch-box {
+    background: var(--code-bg);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 20px;
+    font-family: 'SF Mono', 'Fira Mono', monospace;
+    font-size: 12px;
+    line-height: 1.6;
+    color: #a9b7c6;
+    overflow-x: auto;
+    margin: 16px 0;
+  }
+  .student-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 16px 0;
+    font-size: 14px;
+  }
+  .student-table th {
+    background: var(--bg3);
+    color: var(--muted);
+    text-align: left;
+    padding: 10px 14px;
+    font-weight: 600;
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    border: 1px solid var(--border);
+  }
+  .student-table td {
+    padding: 10px 14px;
+    border: 1px solid var(--border);
+    font-family: 'SF Mono', 'Fira Mono', monospace;
+    font-size: 13px;
+  }
+  .student-table tr:nth-child(even) td { background: var(--bg2); }
+  .preflight {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 20px 24px;
+    margin: 16px 0;
+  }
+  .preflight-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .preflight-item:last-child { border-bottom: none; }
+  .preflight-num {
+    background: var(--accent);
+    color: var(--bg);
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+    font-weight: 700;
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
+  .preflight-text strong { color: var(--accent); display: block; margin-bottom: 4px; }
+  .step {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 16px 20px;
+    margin: 12px 0;
+    display: flex;
+    gap: 14px;
+    align-items: flex-start;
+  }
+  .step-num {
+    background: var(--bg3);
+    color: var(--accent);
+    border: 1px solid var(--accent);
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    font-weight: 700;
+    flex-shrink: 0;
+  }
+  .step-content { flex: 1; }
+  .question {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--warn);
+    border-radius: 6px;
+    padding: 16px 20px;
+    margin: 20px 0;
+  }
+  .question-label {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--warn);
+    margin-bottom: 8px;
+  }
+  .question-text { font-weight: 600; color: var(--text); }
+  .callout {
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--accent2);
+    border-radius: 6px;
+    padding: 16px 20px;
+    margin: 16px 0;
+    font-size: 14px;
+    color: var(--muted);
+    line-height: 1.7;
+  }
+  .callout strong { color: var(--text); }
+  .flag-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 12px 0 20px;
+    font-size: 14px;
+  }
+  .flag-table th {
+    background: var(--bg3);
+    color: var(--muted);
+    text-align: left;
+    padding: 8px 12px;
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    border: 1px solid var(--border);
+  }
+  .flag-table td {
+    padding: 8px 12px;
+    border: 1px solid var(--border);
+    vertical-align: top;
+  }
+  .flag-table td:first-child {
+    font-family: 'SF Mono', 'Fira Mono', monospace;
+    font-size: 13px;
+    color: var(--accent);
+    white-space: nowrap;
+  }
+  .triage-box {
+    background: var(--code-bg);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 20px 24px;
+    margin: 16px 0;
+    font-family: 'SF Mono', 'Fira Mono', monospace;
+    font-size: 13px;
+    line-height: 2;
+    color: #a9b7c6;
+  }
+  .takeaways {
+    list-style: none;
+    margin: 16px 0;
+    padding: 0;
+  }
+  .takeaways li {
+    padding: 14px 0;
+    border-bottom: 1px solid var(--border);
+    padding-left: 20px;
+    position: relative;
+    font-size: 15px;
+    line-height: 1.6;
+  }
+  .takeaways li::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 22px;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--accent2);
+  }
+  .takeaways li strong { color: var(--accent); }
+  .takeaways li:last-child { border-bottom: none; }
+  .important-callout {
+    background: #1a1f00;
+    border: 1px solid var(--warn);
+    border-radius: 6px;
+    padding: 16px 20px;
+    margin: 20px 0;
+    font-size: 14px;
+    line-height: 1.7;
+  }
+  .important-callout strong { color: var(--warn); }
+  a { color: var(--accent); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  ul, ol { padding-left: 24px; margin: 12px 0; }
+  li { margin: 6px 0; line-height: 1.6; }
+  .progress-bar {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    height: 4px;
+    margin: 20px 0;
+    overflow: hidden;
+  }
+  .progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--accent2), var(--accent));
+    border-radius: 20px;
+    width: 14%;
+  }
+  .part-nav {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin: 16px 0 32px;
+  }
+  .part-chip {
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 4px 12px;
+    font-size: 12px;
+    color: var(--muted);
+    cursor: pointer;
+  }
+  .part-chip.active {
+    background: var(--tag-bg);
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+  @media (max-width: 600px) {
+    h1 { font-size: 22px; }
+    h2 { font-size: 18px; }
+    .container { padding: 24px 16px 60px; }
+  }
+
+  /* ── TRIAGE DECISION FORM ── */
+  .triage-decision {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    margin: 20px 0;
+    overflow: hidden;
+  }
+  .triage-q-section {
+    padding: 20px 24px;
+    border-bottom: 1px solid var(--border);
+  }
+  .triage-q-section:last-child { border-bottom: none; }
+  .tq-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 14px;
+  }
+  .tq-num-badge {
+    width: 28px; height: 28px; border-radius: 50%;
+    background: var(--bg3); border: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 13px; font-weight: 800; color: var(--muted);
+    flex-shrink: 0;
+  }
+  .tq-question-text {
+    font-size: 16px; font-weight: 700; color: var(--text);
+  }
+  .tq-options {
+    display: flex; flex-direction: column; gap: 8px;
+    padding-left: 40px;
+  }
+  .tq-option {
+    display: flex; align-items: flex-start; gap: 14px;
+    padding: 13px 16px; border-radius: 8px;
+    border: 1px solid var(--border); background: var(--bg3);
+    cursor: pointer; transition: border-color .2s, background .2s;
+    user-select: none;
+  }
+  .tq-option input[type="radio"] { display: none; }
+  .tq-radio {
+    width: 18px; height: 18px; border-radius: 50%;
+    border: 2px solid var(--border); flex-shrink: 0;
+    margin-top: 2px; transition: border-color .2s, background .2s;
+    position: relative;
+  }
+  .tq-radio::after {
+    content: ''; position: absolute;
+    width: 8px; height: 8px; border-radius: 50%;
+    background: transparent; top: 3px; left: 3px;
+    transition: background .2s;
+  }
+  .tq-option-body .tq-opt-head {
+    font-size: 14px; font-weight: 700; color: var(--text);
+    margin-bottom: 2px;
+  }
+  .tq-option-body .tq-opt-sub {
+    font-size: 12px; color: var(--muted); line-height: 1.4;
+  }
+
+  /* Selected state */
+  .tq-option input[type="radio"]:checked ~ .tq-radio {
+    border-color: currentColor;
+  }
+  .tq-option input[type="radio"]:checked ~ .tq-radio::after {
+    background: currentColor;
+  }
+
+  /* Danger option (Yes / External / account exists) */
+  .tq-opt-danger { color: var(--danger); }
+  .tq-opt-danger:has(input:checked) {
+    border-color: rgba(248,81,73,.5);
+    background: rgba(248,81,73,.07);
+  }
+  .tq-opt-danger:has(input:checked) .tq-radio { border-color: var(--danger); }
+  .tq-opt-danger:has(input:checked) .tq-radio::after { background: var(--danger); }
+  .tq-opt-danger:has(input:checked) .tq-opt-head { color: var(--danger); }
+
+  /* Safe option (No / Internal / doesn't exist) */
+  .tq-opt-safe { color: var(--accent2); }
+  .tq-opt-safe:has(input:checked) {
+    border-color: rgba(63,185,80,.4);
+    background: rgba(63,185,80,.06);
+  }
+  .tq-opt-safe:has(input:checked) .tq-radio { border-color: var(--accent2); }
+  .tq-opt-safe:has(input:checked) .tq-radio::after { background: var(--accent2); }
+  .tq-opt-safe:has(input:checked) .tq-opt-head { color: var(--accent2); }
+
+  /* Action options */
+  .tq-opt-monitor { color: var(--accent); }
+  .tq-opt-monitor:has(input:checked) {
+    border-color: rgba(88,166,255,.4);
+    background: rgba(88,166,255,.07);
+  }
+  .tq-opt-monitor:has(input:checked) .tq-radio { border-color: var(--accent); }
+  .tq-opt-monitor:has(input:checked) .tq-radio::after { background: var(--accent); }
+  .tq-opt-monitor:has(input:checked) .tq-opt-head { color: var(--accent); }
+
+  .tq-opt-escalate { color: var(--warn); }
+  .tq-opt-escalate:has(input:checked) {
+    border-color: rgba(210,153,34,.5);
+    background: rgba(210,153,34,.07);
+  }
+  .tq-opt-escalate:has(input:checked) .tq-radio { border-color: var(--warn); }
+  .tq-opt-escalate:has(input:checked) .tq-radio::after { background: var(--warn); }
+  .tq-opt-escalate:has(input:checked) .tq-opt-head { color: var(--warn); }
+
+  .tq-opt-block { color: var(--danger); }
+  .tq-opt-block:has(input:checked) {
+    border-color: rgba(248,81,73,.5);
+    background: rgba(248,81,73,.07);
+  }
+  .tq-opt-block:has(input:checked) .tq-radio { border-color: var(--danger); }
+  .tq-opt-block:has(input:checked) .tq-radio::after { background: var(--danger); }
+  .tq-opt-block:has(input:checked) .tq-opt-head { color: var(--danger); }
+
+  /* Hover on unselected */
+  .tq-option:hover { border-color: var(--muted); }
+
+  /* ── TRIAGE NOTE FORM ── */
+  .triage-note-form {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    margin: 20px 0;
+    overflow: hidden;
+  }
+  .tnf-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 20px;
+    background: var(--bg3);
+    border-bottom: 1px solid var(--border);
+  }
+  .tnf-title {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: .12em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+  .tnf-title-dot {
+    width: 8px; height: 8px; border-radius: 50%;
+    background: var(--warn);
+    animation: blink-dot 2s ease-in-out infinite;
+  }
+  @keyframes blink-dot { 0%,100%{opacity:1} 50%{opacity:.25} }
+  .copy-btn {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    padding: 7px 14px;
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--muted);
+    cursor: pointer;
+    transition: border-color .2s, color .2s;
+  }
+  .copy-btn:hover { border-color: var(--accent); color: var(--accent); }
+  .copy-btn.copied { border-color: var(--accent2); color: var(--accent2); }
+
+  .tnf-row {
+    display: grid;
+    grid-template-columns: 140px 1fr;
+    border-bottom: 1px solid var(--border);
+    min-height: 50px;
+  }
+  .tnf-row:last-child { border-bottom: none; }
+  .tnf-label {
+    display: flex;
+    align-items: center;
+    padding: 12px 20px;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: .06em;
+    text-transform: uppercase;
+    color: var(--muted);
+    background: var(--bg3);
+    border-right: 1px solid var(--border);
+    line-height: 1.4;
+  }
+  .tnf-field {
+    display: flex;
+    align-items: center;
+    padding: 10px 16px;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+  .tnf-input {
+    background: transparent;
+    border: none;
+    border-bottom: 1px solid var(--border);
+    color: var(--text);
+    font-family: 'SF Mono', 'Fira Mono', monospace;
+    font-size: 13px;
+    padding: 4px 0;
+    width: 100%;
+    outline: none;
+    transition: border-color .2s;
+  }
+  .tnf-input:focus { border-bottom-color: var(--accent); }
+  .tnf-input::placeholder { color: rgba(139,148,158,.5); font-style: italic; }
+  .tnf-static {
+    font-family: 'SF Mono', 'Fira Mono', monospace;
+    font-size: 13px;
+    color: var(--muted);
+  }
+  .tnf-static strong { color: var(--text); }
+
+  /* Alert hits sub-row */
+  .tnf-hits {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 12px 16px;
+    width: 100%;
+  }
+  .tnf-hit-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-family: 'SF Mono', 'Fira Mono', monospace;
+    font-size: 13px;
+    color: var(--muted);
+  }
+  .tnf-hit-row strong { color: var(--text); margin-right: 4px; }
+  .tnf-count {
+    background: transparent;
+    border: none;
+    border-bottom: 1px solid var(--border);
+    color: var(--text);
+    font-family: 'SF Mono', 'Fira Mono', monospace;
+    font-size: 13px;
+    width: 52px;
+    text-align: center;
+    outline: none;
+    padding: 2px 4px;
+    transition: border-color .2s;
+  }
+  .tnf-count:focus { border-bottom-color: var(--accent); }
+  .tnf-count::placeholder { color: rgba(139,148,158,.4); }
+
+  /* Inline radio options (YES/NO, Outcome, Action) */
+  .tnf-radios {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 10px 16px;
+    width: 100%;
+  }
+  .tnf-radio-opt {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 11px 14px;
+    border-radius: 7px;
+    border: 1px solid var(--border);
+    background: var(--bg3);
+    cursor: pointer;
+    transition: border-color .2s, background .2s;
+  }
+  .tnf-radio-opt input[type="radio"] { display: none; }
+  .tnf-dot {
+    width: 16px; height: 16px; border-radius: 50%;
+    border: 2px solid var(--border); flex-shrink: 0;
+    margin-top: 2px; position: relative; transition: border-color .2s;
+  }
+  .tnf-dot::after {
+    content: ''; position: absolute;
+    width: 6px; height: 6px; border-radius: 50%;
+    top: 3px; left: 3px; background: transparent; transition: background .2s;
+  }
+  .tnf-radio-opt:hover { border-color: var(--muted); }
+
+  .tnf-opt-label { font-size: 13px; font-weight: 700; display: block; }
+  .tnf-opt-sub { font-size: 12px; color: var(--muted); margin-top: 2px; line-height: 1.4; }
+
+  /* Outcome variants */
+  .tnf-breach:has(input:checked) { border-color: rgba(248,81,73,.5); background: rgba(248,81,73,.07); }
+  .tnf-breach:has(input:checked) .tnf-dot { border-color: var(--danger); }
+  .tnf-breach:has(input:checked) .tnf-dot::after { background: var(--danger); }
+  .tnf-breach:has(input:checked) .tnf-opt-label { color: var(--danger); }
+
+  .tnf-failed:has(input:checked) { border-color: rgba(88,166,255,.4); background: rgba(88,166,255,.06); }
+  .tnf-failed:has(input:checked) .tnf-dot { border-color: var(--accent); }
+  .tnf-failed:has(input:checked) .tnf-dot::after { background: var(--accent); }
+  .tnf-failed:has(input:checked) .tnf-opt-label { color: var(--accent); }
+
+  /* Action variants */
+  .tnf-escalate:has(input:checked) { border-color: rgba(210,153,34,.5); background: rgba(210,153,34,.07); }
+  .tnf-escalate:has(input:checked) .tnf-dot { border-color: var(--warn); }
+  .tnf-escalate:has(input:checked) .tnf-dot::after { background: var(--warn); }
+  .tnf-escalate:has(input:checked) .tnf-opt-label { color: var(--warn); }
+
+  .tnf-block:has(input:checked) { border-color: rgba(248,81,73,.5); background: rgba(248,81,73,.07); }
+  .tnf-block:has(input:checked) .tnf-dot { border-color: var(--danger); }
+  .tnf-block:has(input:checked) .tnf-dot::after { background: var(--danger); }
+  .tnf-block:has(input:checked) .tnf-opt-label { color: var(--danger); }
+
+  .tnf-monitor:has(input:checked) { border-color: rgba(88,166,255,.4); background: rgba(88,166,255,.06); }
+  .tnf-monitor:has(input:checked) .tnf-dot { border-color: var(--accent); }
+  .tnf-monitor:has(input:checked) .tnf-dot::after { background: var(--accent); }
+  .tnf-monitor:has(input:checked) .tnf-opt-label { color: var(--accent); }
+
+  /* YES/NO inline variant */
+  .tnf-yn { flex-direction: row; padding: 8px 14px; }
+  .tnf-yn .tnf-dot { margin-top: 0; }
+  .tnf-yes:has(input:checked) { border-color: rgba(248,81,73,.5); background: rgba(248,81,73,.07); }
+  .tnf-yes:has(input:checked) .tnf-dot { border-color: var(--danger); }
+  .tnf-yes:has(input:checked) .tnf-dot::after { background: var(--danger); }
+  .tnf-yes:has(input:checked) .tnf-opt-label { color: var(--danger); }
+  .tnf-no:has(input:checked) { border-color: rgba(63,185,80,.4); background: rgba(63,185,80,.06); }
+  .tnf-no:has(input:checked) .tnf-dot { border-color: var(--accent2); }
+  .tnf-no:has(input:checked) .tnf-dot::after { background: var(--accent2); }
+  .tnf-no:has(input:checked) .tnf-opt-label { color: var(--accent2); }
+
+  /* ── CONCEPT BOX ── */
+  .concept-box{background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:24px 28px;margin:20px 0;}
+  .cb-title{font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;margin-bottom:20px;}
+  .concept-terms{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;margin-bottom:20px;}
+  .ct-card{background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:16px 18px;}
+  .ct-card .ct-term{font-size:15px;font-weight:800;margin-bottom:6px;}
+  .ct-card .ct-def{font-size:13px;color:var(--muted);line-height:1.6;}
+  .concept-loop{display:flex;align-items:center;background:var(--bg3);border:1px solid var(--border);border-radius:8px;overflow:hidden;margin-bottom:16px;}
+  .cl-step{flex:1;padding:14px 12px;text-align:center;border-right:1px solid var(--border);}
+  .cl-step:last-child{border-right:none;}
+  .cl-step .cl-icon{font-size:20px;margin-bottom:6px;}
+  .cl-step .cl-label{font-size:10px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-bottom:4px;}
+  .cl-step .cl-desc{font-size:11px;color:var(--text);line-height:1.4;}
+  .cl-arrow{font-size:14px;color:var(--border);padding:0 2px;flex-shrink:0;align-self:center;}
+  .concept-analogy{border-radius:0 6px 6px 0;padding:12px 16px;font-size:13px;color:var(--muted);line-height:1.6;}
+  .concept-analogy strong{color:var(--text);}
+
+  .access-box{background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:20px 24px;margin:20px 0 0;}
+  .access-box-title{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:12px;}
+  .access-table{width:100%;border-collapse:collapse;}
+  .access-table th{background:var(--bg3);color:var(--muted);font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;padding:8px 12px;text-align:left;border-bottom:1px solid var(--border);}
+  .access-table td{padding:9px 12px;border-bottom:1px solid var(--border);font-size:13px;vertical-align:middle;}
+  .access-table tr:last-child td{border-bottom:none;}
+  .access-table td:first-child{font-weight:600;color:var(--text);white-space:nowrap;}
+  .access-table a{color:var(--accent);text-decoration:none;font-family:monospace;font-size:12px;}
+  .access-table a:hover{text-decoration:underline;}
+  .access-cred{font-family:monospace;font-size:12px;background:var(--bg3);padding:2px 6px;border-radius:4px;}
+  .access-note{font-size:12px;color:var(--muted);margin-top:10px;padding:8px 12px;background:var(--bg3);border-radius:6px;border-left:3px solid var(--accent);}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-inner">
+    <div class="logo">Fortark <span>SOC</span> Labs</div>
+    <div class="sep">›</div>
+    <div class="lab-badge">LAB 1 OF 7</div>
+  </div>
+</div>
+
+<div class="container">
+
+  <h1>SSH Brute Force: Attack, Detect, Triage</h1>
+
+  <div class="meta">
+    <div class="meta-item"><div class="meta-dot"></div> 45 minutes</div>
+    <div class="meta-item"><div class="meta-dot" style="background:var(--accent2)"></div> Beginner — no prior experience required</div>
+    <div class="meta-item"><div class="meta-dot" style="background:var(--warn)"></div> Tools: Wazuh · Kali Linux · Claude AI</div>
+  </div>
+
+  <table class="mitre-table">
+    <thead>
+      <tr>
+        <th>Tactic</th>
+        <th>Technique</th>
+        <th>Plain English</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Credential Access</td>
+        <td><span class="mitre-tag">T1110.001</span> Brute Force: Password Guessing</td>
+        <td>Trying thousands of passwords automatically until one works</td>
+      </tr>
+      <tr>
+        <td>Initial Access</td>
+        <td><span class="mitre-tag">T1078</span> Valid Accounts</td>
+        <td>Logging in with a credential stolen via the brute force</td>
+      </tr>
+    </tbody>
+  </table>
+
+
+  <!-- ACCESS -->
+  <h2 id="access">Platform Access</h2>
+  <div class="access-box">
+    <div class="access-box-title">Open these in separate browser tabs before starting</div>
+    <table class="access-table">
+      <thead><tr><th>Tool</th><th>URL</th><th>Login</th></tr></thead>
+      <tbody>
+        <tr><td>Wazuh (SIEM)</td><td><a href="http://localhost" target="_blank">http://localhost</a></td><td><span class="access-cred">admin</span> / <span class="access-cred">S0cPlatf0rm!e0d085fd</span></td></tr>
+        <tr><td>Kali Terminal</td><td><a href="http://localhost/attacker/" target="_blank">http://localhost/attacker/</a></td><td><span class="access-cred">student</span> / <span class="access-cred">FortarkLabs1!</span></td></tr>
+      </tbody>
+    </table>
+    <div class="access-note">Your seat number is <strong>N</strong> (1–5). Use <code>sN-lab-target</code> as your target hostname throughout this lab.</div>
+  </div>
+
+  <!-- CONCEPT -->
+  <h2 id="concept">What is a brute force attack?</h2>
+
+  <div class="concept-box">
+    <div class="cb-title" style="color:var(--accent)">Two terms you need to understand first</div>
+
+    <div class="concept-terms">
+      <div class="ct-card">
+        <div class="ct-term" style="color:var(--accent)">SSH — Secure Shell</div>
+        <div class="ct-def">A protocol that lets you log into a computer over a network — remotely, from anywhere in the world — by typing a username and password. SSH is legitimate technology used by system administrators every day. Attackers use it because once you log in, you have the same access as the person whose credentials you used.</div>
+      </div>
+      <div class="ct-card">
+        <div class="ct-term" style="color:var(--danger)">Brute Force</div>
+        <div class="ct-def">Trying every possible password, one after another, until one works. By hand, a human can try 5 passwords per minute. With an automated tool like Hydra, an attacker can try 100 passwords per second. The attack does not require cleverness — just patience and a wordlist of common passwords. Most organisations have at least one weak account. That is the one the attacker finds.</div>
+      </div>
+    </div>
+
+    <div class="concept-loop">
+      <div class="cl-step">
+        <div class="cl-icon">⚔️</div>
+        <div class="cl-label">Attacker</div>
+        <div class="cl-desc">Runs Hydra with a wordlist of 10,000 passwords</div>
+      </div>
+      <div class="cl-arrow">→</div>
+      <div class="cl-step">
+        <div class="cl-icon">❌</div>
+        <div class="cl-label">Wrong password</div>
+        <div class="cl-desc">Try the next one — 100× per second</div>
+      </div>
+      <div class="cl-arrow">→</div>
+      <div class="cl-step">
+        <div class="cl-icon">✅</div>
+        <div class="cl-label">Correct password</div>
+        <div class="cl-desc">Attacker is now logged in as the victim user</div>
+      </div>
+      <div class="cl-arrow">→</div>
+      <div class="cl-step">
+        <div class="cl-icon">🚨</div>
+        <div class="cl-label">SOC alert</div>
+        <div class="cl-desc">Wazuh sees the flood of failures and fires</div>
+      </div>
+    </div>
+
+    <div class="concept-analogy" style="background:rgba(88,166,255,.05);border-left:3px solid var(--accent)">
+      <strong>Analogy:</strong> Imagine a burglar with a keyring of 10,000 keys standing at your front door, trying each one as fast as possible. Most will not fit. But if your lock uses one of the common cuts they have, they will get through — and you will never know they tried the other 9,999 until you check the camera footage. In this lab, you are running the automated keyring.
+    </div>
+  </div>
+
+  <hr>
+
+  <!-- SCENARIO -->
+  <h2>The scenario</h2>
+
+  <div class="scenario-box">
+    <span class="scenario-time">02:17 UTC — SOC Alert</span>
+    It is 2:17am. Your SOC dashboard sends an alert to your phone.
+    <br><br>
+    A company server is being hammered with failed SSH login attempts — over a hundred in the last two minutes, all from the same IP address, all targeting the same username. The pattern is unmistakable: someone is running an automated password attack.
+    <br><br>
+    Your job as the analyst on shift is to answer three questions as fast as possible:
+    <br><br>
+    <strong>1. Is this real, or a false alarm?</strong><br>
+    <strong>2. Did they get in?</strong><br>
+    <strong>3. What do you do in the next 10 minutes?</strong>
+    <br><br>
+    In this lab, you are both the attacker and the analyst. You will launch the attack yourself from a Kali Linux terminal in your browser, watch the alerts appear in the SOC dashboard in real time, and triage what you found — exactly as a SOC analyst would on a real shift.
+  </div>
+
+  <hr>
+
+  <!-- HOW IT WORKS -->
+  <h2>How this works</h2>
+  <p>Before you touch a keyboard, understand what is about to happen:</p>
+
+  <div style="display:flex; gap:0; align-items:stretch; margin:20px 0; font-size:13px;">
+
+    <!-- Left box: Browser -->
+    <div style="flex:1; background:var(--bg2); border:1px solid var(--border); border-radius:8px 0 0 8px; padding:20px; min-width:0;">
+      <div style="color:var(--muted); font-size:11px; font-weight:700; letter-spacing:0.1em; text-transform:uppercase; margin-bottom:14px;">Your Browser</div>
+      <div style="background:var(--bg3); border:1px solid var(--border); border-radius:5px; padding:12px 14px; margin-bottom:10px;">
+        <div style="color:var(--accent); font-weight:600; font-size:12px; margin-bottom:4px;">Tab 1 — /attacker/</div>
+        <div style="color:var(--muted); font-size:12px;">Kali Linux terminal</div>
+      </div>
+      <div style="background:var(--bg3); border:1px solid var(--border); border-radius:5px; padding:12px 14px;">
+        <div style="color:var(--accent); font-weight:600; font-size:12px; margin-bottom:4px;">Tab 2 — localhost</div>
+        <div style="color:var(--muted); font-size:12px;">Wazuh SOC dashboard</div>
+      </div>
+    </div>
+
+    <!-- Arrows column -->
+    <div style="display:flex; flex-direction:column; justify-content:center; align-items:center; gap:32px; padding:0 8px; min-width:100px; background:var(--bg); border-top:1px solid var(--border); border-bottom:1px solid var(--border);">
+      <div style="text-align:center;">
+        <div style="color:var(--danger); font-weight:700; font-size:11px; letter-spacing:0.05em; margin-bottom:4px;">ATTACK</div>
+        <div style="font-size:22px; color:var(--danger);">→</div>
+        <div style="color:var(--muted); font-size:10px;">SSH brute force</div>
+      </div>
+      <div style="text-align:center;">
+        <div style="color:var(--accent2); font-weight:700; font-size:11px; letter-spacing:0.05em; margin-bottom:4px;">ALERTS</div>
+        <div style="font-size:22px; color:var(--accent2);">←</div>
+        <div style="color:var(--muted); font-size:10px;">real-time events</div>
+      </div>
+    </div>
+
+    <!-- Right box: SOC Platform -->
+    <div style="flex:1; background:var(--bg2); border:1px solid var(--border); border-radius:0 8px 8px 0; padding:20px; min-width:0;">
+      <div style="color:var(--muted); font-size:11px; font-weight:700; letter-spacing:0.1em; text-transform:uppercase; margin-bottom:14px;">SOC Platform</div>
+      <div style="background:var(--bg3); border:1px solid var(--border); border-radius:5px; padding:12px 14px; margin-bottom:10px;">
+        <div style="color:var(--warn); font-weight:600; font-size:12px; margin-bottom:4px;">sN-lab-target</div>
+        <div style="color:var(--muted); font-size:12px;">Ubuntu VM · sshd port 222N<br>failed logins → auth.log</div>
+      </div>
+      <div style="background:var(--bg3); border:1px solid var(--border); border-radius:5px; padding:12px 14px;">
+        <div style="color:var(--accent2); font-weight:600; font-size:12px; margin-bottom:4px;">Wazuh Agent → Manager</div>
+        <div style="color:var(--muted); font-size:12px;">parses logs · fires rules<br>sends alerts to dashboard</div>
+      </div>
+    </div>
+
+  </div>
+
+  <p>Every failed login you generate in Tab 1 appears as an alert in Tab 2 within seconds. The entire chain — attack, detection, alert — happens live in front of you.</p>
+
+  <hr>
+
+  <!-- STUDENT DETAILS -->
+  <h2>Your student details</h2>
+  <p>Each student has their own isolated victim machine and Wazuh agent. Use your student number everywhere you see <code>[N]</code> in this lab.</p>
+
+  <table class="student-table">
+    <thead>
+      <tr><th>Student</th><th>Target Hostname</th><th>Wazuh Filter</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>Student 1</td><td>lab-target</td><td>agent.name: lab-target</td></tr>
+      <tr><td>Student 2</td><td>lab-target</td><td>agent.name: lab-target</td></tr>
+      <tr><td>Student 3</td><td>lab-target</td><td>agent.name: lab-target</td></tr>
+      <tr><td>Student 4</td><td>lab-target</td><td>agent.name: lab-target</td></tr>
+      <tr><td>Student 5</td><td>lab-target</td><td>agent.name: lab-target</td></tr>
+    </tbody>
+  </table>
+
+  <p><strong>Victim account on your target:</strong> username <code>victim</code> / password <code>password123</code></p>
+
+  <hr>
+
+  <!-- PRE-FLIGHT -->
+  <h2>Pre-flight check</h2>
+  <p>Do these three checks before anything else. If any fail, contact your instructor.</p>
+
+  <div class="preflight">
+    <div class="preflight-item">
+      <div class="preflight-num">1</div>
+      <div class="preflight-text">
+        <strong>SOC dashboard loads</strong>
+        Open <a href="http://localhost" target="_blank">http://localhost</a> in a browser tab. You should see the Wazuh dashboard.
+      </div>
+    </div>
+    <div class="preflight-item">
+      <div class="preflight-num">2</div>
+      <div class="preflight-text">
+        <strong>Your agent is active</strong>
+        In the dashboard go to <strong>Agents</strong> and look for <code>s[N]-lab-target</code>. It should show <strong>Active</strong> with a green indicator.
+      </div>
+    </div>
+    <div class="preflight-item">
+      <div class="preflight-num">3</div>
+      <div class="preflight-text">
+        <strong>Kali terminal loads</strong>
+        Open <a href="http://localhost/attacker/" target="_blank">http://localhost/attacker/</a> in a second browser tab. You should see a terminal prompt. Type <code>whoami</code> and press Enter — it should say <code>student</code>.
+      </div>
+    </div>
+  </div>
+
+  <p style="color: var(--accent2); font-weight: 600;">All three good? Start the lab.</p>
+
+  <hr>
+
+  <!-- PART 1 -->
+  <h2>Part 1 — Open your watchpost first</h2>
+
+  <div class="important-callout">
+    <strong>⚑ Do this before launching the attack.</strong> The most important moment in this lab is watching your own attack appear in the dashboard in real time. You must have the dashboard open and filtered <em>before</em> you launch the attack — not after.
+  </div>
+
+  <div class="step">
+    <div class="step-num">1</div>
+    <div class="step-content">In your Wazuh tab go to <strong>Threat Hunting → Events</strong></div>
+  </div>
+  <div class="step">
+    <div class="step-num">2</div>
+    <div class="step-content">Set the time range to <strong>Last 15 minutes</strong> (top right corner)</div>
+  </div>
+  <div class="step">
+    <div class="step-num">3</div>
+    <div class="step-content">Enter your filter in the search bar and press Enter:
+      <pre>agent.name: s[N]-lab-target</pre>
+    </div>
+  </div>
+  <div class="step">
+    <div class="step-num">4</div>
+    <div class="step-content">The results will be empty — nothing has happened yet. Leave this tab open and switch to your Kali terminal.</div>
+  </div>
+
+  <hr>
+
+  <!-- PART 2 -->
+  <h2>Part 2 — Launch the brute force</h2>
+  <p>You are now the attacker.</p>
+  <p>The tool you will use is called <strong>Hydra</strong> — one of the most widely used password-cracking tools in the world, used by both attackers and security professionals. It takes a list of passwords and fires them at your target's SSH server one by one, automatically, until something works.</p>
+  <p>In the Kali terminal, run this command. Replace <code>[N]</code> with your student number:</p>
+
+  <pre>hydra -l admin -P /usr/share/wordlists/rockyou.txt -t 4 -V -f ssh://s[N]-lab-target</pre>
+
+  <p><strong>What each flag does:</strong></p>
+
+  <table class="flag-table">
+    <thead><tr><th>Flag</th><th>What it does</th></tr></thead>
+    <tbody>
+      <tr><td>-l admin</td><td>Try to log in as the username <code>admin</code></td></tr>
+      <tr><td>-P rockyou.txt</td><td>Use this list of 14 million real-world leaked passwords</td></tr>
+      <tr><td>-t 4</td><td>Run 4 attempts at the same time</td></tr>
+      <tr><td>-V</td><td>Print every attempt to the screen as it happens</td></tr>
+      <tr><td>-f</td><td>Stop the moment a working password is found</td></tr>
+      <tr><td>ssh://s[N]-lab-target</td><td>Connect to your target machine directly by hostname</td></tr>
+    </tbody>
+  </table>
+
+  <p>You will see output like this scrolling fast:</p>
+  <pre>[ATTEMPT] target lab-target - login "admin" - pass "123456"
+[ATTEMPT] target lab-target - login "admin" - pass "password"
+[ATTEMPT] target lab-target - login "admin" - pass "iloveyou"</pre>
+
+  <p><strong>Note the exact time</strong>, then switch straight to your Wazuh tab.</p>
+
+  <hr>
+
+  <!-- PART 3 -->
+  <h2>Part 3 — Hunt the alerts</h2>
+
+  <h3>Wave 1 — Individual failures (rule 5710)</h3>
+  <p>Within 5–10 seconds of the attack starting, alerts will begin appearing. Each one represents a single failed SSH login attempt that Wazuh caught and turned into a security event.</p>
+  <p>Click any alert to expand it and find:</p>
+
+  <div class="question">
+    <div class="question-label">Q1</div>
+    <div class="question-text">What IP address is the attack coming from? <span style="color:var(--muted);font-weight:400;">(field: <code>data.srcip</code>)</span></div>
+  </div>
+
+  <div class="question">
+    <div class="question-label">Q2</div>
+    <div class="question-text">What username is being targeted? <span style="color:var(--muted);font-weight:400;">(field: <code>data.srcuser</code>)</span></div>
+  </div>
+
+  <div class="question">
+    <div class="question-label">Q3</div>
+    <div class="question-text">The alert message says "Invalid user admin" — what does that mean, and why does it matter?</div>
+  </div>
+
+  <div class="callout">
+    There is a critical difference between two alerts that both look like "failed login":
+    <br><br>
+    <strong>"Invalid user admin"</strong> — the username <code>admin</code> does not exist on this machine. The attacker does not even have a valid username yet.
+    <br><br>
+    <strong>"Failed password for root"</strong> — the username <code>root</code> exists. The attacker has the right username. They just need the password.
+    <br><br>
+    Same alert type. Completely different risk level. A good analyst reads the message, not just the rule ID.
+  </div>
+
+  <h3>Wave 2 — Brute force pattern detected (rule 2502)</h3>
+  <p>After roughly 8 failures from the same IP, Wazuh recognises the pattern and fires a higher-severity alert. It has correlated the individual failures into a single attack story.</p>
+  <p>Update your filter:</p>
+  <pre>agent.name: s[N]-lab-target AND rule.id: 2502</pre>
+
+  <div class="question">
+    <div class="question-label">Q4</div>
+    <div class="question-text">What level does rule 2502 fire at? <span style="color:var(--muted);font-weight:400;">(check <code>rule.level</code>)</span></div>
+  </div>
+
+  <div class="question">
+    <div class="question-label">Q5</div>
+    <div class="question-text">How many failures triggered it?</div>
+  </div>
+
+  <div class="callout">
+    Wazuh rule levels run from 0 to 15. Level 5 is low, level 10 is high, level 12 and above is critical. In most SOC environments anything above level 7 triggers a notification to the on-call analyst. A level 10 brute force alert at 2am would wake someone up.
+    <br><br>
+    <strong>SOC SLAs by alert level — real organisations are contractually bound to these timelines:</strong>
+    <br><br>
+    <table style="width:100%;border-collapse:collapse;font-size:13px;margin-top:8px;">
+      <thead>
+        <tr>
+          <th style="background:var(--bg);color:var(--muted);text-align:left;padding:8px 12px;border:1px solid var(--border);font-size:11px;text-transform:uppercase;letter-spacing:0.06em;">Level</th>
+          <th style="background:var(--bg);color:var(--muted);text-align:left;padding:8px 12px;border:1px solid var(--border);font-size:11px;text-transform:uppercase;letter-spacing:0.06em;">Severity</th>
+          <th style="background:var(--bg);color:var(--muted);text-align:left;padding:8px 12px;border:1px solid var(--border);font-size:11px;text-transform:uppercase;letter-spacing:0.06em;">Acknowledge</th>
+          <th style="background:var(--bg);color:var(--muted);text-align:left;padding:8px 12px;border:1px solid var(--border);font-size:11px;text-transform:uppercase;letter-spacing:0.06em;">Investigate</th>
+          <th style="background:var(--bg);color:var(--muted);text-align:left;padding:8px 12px;border:1px solid var(--border);font-size:11px;text-transform:uppercase;letter-spacing:0.06em;">Escalate if unresolved</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td style="padding:8px 12px;border:1px solid var(--border);font-family:monospace;">1–6</td>
+          <td style="padding:8px 12px;border:1px solid var(--border);color:var(--accent2);">Low / Info</td>
+          <td style="padding:8px 12px;border:1px solid var(--border);">Next business day</td>
+          <td style="padding:8px 12px;border:1px solid var(--border);">Within 72 hours</td>
+          <td style="padding:8px 12px;border:1px solid var(--border);color:var(--muted);">Not required</td>
+        </tr>
+        <tr style="background:var(--bg);">
+          <td style="padding:8px 12px;border:1px solid var(--border);font-family:monospace;">7–9</td>
+          <td style="padding:8px 12px;border:1px solid var(--border);color:var(--accent);">Medium</td>
+          <td style="padding:8px 12px;border:1px solid var(--border);">Within 4 hours</td>
+          <td style="padding:8px 12px;border:1px solid var(--border);">Within 8 hours</td>
+          <td style="padding:8px 12px;border:1px solid var(--border);">Tier 2 within 8 hours</td>
+        </tr>
+        <tr>
+          <td style="padding:8px 12px;border:1px solid var(--border);font-family:monospace;">10–11</td>
+          <td style="padding:8px 12px;border:1px solid var(--border);color:var(--warn);">High</td>
+          <td style="padding:8px 12px;border:1px solid var(--border);font-weight:600;">Within 30 minutes</td>
+          <td style="padding:8px 12px;border:1px solid var(--border);">Within 2 hours</td>
+          <td style="padding:8px 12px;border:1px solid var(--border);">Tier 2 immediately</td>
+        </tr>
+        <tr style="background:var(--bg);">
+          <td style="padding:8px 12px;border:1px solid var(--border);font-family:monospace;">12–14</td>
+          <td style="padding:8px 12px;border:1px solid var(--border);color:var(--danger);">Critical</td>
+          <td style="padding:8px 12px;border:1px solid var(--border);font-weight:600;">Within 15 minutes</td>
+          <td style="padding:8px 12px;border:1px solid var(--border);">Immediate</td>
+          <td style="padding:8px 12px;border:1px solid var(--border);">Tier 2 + management within 30 min</td>
+        </tr>
+        <tr>
+          <td style="padding:8px 12px;border:1px solid var(--border);font-family:monospace;">15</td>
+          <td style="padding:8px 12px;border:1px solid var(--border);color:var(--danger);font-weight:700;">Emergency</td>
+          <td style="padding:8px 12px;border:1px solid var(--border);font-weight:700;color:var(--danger);">Immediate</td>
+          <td style="padding:8px 12px;border:1px solid var(--border);font-weight:700;">Immediate</td>
+          <td style="padding:8px 12px;border:1px solid var(--border);font-weight:700;">CISO + incident commander now</td>
+        </tr>
+      </tbody>
+    </table>
+    <br>
+    Rule 2502 fires at level 10 — that is a <strong>30-minute acknowledgement SLA</strong>. The clock starts the moment the alert fires, not when an analyst notices it. In this lab that alert appeared within 10 seconds of hydra starting. In a real SOC, you would already be 10 seconds into your 30-minute window.
+  </div>
+
+  <hr>
+
+  <!-- PART 4 -->
+  <h2>Part 4 — Simulate the breach</h2>
+
+  <p>The username <code>admin</code> does not exist on your target. Hydra will try every password in the list and fail — you cannot log into an account that does not exist.</p>
+  <p>But real attackers adapt. When one username fails, they try others gathered from reconnaissance. They find that the username <code>victim</code> exists on the system.</p>
+  <p><strong>Stop hydra</strong> with <code>Ctrl+C</code> in the Kali terminal.</p>
+  <p>Now simulate the attacker succeeding — log in as the real account:</p>
+
+  <pre>ssh victim@s[N]-lab-target
+<span class="comment"># password: password123</span></pre>
+
+  <p>Once inside, type <code>exit</code>. You only needed the session to be established.</p>
+  <p>Back in Wazuh, search for:</p>
+  <pre>agent.name: s[N]-lab-target AND rule.id: 40112</pre>
+
+  <div class="question">
+    <div class="question-label">Q6</div>
+    <div class="question-text">Is there a rule 40112 alert? What level is it?</div>
+  </div>
+
+  <div class="important-callout">
+    <strong>Rule 40112 is the most important alert in this lab.</strong>
+    <br><br>
+    It fires when Wazuh sees a pattern of failures from an IP followed by a successful login. It does not just tell you someone tried to get in. It tells you: <strong>they got in.</strong>
+    <br><br>
+    This single alert changes everything. You are no longer investigating an attempted breach. You are investigating a confirmed breach. The response is completely different — isolation, forensics, escalation — versus simply blocking an IP and moving on.
+    <br><br>
+    Notice the level progression: rule 5710 fires at level 5, rule 2502 at level 10, rule 40112 at level 12. Wazuh is automatically escalating severity as the attack story becomes clearer.
+  </div>
+
+  <hr>
+
+  <!-- PART 5 -->
+  <h2>Part 5 — Your triage decision</h2>
+  <p>Before you ask Claude anything, make your own call. Answer each question based on what you found in the Wazuh dashboard. This is the analyst's job.</p>
+
+  <div class="triage-decision">
+
+    <!-- Q1 -->
+    <div class="triage-q-section">
+      <div class="tq-header">
+        <div class="tq-num-badge">1</div>
+        <div class="tq-question-text">Did the attack succeed?</div>
+      </div>
+      <div class="tq-options">
+        <label class="tq-option tq-opt-danger">
+          <input type="radio" name="q1" value="yes">
+          <div class="tq-radio"></div>
+          <div class="tq-option-body">
+            <div class="tq-opt-head">Yes — rule 40112 fired</div>
+            <div class="tq-opt-sub">Failures followed by a successful login. The attack chain is complete. This is a confirmed breach.</div>
+          </div>
+        </label>
+        <label class="tq-option tq-opt-safe">
+          <input type="radio" name="q1" value="no">
+          <div class="tq-radio"></div>
+          <div class="tq-option-body">
+            <div class="tq-opt-head">No — no successful login detected</div>
+            <div class="tq-opt-sub">Rule 40112 did not fire. The brute force is still in progress or was stopped before succeeding.</div>
+          </div>
+        </label>
+      </div>
+    </div>
+
+    <!-- Q2 -->
+    <div class="triage-q-section">
+      <div class="tq-header">
+        <div class="tq-num-badge">2</div>
+        <div class="tq-question-text">Is the source IP internal or external?</div>
+      </div>
+      <div class="tq-options">
+        <label class="tq-option tq-opt-safe">
+          <input type="radio" name="q2" value="internal">
+          <div class="tq-radio"></div>
+          <div class="tq-option-body">
+            <div class="tq-opt-head">Internal — 192.168.x.x range</div>
+            <div class="tq-opt-sub">The source is inside the network. Could be a compromised internal machine, a misconfigured service, or a legitimate tool.</div>
+          </div>
+        </label>
+        <label class="tq-option tq-opt-danger">
+          <input type="radio" name="q2" value="external">
+          <div class="tq-radio"></div>
+          <div class="tq-option-body">
+            <div class="tq-opt-head">External — any other range</div>
+            <div class="tq-opt-sub">The source is coming from outside the network. This is an internet-facing attack. Look up the IP — it may be a known scanner or threat actor infrastructure.</div>
+          </div>
+        </label>
+      </div>
+    </div>
+
+    <!-- Q3 -->
+    <div class="triage-q-section">
+      <div class="tq-header">
+        <div class="tq-num-badge">3</div>
+        <div class="tq-question-text">Was the targeted username a real account on the system?</div>
+      </div>
+      <div class="tq-options">
+        <label class="tq-option tq-opt-safe">
+          <input type="radio" name="q3" value="invalid">
+          <div class="tq-radio"></div>
+          <div class="tq-option-body">
+            <div class="tq-opt-head">No — alert said "Invalid user"</div>
+            <div class="tq-opt-sub">The account does not exist on this machine. The attacker is guessing usernames. They have not found a valid target yet.</div>
+          </div>
+        </label>
+        <label class="tq-option tq-opt-danger">
+          <input type="radio" name="q3" value="failed-password">
+          <div class="tq-radio"></div>
+          <div class="tq-option-body">
+            <div class="tq-opt-head">Yes — alert said "Failed password for [user]"</div>
+            <div class="tq-opt-sub">The account exists. The attacker has a valid username and is now guessing the password. Significantly higher risk — they only need one more thing.</div>
+          </div>
+        </label>
+      </div>
+    </div>
+
+    <!-- Q4 -->
+    <div class="triage-q-section">
+      <div class="tq-header">
+        <div class="tq-num-badge">4</div>
+        <div class="tq-question-text">Your recommended action</div>
+      </div>
+      <div class="tq-options">
+        <label class="tq-option tq-opt-monitor">
+          <input type="radio" name="q4" value="monitor">
+          <div class="tq-radio"></div>
+          <div class="tq-option-body">
+            <div class="tq-opt-head">Monitor</div>
+            <div class="tq-opt-sub">Low confidence. The pattern is present but no breach confirmed. Continue watching — note the alert and check back.</div>
+          </div>
+        </label>
+        <label class="tq-option tq-opt-escalate">
+          <input type="radio" name="q4" value="escalate">
+          <div class="tq-radio"></div>
+          <div class="tq-option-body">
+            <div class="tq-opt-head">Escalate</div>
+            <div class="tq-opt-sub">Confirmed or likely breach. Rule 40112 fired. Wake up Tier 2. This needs an incident response, not just monitoring.</div>
+          </div>
+        </label>
+        <label class="tq-option tq-opt-block">
+          <input type="radio" name="q4" value="block">
+          <div class="tq-radio"></div>
+          <div class="tq-option-body">
+            <div class="tq-opt-head">Block</div>
+            <div class="tq-opt-sub">Isolate the source IP immediately. Used when the attack is still active and ongoing — stopping it takes priority over investigation.</div>
+          </div>
+        </label>
+      </div>
+    </div>
+
+  </div>
+
+  <p>Lock in your answers before moving to Part 6. You will compare them to Claude's recommendation.</p>
+
+  <hr>
+
+  <!-- PART 6 -->
+  <h2>Part 6 — Ask Claude to triage</h2>
+  <p>Open a Claude conversation and paste this prompt. Fill in the brackets with your actual findings:</p>
+
+  <pre>I am a SOC analyst investigating alerts on a Linux server
+called s[N]-lab-target.
+
+Here is what I found:
+- [NUMBER] failed SSH login attempts from IP [ATTACKER IP]
+- Username targeted: [USERNAME]
+- Rule 5710 fired [X] times (individual failures, level 5)
+- Rule 2502 fired — brute force pattern detected at level [LEVEL]
+- Rule 40112 fired [YES or NO] — this rule means failures followed
+  by a successful login. If yes, the successful login was as
+  user "victim".
+
+Is this a confirmed breach? What should I prioritise in the
+next 10 minutes?</pre>
+
+  <div class="question">
+    <div class="question-label">Q7</div>
+    <div class="question-text">How does Claude's recommendation compare to your decision from Part 5?</div>
+  </div>
+
+  <div class="question">
+    <div class="question-label">Q8</div>
+    <div class="question-text">Did Claude surface anything you had not considered?</div>
+  </div>
+
+  <div class="callout">
+    This is how Claude is used in a real SOC — not to replace analyst judgement but to cross-check it. You bring context Claude does not have: which systems are critical, which IPs are trusted, what is normal in this environment. Claude brings speed and breadth. Use both.
+  </div>
+
+  <hr>
+
+  <!-- PART 7 -->
+  <h2>Part 7 — Write the triage note</h2>
+  <p>Every investigated alert needs a written record. This is what the next analyst reads when they come on shift, and your audit trail if this becomes a full incident. Fill in each field from your findings in the Wazuh dashboard.</p>
+
+  <div class="triage-note-form" id="triageNoteForm">
+
+    <div class="tnf-header">
+      <div class="tnf-title">
+        <div class="tnf-title-dot"></div>
+        Triage Note — Lab 1
+      </div>
+      <button class="copy-btn" id="copyBtn" onclick="copyTriageNote()">
+        <svg width="13" height="13" viewBox="0 0 16 16" fill="currentColor"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"/><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"/></svg>
+        Copy note
+      </button>
+    </div>
+
+    <!-- Date / Time -->
+    <div class="tnf-row">
+      <div class="tnf-label">Date / Time</div>
+      <div class="tnf-field">
+        <input class="tnf-input" id="tnf-datetime" type="text"
+          placeholder="e.g. 2026-05-30 13:09 UTC — timestamp of first rule 5710 alert">
+      </div>
+    </div>
+
+    <!-- Source IP -->
+    <div class="tnf-row">
+      <div class="tnf-label">Source IP</div>
+      <div class="tnf-field">
+        <input class="tnf-input" id="tnf-srcip" type="text"
+          placeholder="e.g. 140.82.114.4 — the attacker IP from the alert">
+      </div>
+    </div>
+
+    <!-- Target -->
+    <div class="tnf-row">
+      <div class="tnf-label">Target</div>
+      <div class="tnf-field">
+        <input class="tnf-input" id="tnf-target" type="text"
+          placeholder="e.g. admin / victim @ lab-target">
+      </div>
+    </div>
+
+    <!-- Alert hits -->
+    <div class="tnf-row" style="align-items:flex-start;">
+      <div class="tnf-label" style="padding-top:14px;">Alert hits</div>
+      <div class="tnf-hits">
+        <div class="tnf-hit-row">
+          <strong>Rule 5710</strong> ×
+          <input class="tnf-count" id="tnf-5710" type="number" min="0" placeholder="0">
+          <span style="color:rgba(139,148,158,.5);font-size:12px;">individual failures</span>
+        </div>
+        <div class="tnf-hit-row">
+          <strong>Rule 2502</strong> ×
+          <input class="tnf-count" id="tnf-2502" type="number" min="0" placeholder="0">
+          <span style="color:rgba(139,148,158,.5);font-size:12px;">brute force pattern</span>
+        </div>
+        <div class="tnf-hit-row" style="gap:14px;flex-wrap:wrap;">
+          <span><strong>Rule 40112</strong></span>
+          <label class="tq-option tq-opt-danger tnf-yn tnf-yes" style="flex:none;padding:7px 14px;">
+            <input type="radio" name="tnf-40112" id="tnf-40112-yes" value="YES">
+            <div class="tq-radio" style="width:14px;height:14px;"></div>
+            <div class="tq-option-body"><div class="tq-opt-head" style="font-size:13px;">YES — fired</div></div>
+          </label>
+          <label class="tq-option tq-opt-safe tnf-yn tnf-no" style="flex:none;padding:7px 14px;">
+            <input type="radio" name="tnf-40112" id="tnf-40112-no" value="NO">
+            <div class="tq-radio" style="width:14px;height:14px;"></div>
+            <div class="tq-option-body"><div class="tq-opt-head" style="font-size:13px;">NO — did not fire</div></div>
+          </label>
+        </div>
+      </div>
+    </div>
+
+    <!-- Outcome -->
+    <div class="tnf-row" style="align-items:flex-start;">
+      <div class="tnf-label" style="padding-top:14px;">Outcome</div>
+      <div class="tnf-radios">
+        <label class="tnf-radio-opt tnf-breach">
+          <input type="radio" name="tnf-outcome" value="CONFIRMED BREACH — successful login after brute force">
+          <div class="tnf-dot"></div>
+          <div>
+            <span class="tnf-opt-label">Confirmed Breach</span>
+            <span class="tnf-opt-sub">Rule 40112 fired — the attacker successfully logged in after the brute force</span>
+          </div>
+        </label>
+        <label class="tnf-radio-opt tnf-failed">
+          <input type="radio" name="tnf-outcome" value="FAILED ATTEMPT — brute force blocked, no successful login">
+          <div class="tnf-dot"></div>
+          <div>
+            <span class="tnf-opt-label">Failed Attempt</span>
+            <span class="tnf-opt-sub">Rule 40112 did not fire — the brute force ran but never achieved a successful login</span>
+          </div>
+        </label>
+      </div>
+    </div>
+
+    <!-- Verdict -->
+    <div class="tnf-row">
+      <div class="tnf-label">Verdict</div>
+      <div class="tnf-field">
+        <span class="tnf-static" style="color:var(--accent2);font-weight:700;">True Positive</span>
+        <span class="tnf-static" style="font-size:12px;margin-left:8px;">— the alert fired and the threat was real</span>
+      </div>
+    </div>
+
+    <!-- Action -->
+    <div class="tnf-row" style="align-items:flex-start;">
+      <div class="tnf-label" style="padding-top:14px;">Action</div>
+      <div class="tnf-radios">
+        <label class="tnf-radio-opt tnf-escalate">
+          <input type="radio" name="tnf-action" value="Escalate to Tier 2 / Incident Response">
+          <div class="tnf-dot"></div>
+          <div>
+            <span class="tnf-opt-label">Escalate to Tier 2 / Incident Response</span>
+            <span class="tnf-opt-sub">Confirmed breach — a human needs to investigate what the attacker did after they got in</span>
+          </div>
+        </label>
+        <label class="tnf-radio-opt tnf-block">
+          <input type="radio" name="tnf-action" value="Block source IP and monitor">
+          <div class="tnf-dot"></div>
+          <div>
+            <span class="tnf-opt-label">Block source IP and monitor</span>
+            <span class="tnf-opt-sub">Attack ongoing but no breach confirmed — stop the source while continuing to watch</span>
+          </div>
+        </label>
+        <label class="tnf-radio-opt tnf-monitor">
+          <input type="radio" name="tnf-action" value="Monitor — no escalation required at this time">
+          <div class="tnf-dot"></div>
+          <div>
+            <span class="tnf-opt-label">Monitor</span>
+            <span class="tnf-opt-sub">Failed attempt, low risk — log the event and continue watching</span>
+          </div>
+        </label>
+      </div>
+    </div>
+
+    <!-- Analyst -->
+    <div class="tnf-row">
+      <div class="tnf-label">Analyst</div>
+      <div class="tnf-field">
+        <input class="tnf-input" id="tnf-analyst" type="text" placeholder="Your name">
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+  function copyTriageNote() {
+    const dt       = document.getElementById('tnf-datetime').value || '[timestamp]';
+    const srcip    = document.getElementById('tnf-srcip').value    || '[attacker IP]';
+    const target   = document.getElementById('tnf-target').value   || '[target]';
+    const c5710    = document.getElementById('tnf-5710').value     || '0';
+    const c2502    = document.getElementById('tnf-2502').value     || '0';
+    const r40112   = document.querySelector('input[name="tnf-40112"]:checked');
+    const outcome  = document.querySelector('input[name="tnf-outcome"]:checked');
+    const action   = document.querySelector('input[name="tnf-action"]:checked');
+    const analyst  = document.getElementById('tnf-analyst').value  || '[analyst]';
+
+    const note = [
+      'Date/Time   : ' + dt,
+      'Source IP   : ' + srcip,
+      'Target      : ' + target,
+      'Alert hits  : Rule 5710 ×' + c5710 + '  Rule 2502 ×' + c2502 + '  Rule 40112: ' + (r40112 ? r40112.value : '[YES/NO]'),
+      'Outcome     : ' + (outcome ? outcome.value : '[CONFIRMED BREACH / FAILED ATTEMPT]'),
+      'Verdict     : True Positive',
+      'Action      : ' + (action ? action.value : '[action]'),
+      'Analyst     : ' + analyst,
+    ].join('\n');
+
+    navigator.clipboard.writeText(note).then(() => {
+      const btn = document.getElementById('copyBtn');
+      btn.textContent = '✓ Copied';
+      btn.classList.add('copied');
+      setTimeout(() => {
+        btn.innerHTML = '<svg width="13" height="13" viewBox="0 0 16 16" fill="currentColor"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"/><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"/></svg> Copy note';
+        btn.classList.remove('copied');
+      }, 2000);
+    });
+  }
+  </script>
+
+  <p>Keep this note. In Lab 2 you will investigate what the attacker did after they got in.</p>
+
+  <hr>
+
+  <!-- KEY TAKEAWAYS -->
+  <h2>Key takeaways</h2>
+
+  <ul class="takeaways">
+    <li><strong>Brute force is loud</strong> — hundreds of attempts in minutes is an obvious pattern. The only question is whether anyone is watching when it happens.</li>
+    <li><strong>Always check whether the attack succeeded</strong> — a pile of failed logins is noisy and common. Failed logins followed by a success is a confirmed breach requiring a completely different response.</li>
+    <li><strong>"Invalid user" vs "failed password" are not the same thing</strong> — one means the attacker does not have a valid username yet. The other means they do. Read the alert message, not just the rule ID.</li>
+    <li><strong>Rule 40112 is the one that matters</strong> — it does the correlation for you. When it fires, the attack story is complete. When it does not fire, keep watching.</li>
+    <li><strong>The triage note is the deliverable</strong> — spotting the alert is the easy part. Writing a clear, accurate, documented decision that holds up under review is what the job actually requires.</li>
+    <li><strong>Claude is a force multiplier, not an oracle</strong> — it produces an incident narrative in seconds. But your knowledge of the environment will always matter more than raw alerts. Use both.</li>
+  </ul>
+
+  <hr>
+  <p style="font-size:13px; color:var(--muted); text-align:center; padding-top: 8px;">
+    Fortark SOC Labs · Lab 1 of 7 · Next: <strong>Post-Breach Investigation</strong>
+  </p>
+
+</div>
+</body>
+</html>
