@@ -33,16 +33,24 @@ def build_alert(alert):
     agent = alert.get("agent", {})
     data = alert.get("data", {})
     ts = alert.get("timestamp", "")
+    mitre = rule.get("mitre", {})
 
     agent_name = agent.get("name", "unknown")
     src_ip = data.get("srcip", data.get("src_ip", "unknown"))
     dst_user = data.get("dstuser", data.get("user", "unknown"))
     rule_desc = rule.get("description", "SSH brute force and successful login")
+    mitre_ids = mitre.get("id", [])
+    mitre_techniques = mitre.get("technique", [])
 
     # Unique per agent+hour so re-runs in the same hour don't spam cases
     hour = ts[:13] if len(ts) >= 13 else datetime.datetime.utcnow().strftime("%Y-%m-%dT%H")
     ref_raw = f"{agent_name}-{src_ip}-{hour}"
     source_ref = "wazuh-" + hashlib.md5(ref_raw.encode()).hexdigest()[:10]
+
+    mitre_rows = "".join(
+        f"| MITRE | `{mid}` — {tech} |\n"
+        for mid, tech in zip(mitre_ids, mitre_techniques)
+    )
 
     description = (
         f"**Wazuh rule 40112 — SSH brute force succeeded**\n\n"
@@ -52,8 +60,9 @@ def build_alert(alert):
         f"| Attacker IP | `{src_ip}` |\n"
         f"| Target user | `{dst_user}` |\n"
         f"| Rule | {rule.get('id', '?')} — {rule_desc} |\n"
-        f"| Timestamp | `{ts}` |\n\n"
-        f"Automated alert created by Wazuh SOAR integration."
+        f"| Timestamp | `{ts}` |\n"
+        f"{mitre_rows}"
+        f"\nAutomated alert created by Wazuh SOAR integration."
     )
 
     return {
@@ -70,7 +79,7 @@ def build_alert(alert):
             f"src:{src_ip}",
             "rule:40112",
             "automated",
-        ],
+        ] + mitre_ids,
         "tlp": 2,
     }
 
