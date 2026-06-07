@@ -79,6 +79,7 @@ services:
       - FILEBEAT_SSL_VERIFICATION_MODE=none
       - API_USERNAME=${WAZUH_API_USERNAME}
       - API_PASSWORD=${WAZUH_API_PASSWORD}
+      - THEHIVE_API_KEY=${THEHIVE_API_KEY}
     volumes:
       - wazuh-manager-data:/var/ossec/data
       - ./platform/wazuh/config/ossec.conf:/var/ossec/etc/ossec.conf:ro

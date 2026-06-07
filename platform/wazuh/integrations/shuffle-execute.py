@@ -17,8 +17,9 @@ import hashlib
 import datetime
 
 THEHIVE_URL = "http://soc-thehive:9000"
-# student1@thehive.local API key — SOC organisation
-THEHIVE_API_KEY = "0dPfyff5F7JFE1pmcZP1F3O7p/lgKH+t"
+# Read from env (set THEHIVE_API_KEY in .env after TheHive first-run setup)
+import os
+THEHIVE_API_KEY = os.environ.get("THEHIVE_API_KEY", "")
 
 TARGET_RULE = "40112"
 

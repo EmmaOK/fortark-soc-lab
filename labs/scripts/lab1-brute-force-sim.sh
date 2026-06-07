@@ -3,15 +3,15 @@
 # Simulates a brute force attack by making rapid failed SSH login attempts
 # followed by one successful login (using valid credentials).
 #
-# Safe: uses SSH to a target you control (default: Mac Mini at 192.168.6.213).
-# Wazuh on the target machine picks up the auth failures from sshd logs.
+# Safe: uses SSH to a target you control (default: lab-target container).
+# Wazuh on the target picks up the auth failures from sshd logs.
 #
-# Requirements: ssh available on PATH, target machine has SSH enabled.
+# Requirements: ssh available on PATH (run from Kali container or host).
 
 set -euo pipefail
 
-TARGET_HOST="${TARGET_HOST:-192.168.6.213}"
-TARGET_USER="${TARGET_USER:-emmanuelokonkwo}"
+TARGET_HOST="${TARGET_HOST:-lab-target}"
+TARGET_USER="${TARGET_USER:-victim}"
 ATTACK_USER="${ATTACK_USER:-admin}"       # username attacker tries
 ATTEMPT_COUNT="${ATTEMPT_COUNT:-20}"      # number of failed attempts
 DELAY="${DELAY:-0.3}"                     # seconds between attempts
