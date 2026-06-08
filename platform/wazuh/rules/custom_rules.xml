@@ -86,6 +86,16 @@
     <group>lab4,ransomware,impact,attack_simulation,</group>
   </rule>
 
+  <rule id="100404" level="12">
+    <program_name>^lab4-ransomware$</program_name>
+    <match>STAGE:INHIBIT</match>
+    <description>Lab 4 Sim: Ransomware sweeping for backup files to destroy</description>
+    <mitre>
+      <id>T1490</id>
+    </mitre>
+    <group>lab4,ransomware,inhibit_recovery,attack_simulation,</group>
+  </rule>
+
   <!-- ── Lab 5: Supply chain sim ─────────────────────────────────────── -->
 
   <rule id="100500" level="7">
