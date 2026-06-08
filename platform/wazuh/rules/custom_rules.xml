@@ -96,6 +96,16 @@
     <group>lab4,ransomware,inhibit_recovery,attack_simulation,</group>
   </rule>
 
+  <rule id="100405" level="12">
+    <program_name>^lab4-ransomware$</program_name>
+    <match>INHIBIT:FOUND_BACKUP</match>
+    <description>Lab 4 Sim: Ransomware found backup file targeted for destruction</description>
+    <mitre>
+      <id>T1490</id>
+    </mitre>
+    <group>lab4,ransomware,inhibit_recovery,attack_simulation,</group>
+  </rule>
+
   <!-- ── Lab 5: Supply chain sim ─────────────────────────────────────── -->
 
   <rule id="100500" level="7">
