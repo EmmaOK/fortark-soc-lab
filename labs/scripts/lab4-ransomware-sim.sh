@@ -40,6 +40,7 @@ sleep 1
 echo ""
 echo -e "${YLW}[Stage 2] Staging — creating victim file set in ${TARGET_DIR}...${NC}"
 logger -t "$TAG" "STAGE:STAGING creating victim files in $TARGET_DIR"
+rm -rf "$TARGET_DIR"
 mkdir -p "$TARGET_DIR"
 
 for i in $(seq 1 $FILE_COUNT); do
