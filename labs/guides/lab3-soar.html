@@ -355,9 +355,9 @@
     <table class="access-table">
       <thead><tr><th>Tool</th><th>URL</th><th>Login</th></tr></thead>
       <tbody>
-        <tr><td>Wazuh (SIEM)</td><td><a href="http://localhost" target="_blank">http://localhost</a></td><td><span class="access-cred">admin</span> / <span class="access-cred">S0cPlatf0rm!e0d085fd</span></td></tr>
-        <tr><td>TheHive (cases)</td><td><a href="http://localhost/thehive/" target="_blank">http://localhost/thehive/</a></td><td><span class="access-cred">studentN@thehive.local</span> / <span class="access-cred">FortarkLabs1!</span></td></tr>
-        <tr><td>Shuffle (SOAR)</td><td><a href="https://localhost:3001" target="_blank">https://localhost:3001</a></td><td><span class="access-cred">studentN</span> / <span class="access-cred">FortarkLabs1!</span></td></tr>
+        <tr><td>Wazuh (SIEM)</td><td><a href="https://sec.fortark.com" target="_blank">https://sec.fortark.com</a></td><td><span class="access-cred">admin</span> / <span class="access-cred">S0cPlatf0rm!e0d085fd</span></td></tr>
+        <tr><td>TheHive (cases)</td><td><a href="https://sec.fortark.com/thehive/" target="_blank">https://sec.fortark.com/thehive/</a></td><td><span class="access-cred">student1@thehive.local</span> / <span class="access-cred">FortarkLabs1!</span></td></tr>
+        <tr><td>Shuffle (SOAR)</td><td><a href="https://192.168.6.213:3001" target="_blank">https://192.168.6.213:3001</a></td><td><span class="access-cred">admin</span> / <span class="access-cred">FortarkLabs1!</span></td></tr>
       </tbody>
     </table>
     <div class="access-note"><strong>N</strong> = your seat number (1–5). Accept the SSL certificate warning on the Shuffle link.</div>
@@ -481,14 +481,14 @@
       <div class="pipeline-node pn-shuffle">
         <div class="pn-icon">⚙️</div>
         <div class="pn-body">
-          <div class="pn-name">Shuffle SOAR</div>
-          <div class="pn-desc">Receives alert → runs workflow "Wazuh Brute Force — Auto TheHive Case" → parses agent name, attacker IP, severity → calls TheHive API</div>
+          <div class="pn-name">shuffle.py (integration script)</div>
+          <div class="pn-desc">Wazuh's built-in <code>shuffle</code> wrapper calls <code>shuffle.py</code> — our custom script checks for rule 40112, builds the alert payload, and calls TheHive directly</div>
         </div>
       </div>
 
       <div class="pipeline-arrow">
         <div class="arrow-line"></div>
-        <div class="arrow-label">POST /api/v1/alert — structured case data</div>
+        <div class="arrow-label">POST /api/v1/alert — structured alert data</div>
         <div class="arrow-line"></div>
         <div class="arrow-tip"></div>
       </div>
@@ -497,7 +497,7 @@
         <div class="pn-icon">🐝</div>
         <div class="pn-body">
           <div class="pn-name">TheHive</div>
-          <div class="pn-desc">Creates HIGH severity alert: "[AUTOMATED] SSH Brute Force + Login Detected" with agent, IP, MITRE tags</div>
+          <div class="pn-desc">Creates HIGH severity alert: "SSH Brute Force Success — s[N]-lab-target from [attacker IP]" with agent, IP, and MITRE tags</div>
         </div>
       </div>
 
@@ -527,8 +527,8 @@
         <td>Detects the event and sends the full alert JSON to Shuffle via the integration script</td>
       </tr>
       <tr>
-        <td><strong style="color:var(--purple);">Shuffle SOAR</strong></td>
-        <td>Receives the alert, parses the fields, executes the workflow, calls the TheHive API</td>
+        <td><strong style="color:var(--purple);">shuffle.py</strong></td>
+        <td>Custom integration script — called by Wazuh on every level-7+ alert, checks for rule 40112, and calls the TheHive API directly</td>
       </tr>
       <tr>
         <td><strong style="color:var(--teal);">TheHive</strong></td>
@@ -545,11 +545,11 @@
   <table class="student-table">
     <thead><tr><th>Student</th><th>Target</th><th>Wazuh filter</th></tr></thead>
     <tbody>
-      <tr><td>Student 1</td><td><code>ssh victim@lab-target</code></td><td><code>agent.name: lab-target</code></td></tr>
-      <tr><td>Student 2</td><td><code>ssh victim@lab-target</code></td><td><code>agent.name: lab-target</code></td></tr>
-      <tr><td>Student 3</td><td><code>ssh victim@lab-target</code></td><td><code>agent.name: lab-target</code></td></tr>
-      <tr><td>Student 4</td><td><code>ssh victim@lab-target</code></td><td><code>agent.name: lab-target</code></td></tr>
-      <tr><td>Student 5</td><td><code>ssh victim@lab-target</code></td><td><code>agent.name: lab-target</code></td></tr>
+      <tr><td>Student 1</td><td><code>ssh victim@s1-lab-target</code></td><td><code>agent.name: s1-lab-target</code></td></tr>
+      <tr><td>Student 2</td><td><code>ssh victim@s2-lab-target</code></td><td><code>agent.name: s2-lab-target</code></td></tr>
+      <tr><td>Student 3</td><td><code>ssh victim@s3-lab-target</code></td><td><code>agent.name: s3-lab-target</code></td></tr>
+      <tr><td>Student 4</td><td><code>ssh victim@s4-lab-target</code></td><td><code>agent.name: s4-lab-target</code></td></tr>
+      <tr><td>Student 5</td><td><code>ssh victim@s5-lab-target</code></td><td><code>agent.name: s5-lab-target</code></td></tr>
     </tbody>
   </table>
 
@@ -562,7 +562,7 @@
       <div class="pf-num">1</div>
       <div class="pf-body">
         <div class="pf-head">Wazuh dashboard loads</div>
-        <div class="pf-sub">Open <code>http://localhost</code> and confirm you can see the Wazuh dashboard.</div>
+        <div class="pf-sub">Open <code>https://sec.fortark.com</code> and confirm you can see the Wazuh dashboard.</div>
       </div>
     </div>
     <div class="preflight-item">
@@ -576,7 +576,7 @@
       <div class="pf-num">3</div>
       <div class="pf-body">
         <div class="pf-head">Kali terminal loads</div>
-        <div class="pf-sub">Open <code>http://localhost/attacker/</code> — you should see the <code>student@kali</code> prompt.</div>
+        <div class="pf-sub">Open <code>https://sec.fortark.com/attacker/</code> — you should see the <code>student@kali</code> prompt.</div>
       </div>
     </div>
     <div class="preflight-item">
@@ -598,47 +598,31 @@
   <h2 id="part1">Part 1 — Tour the automation pipeline before you trigger it</h2>
   <p>Before running the attack, explore the components that will respond to it. Understanding each piece makes the automation feel real rather than magical.</p>
 
-  <h3>Step 1 — Look at the Shuffle workflow</h3>
-  <div class="step-list">
-    <div class="step-item">
-      <div class="step-num">1</div>
-      <div class="step-body">Open <code>http://localhost:3001</code> in a browser.<br>Login: <code>admin</code> / <code>FortarkLabs1!</code></div>
-    </div>
-    <div class="step-item">
-      <div class="step-num">2</div>
-      <div class="step-body">Click <strong>Workflows</strong> → <strong>Wazuh Brute Force — Auto TheHive Case</strong>.</div>
-    </div>
-    <div class="step-item">
-      <div class="step-num">3</div>
-      <div class="step-body">You will see a single action node: <strong>thehive-create</strong>. Click it and read the configuration — look at the URL and the body fields.</div>
-    </div>
-  </div>
-
-  <div class="question">
-    <div class="question-label">Q1</div>
-    <div class="question-text">What does the <strong>thehive-create</strong> action do when the workflow runs? <em style="color:var(--muted);font-weight:400;">(What URL does it call? What does the body contain?)</em></div>
-  </div>
-
-  <div class="callout purple">
-    The action makes an HTTP POST to TheHive's alert API at <code>http://localhost:9000/api/v1/alert</code>. The body contains fields extracted from the Wazuh alert: the agent name that was attacked, the attacker's source IP, and the severity level. Shuffle maps these automatically from the incoming alert JSON.
-  </div>
-
-  <h3>Step 2 — Understand the Wazuh integration</h3>
-  <p>The integration that connects Wazuh to Shuffle is configured in two places:</p>
+  <h3>Step 1 — Look at the integration script</h3>
+  <p>This lab uses a <strong>direct integration</strong>: Wazuh calls a Python script (<code>shuffle.py</code>) that sends the alert straight to TheHive — no Shuffle worker involved. You can browse Shuffle at <a href="https://192.168.6.213:3001" target="_blank">https://192.168.6.213:3001</a> to explore its workflow UI, but the SOAR automation in this lab runs through the script, not through a Shuffle workflow.</p>
 
   <div class="step-list">
     <div class="step-item">
       <div class="step-num" style="background:rgba(88,166,255,.15);border-color:rgba(88,166,255,.3);color:var(--accent);">A</div>
       <div class="step-body">
-        <strong>In <code>ossec.conf</code></strong> — the Wazuh manager config has an integration block that says: fire on any alert of level 7 or higher, call a script named <code>shuffle-execute</code>, and pass the full alert as JSON.
+        <strong>In <code>ossec.conf</code></strong> — the Wazuh manager config has an integration block that says: fire on any alert of level 7 or higher, call the built-in <code>shuffle</code> wrapper, and pass the full alert as JSON.
       </div>
     </div>
     <div class="step-item">
       <div class="step-num" style="background:rgba(88,166,255,.15);border-color:rgba(88,166,255,.3);color:var(--accent);">B</div>
       <div class="step-body">
-        <strong>The <code>shuffle-execute</code> script</strong> reads the alert JSON, checks whether it is rule 40112 (brute force + successful login) or level 10+, and if so, calls the Shuffle API to execute the workflow.
+        <strong>The <code>shuffle.py</code> script</strong> reads the alert JSON, checks whether it is rule 40112 (brute force + successful login), and if so, makes an HTTP POST directly to <code>http://soc-thehive:9000/api/v1/alert</code> with a structured payload containing the agent name, attacker IP, severity, and MITRE tags.
       </div>
     </div>
+  </div>
+
+  <div class="question">
+    <div class="question-label">Q1</div>
+    <div class="question-text">What does the <code>shuffle.py</code> script check before creating a TheHive alert? <em style="color:var(--muted);font-weight:400;">(Why doesn't every level-7 alert create a case?)</em></div>
+  </div>
+
+  <div class="callout purple">
+    The script checks for <strong>rule 40112</strong> specifically. Rule 40112 matches <em>both</em> a brute force attempt <em>and</em> a successful login — the combination that signals an actual breach. Many brute force attempts fail and are loud, routine events. <strong>Rule 40112 is the quiet, dangerous one: it means the attacker found the password.</strong> That is the event worth automatic case creation.
   </div>
 
   <div class="question">
@@ -662,7 +646,7 @@
       <div class="step-body">
         Open <strong>two browser tabs side by side</strong>:
         <ul style="margin-top:8px;padding-left:20px;font-size:14px;color:var(--muted);">
-          <li><strong style="color:var(--text);">Tab A</strong> — TheHive alerts list (login as <code>shuffle@soc.local</code>)</li>
+          <li><strong style="color:var(--text);">Tab A</strong> — TheHive alerts list (login as <code>student1@thehive.local</code> / <code>FortarkLabs1!</code>)</li>
           <li><strong style="color:var(--text);">Tab B</strong> — Wazuh dashboard, filter <code>agent.name: s[N]-lab-target</code>, time range Last 15 minutes</li>
         </ul>
       </div>
@@ -671,7 +655,10 @@
       <div class="step-num">2</div>
       <div class="step-body">
         In the Kali terminal, run the brute force:
-        <pre style="margin:8px 0 0;">hydra -l victim -P /usr/share/wordlists/rockyou.txt -t 16 -W 1 -F ssh://s[N]-lab-target</pre>
+        <pre style="margin:8px 0 0;"># Create a short wordlist (password123 must be near the end — failures before success)
+printf "%s\n" admin123 letmein 12345678 qwerty abc123 iloveyou monkey dragon master pass123 root123 toor batman superman hunter2 passw0rd changeme Winter2024 Summer2024 password123 > /tmp/wordlist.txt
+
+hydra -l victim -P /tmp/wordlist.txt -t 4 ssh://s[N]-lab-target</pre>
       </div>
     </div>
     <div class="step-item">
@@ -709,7 +696,7 @@
     </div>
     <div class="timing-sub">
       In a well-tuned SOAR pipeline, alert-to-case creation takes <strong style="color:var(--text);">3–8 seconds</strong>:<br>
-      Wazuh → integration script (~1s) → Shuffle (~1s) → worker spawns + workflow runs (~3–5s) → TheHive API call (~1s).<br>
+      Wazuh → integration script (~1s) → shuffle.py POST to TheHive (~1s).<br>
       No analyst was involved at any point.
     </div>
   </div>
@@ -718,7 +705,7 @@
 
   <!-- PART 3 -->
   <h2 id="part3">Part 3 — Examine the automatically created case</h2>
-  <p>Open TheHive and click on the new alert titled <strong>[AUTOMATED] SSH Brute Force + Login Detected</strong>. Read through the case details.</p>
+  <p>Open TheHive and click on the new alert titled <strong>SSH Brute Force Success — s[N]-lab-target from [attacker IP]</strong>. Read through the case details.</p>
 
   <div class="question">
     <div class="question-label">Q4</div>
@@ -852,7 +839,13 @@
 
   <!-- PART 6 -->
   <h2 id="part6">Part 6 — Close the case</h2>
-  <p>Work through each step in TheHive to close the investigation.</p>
+  <p>In a real incident, a case is only closed after the full incident response lifecycle is complete. Closing early — before the attacker is out and the system is clean — means you declared victory while the breach was still active.</p>
+
+  <p>The correct order is <strong>Contain → Eradicate → Recover → Document → Close</strong>. Work through the full checklist below.</p>
+
+  <div class="callout warn" style="margin-bottom:20px;">
+    <strong>Lab note:</strong> Steps 1–3 (Contain, Eradicate, Recover) describe what you would do in a real incident. In this lab the target is a throwaway container with no production data, so we document what the actions would be rather than performing them. In a real SOC, you would not skip to step 4 until containment and recovery were confirmed complete.
+  </div>
 
   <div class="thehive-checklist">
 
@@ -860,7 +853,58 @@
       <input type="checkbox">
       <div class="thc-box"><svg width="12" height="12" viewBox="0 0 12 12" fill="white"><path d="M1.5 6l3 3 6-6" stroke="white" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
       <div>
-        <div class="thc-head">1 — Set the verdict</div>
+        <div class="thc-head">1 — Contain</div>
+        <div class="thc-sub">
+          Stop the attacker from doing further damage while the investigation runs.
+          <ul style="margin-top:6px;padding-left:18px;line-height:1.9;">
+            <li><strong>Isolate the compromised host</strong> — remove it from the network or firewall it from lateral movement paths</li>
+            <li><strong>Block the attacker IP</strong> — add a deny rule at the perimeter firewall and/or on the host</li>
+            <li><strong>Revoke the compromised credentials</strong> — lock or reset the <code>victim</code> account immediately; assume the password is now in the attacker's hands</li>
+            <li><strong>Preserve evidence</strong> — take a memory snapshot and disk image before touching anything else; forensic data is destroyed by remediation</li>
+          </ul>
+        </div>
+      </div>
+    </label>
+
+    <label class="thc-item">
+      <input type="checkbox">
+      <div class="thc-box"><svg width="12" height="12" viewBox="0 0 12 12" fill="white"><path d="M1.5 6l3 3 6-6" stroke="white" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+      <div>
+        <div class="thc-head">2 — Eradicate</div>
+        <div class="thc-sub">
+          Remove everything the attacker left behind.
+          <ul style="margin-top:6px;padding-left:18px;line-height:1.9;">
+            <li><strong>Check for persistence</strong> — review <code>~/.ssh/authorized_keys</code>, crontabs, new user accounts, and startup scripts; attackers plant backdoors immediately after gaining access</li>
+            <li><strong>Check running processes</strong> — look for reverse shells, miners, or C2 beacons that started after the login</li>
+            <li><strong>Audit sudo and privileged access</strong> — confirm the attacker did not escalate privileges during the session</li>
+            <li><strong>Remove any artifacts</strong> — malware, dropped files, unauthorized SSH keys</li>
+          </ul>
+        </div>
+      </div>
+    </label>
+
+    <label class="thc-item">
+      <input type="checkbox">
+      <div class="thc-box"><svg width="12" height="12" viewBox="0 0 12 12" fill="white"><path d="M1.5 6l3 3 6-6" stroke="white" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+      <div>
+        <div class="thc-head">3 — Recover</div>
+        <div class="thc-sub">
+          Restore the system to a known-good state and verify it is clean before returning to production.
+          <ul style="margin-top:6px;padding-left:18px;line-height:1.9;">
+            <li><strong>Patch the root cause</strong> — the attacker succeeded because of a weak password; enforce a strong password policy or disable password auth entirely in favour of SSH keys</li>
+            <li><strong>Restore from clean backup</strong> — if the system was modified, restore from a pre-incident snapshot rather than trusting a manually cleaned system</li>
+            <li><strong>Reconnect to the network</strong> — only after eradication is confirmed and the root cause is fixed</li>
+            <li><strong>Monitor for re-entry</strong> — watch the host closely for 24–48 hours after recovery; attackers often return</li>
+          </ul>
+        </div>
+      </div>
+    </label>
+
+    <label class="thc-item">
+      <input type="checkbox">
+      <div class="thc-box"><svg width="12" height="12" viewBox="0 0 12 12" fill="white"><path d="M1.5 6l3 3 6-6" stroke="white" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+      <div>
+        <div class="thc-head">4 — Set the verdict</div>
         <div class="thc-sub">Set to: <strong style="color:var(--danger);">True Positive — Confirmed Breach</strong></div>
       </div>
     </label>
@@ -869,7 +913,7 @@
       <input type="checkbox">
       <div class="thc-box"><svg width="12" height="12" viewBox="0 0 12 12" fill="white"><path d="M1.5 6l3 3 6-6" stroke="white" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
       <div>
-        <div class="thc-head">2 — Set the TLP</div>
+        <div class="thc-head">5 — Set the TLP</div>
         <div class="thc-sub">
           Set to: <span class="tlp-red"><span class="tlp-dot"></span>TLP:RED</span>
           <span style="font-size:13px;color:var(--muted);margin-left:8px;">Do not share externally — this involves an active breach on your infrastructure.</span>
@@ -881,13 +925,14 @@
       <input type="checkbox">
       <div class="thc-box"><svg width="12" height="12" viewBox="0 0 12 12" fill="white"><path d="M1.5 6l3 3 6-6" stroke="white" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
       <div>
-        <div class="thc-head">3 — Write a closing summary</div>
+        <div class="thc-head">6 — Write a closing summary</div>
         <div class="thc-sub">
           Add 2–3 sentences to the description field covering:
           <ul style="margin-top:6px;padding-left:18px;line-height:1.8;">
             <li>What happened (brute force → successful login)</li>
             <li>How it was detected (Wazuh rule 40112)</li>
-            <li>How the case was created (Shuffle SOAR automation)</li>
+            <li>How the case was created (SOAR automation via shuffle.py)</li>
+            <li>What containment and recovery actions were taken</li>
           </ul>
         </div>
       </div>
@@ -897,11 +942,16 @@
       <input type="checkbox">
       <div class="thc-box"><svg width="12" height="12" viewBox="0 0 12 12" fill="white"><path d="M1.5 6l3 3 6-6" stroke="white" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
       <div>
-        <div class="thc-head">4 — Close the case</div>
-        <div class="thc-sub">Mark the case as closed in TheHive.</div>
+        <div class="thc-head">7 — Close the case</div>
+        <div class="thc-sub">Click <strong>Close</strong> in TheHive. The case status will change to <strong>Resolved</strong>. Only do this after containment, eradication, and recovery are confirmed complete.</div>
       </div>
     </label>
 
+  </div>
+
+  <div class="question">
+    <div class="question-label">Q10</div>
+    <div class="question-text">Why is it dangerous to close a case before containment is complete? Give a concrete example of what could happen.</div>
   </div>
 
   <hr>
