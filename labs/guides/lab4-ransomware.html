@@ -700,11 +700,22 @@
       <div class="stage-mitre"><span class="mitre-badge">T1083</span></div>
     </div>
     <div class="stage-body">
-      <p>The ransomware first scans the filesystem to find files worth encrypting. This is logged via syslog.</p>
-      <pre>agent.name: s[N]-lab-target AND full_log: *STAGE:DISCOVERY*</pre>
+      <p>The ransomware first scans the filesystem to find files worth encrypting. This is logged via syslog and picked up by Wazuh. Go to <strong>Threat Hunting → Events</strong> (not FIM — no files have changed yet at this stage).</p>
+      <p>In the <strong>search bar</strong>, type the keyword you expect to see in the log and press Enter:</p>
+      <pre>"STAGE:DISCOVERY"</pre>
+      <p>Click the matching event to expand it. You will see the full alert JSON — read through the key fields:</p>
+      <ul style="margin:10px 0 14px;padding-left:20px;line-height:2;">
+        <li><code>full_log</code> — the raw syslog line, showing exactly what the ransomware logged</li>
+        <li><code>rule.id</code> — the Wazuh rule that matched (<strong>100400</strong>)</li>
+        <li><code>rule.description</code> — human-readable explanation of what fired</li>
+        <li><code>rule.mitre.technique</code> — the ATT&amp;CK technique (<strong>T1083 — File and Directory Discovery</strong>)</li>
+        <li><code>rule.mitre.tactic</code> — the ATT&amp;CK tactic (<strong>Discovery</strong>)</li>
+        <li><code>predecoder.program_name</code> — confirms the source process (<strong>lab4-ransomware</strong>)</li>
+      </ul>
+      <p style="font-size:13px;color:var(--muted);">Once you find an event this way, note the rule ID. For future filtering you can use <code>rule.id: 100400</code> directly — but always start with a keyword search so you understand <em>why</em> that rule ID is the right one.</p>
       <div class="question">
         <div class="question-label">Q3</div>
-        <div class="question-text">What directories did the ransomware scan during discovery?</div>
+        <div class="question-text">What directories did the ransomware scan during discovery? (<em>Hint: look at <code>full_log</code></em>)</div>
       </div>
       <div class="question">
         <div class="question-label">Q4</div>
@@ -809,8 +820,9 @@
       <div class="stage-mitre"><span class="mitre-badge">T1490</span></div>
     </div>
     <div class="stage-body">
-      <p>After encrypting, the ransomware sweeps for backup files and attempts to destroy them.</p>
-      <pre>agent.name: s[N]-lab-target AND full_log: *STAGE:INHIBIT*</pre>
+      <p>After encrypting, the ransomware sweeps for backup files and attempts to destroy them. Search in <strong>Threat Hunting → Events</strong> using the keyword:</p>
+      <pre>"STAGE:INHIBIT"</pre>
+      <p>Expand the event and read <code>full_log</code> to see what backup patterns were targeted.</p>
       <div class="question">
         <div class="question-label">Q11</div>
         <div class="question-text">What types of backup files did the ransomware sweep for?</div>
