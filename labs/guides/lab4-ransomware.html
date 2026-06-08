@@ -822,10 +822,12 @@
     <div class="stage-body">
       <p>After encrypting, the ransomware sweeps for backup files and attempts to destroy them. Search in <strong>Threat Hunting → Events</strong> using the keyword:</p>
       <pre>"STAGE:INHIBIT"</pre>
-      <p>Expand the event and read <code>full_log</code> to see what backup patterns were targeted.</p>
+      <p>This tells you the sweep started. But to see <em>what</em> it found, do a second search for the follow-up events:</p>
+      <pre>"INHIBIT:FOUND_BACKUP"</pre>
+      <p>Each result is a backup file the ransomware located. Look at the <code>full_log</code> field in each event — the file path and extension tell you what backup patterns were targeted (e.g. <code>.bak</code>, <code>.backup</code>, <code>.tar.gz</code>).</p>
       <div class="question">
         <div class="question-label">Q11</div>
-        <div class="question-text">What types of backup files did the ransomware sweep for?</div>
+        <div class="question-text">What backup file extensions did the ransomware target? List them from the <code>INHIBIT:FOUND_BACKUP</code> events.</div>
       </div>
       <div class="question">
         <div class="question-label">Q12</div>
