@@ -820,14 +820,16 @@
       <div class="stage-mitre"><span class="mitre-badge">T1490</span></div>
     </div>
     <div class="stage-body">
-      <p>After encrypting, the ransomware sweeps for backup files and attempts to destroy them. Search in <strong>Threat Hunting → Events</strong> using the keyword:</p>
+      <p>After encrypting, the ransomware sweeps for backup files and attempts to destroy them. Start with the sweep trigger in <strong>Threat Hunting → Events</strong>:</p>
       <pre>"STAGE:INHIBIT"</pre>
-      <p>This tells you the sweep started. But to see <em>what</em> it found, do a second search for the follow-up events:</p>
+      <p>This confirms the sweep started. Now search for what it actually found:</p>
       <pre>"INHIBIT:FOUND_BACKUP"</pre>
-      <p>Each result is a backup file the ransomware located. Look at the <code>full_log</code> field in each event — the file path and extension tell you what backup patterns were targeted (e.g. <code>.bak</code>, <code>.backup</code>, <code>.tar.gz</code>).</p>
+      <p>You will get one event per backup file the ransomware located. Each event's <code>full_log</code> looks like this:</p>
+      <pre style="color:#f85149;">Jun  8 10:27:49 s1-lab-target lab4-ransomware: INHIBIT:FOUND_BACKUP /tmp/lab2-post-exploit/loot.tar.gz</pre>
+      <p>The file path at the end tells you the backup that was targeted. Look at the extensions across all the events — each unique extension represents a backup type the ransomware was programmed to destroy.</p>
       <div class="question">
         <div class="question-label">Q11</div>
-        <div class="question-text">What backup file extensions did the ransomware target? List them from the <code>INHIBIT:FOUND_BACKUP</code> events.</div>
+        <div class="question-text">What backup file extensions did the ransomware target? List them from the <code>INHIBIT:FOUND_BACKUP</code> events in Wazuh.</div>
       </div>
       <div class="question">
         <div class="question-label">Q12</div>
