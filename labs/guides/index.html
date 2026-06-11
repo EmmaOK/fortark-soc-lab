@@ -34,6 +34,10 @@
   .nav-pill{padding:4px 14px;border-radius:20px;font-size:12px;font-weight:700;
     background:rgba(88,166,255,.12);border:1px solid rgba(88,166,255,.25);
     color:var(--accent);}
+  .nav-instructor{margin-left:auto;font-size:12px;color:var(--muted);
+    padding:4px 12px;border:1px solid var(--border);border-radius:6px;
+    transition:color .2s,border-color .2s;}
+  .nav-instructor:hover{color:var(--text);border-color:var(--muted);text-decoration:none;}
 
   /* ── LAYOUT ── */
   .container{max-width:960px;margin:0 auto;padding:0 24px 100px;}
@@ -210,6 +214,7 @@
   <div class="nav-inner">
     <div class="logo">FORTARK <span>SOC LABS</span></div>
     <div class="nav-pill">Course Overview</div>
+    <a class="nav-instructor" href="instructor-setup.html">Instructor Guide →</a>
   </div>
 </nav>
 
