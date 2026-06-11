@@ -332,6 +332,10 @@
     <div class="meta-chip">🛠 <strong>Wazuh · Suricata · TheHive · Cortex</strong></div>
   </div>
 
+  <div class="callout warn">
+    <strong>Windows / WSL2 users:</strong> Suricata requires raw packet capture and is disabled in the Windows deployment (<code>docker-compose.win.yml</code>). If you are on Windows, <strong>skip any step that references <code>rule.groups: suricata</code></strong> and use the syslog alternatives shown inline below. The exfiltration and validation stages are both logged to syslog — you can complete all objectives without Suricata.
+  </div>
+
   <table class="mitre-table">
     <thead><tr><th>Tactic</th><th>Technique</th><th>What it means</th></tr></thead>
     <tbody>
@@ -623,6 +627,7 @@ HUGGINGFACE_TOKEN=hf_DECOYabcdefghijklmnop...</pre>
   <pre>agent.name: s[N]-lab-target AND full_log: *lab7-key-exfil*</pre>
   <p><strong>Tab C — Suricata (network):</strong></p>
   <pre>agent.name: s[N]-lab-target AND rule.groups: suricata</pre>
+  <div class="callout warn" style="margin-top:8px;"><strong>Windows users:</strong> Suricata is disabled — Tab C will return no results. For Stage 3 (exfiltration) use <code>"EXFIL:COMPLETE"</code>, and for Stage 4 (validation) use <code>"VALIDATE:COMPLETE"</code> in syslog instead.</div>
 
   <p>Set all three to <strong>Last 15 minutes</strong>. Then run:</p>
   <pre>ssh victim@s[N]-lab-target
@@ -705,6 +710,7 @@ HUGGINGFACE_TOKEN=hf_DECOYabcdefghijklmnop...</pre>
     <div class="stage-body">
       <pre>agent.name: s[N]-lab-target AND full_log: *STAGE:EXFIL*</pre>
       <pre>agent.name: s[N]-lab-target AND rule.groups: suricata</pre>
+      <div class="callout warn" style="margin-top:8px;"><strong>Windows users:</strong> Skip the Suricata filter. Search syslog for <code>"EXFIL:COMPLETE"</code> (rule 100706) — it logs the destination, payload size, and data fields sent in the exfiltration POST.</div>
       <div class="question"><div class="question-label">Q10</div>
         <div class="question-text">What data was included in the exfiltration POST?<br>
           <span style="font-size:13px;color:var(--muted);font-weight:400;">(Look at the EXFIL syslog entry — what fields were sent?)</span></div></div>
@@ -729,6 +735,7 @@ HUGGINGFACE_TOKEN=hf_DECOYabcdefghijklmnop...</pre>
     <div class="stage-body">
       <pre>agent.name: s[N]-lab-target AND full_log: *STAGE:VALIDATE*</pre>
       <pre>agent.name: s[N]-lab-target AND rule.groups: suricata</pre>
+      <div class="callout warn" style="margin-top:8px;"><strong>Windows users:</strong> Skip the Suricata filter. Search syslog for <code>"VALIDATE:COMPLETE"</code> (rule 100708) — it logs the validation target, HTTP status, and whether the key was accepted.</div>
       <p>Look for the request with the <code>python-anthropic</code> User-Agent and <code>x-api-key</code> header.</p>
       <div class="question"><div class="question-label">Q12</div>
         <div class="question-text">What User-Agent did the validation request use?</div></div>

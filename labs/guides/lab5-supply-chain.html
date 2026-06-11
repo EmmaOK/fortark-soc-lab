@@ -307,6 +307,10 @@
     <div class="meta-chip">🛠 <strong>Wazuh · Suricata · TheHive · Cortex</strong></div>
   </div>
 
+  <div class="callout warn">
+    <strong>Windows / WSL2 users:</strong> Suricata requires raw packet capture and is disabled in the Windows deployment (<code>docker-compose.win.yml</code>). If you are on Windows, <strong>skip any step that references <code>rule.groups: suricata</code></strong> and use the syslog-based alternatives shown inline below each Suricata filter instead. All lab objectives can be completed using Wazuh syslog events alone.
+  </div>
+
   <table class="mitre-table">
     <thead><tr><th>Tactic</th><th>Technique</th><th>What it means</th></tr></thead>
     <tbody>
@@ -580,6 +584,7 @@
 
   <p><strong>Tab C — Suricata network:</strong></p>
   <pre>agent.name: s[N]-lab-target AND rule.groups: suricata</pre>
+  <div class="callout warn" style="margin-top:8px;"><strong>Windows users:</strong> Suricata is disabled — Tab C will return no results. For the C2 callback stage, search syslog for <code>"CALLBACK:BEACON_SENT"</code> (rule 100505) instead.</div>
 
   <p>Set all three to time range: <strong>Last 15 minutes</strong>.</p>
 
@@ -694,6 +699,7 @@
       <pre>agent.name: s[N]-lab-target AND full_log: *STAGE:CALLBACK*</pre>
       <p><strong>Suricata filter:</strong></p>
       <pre>agent.name: s[N]-lab-target AND rule.groups: suricata</pre>
+      <div class="callout warn" style="margin-top:8px;"><strong>Windows users:</strong> Skip the Suricata filter. Use syslog to find the callback event: search for <code>"CALLBACK:BEACON_SENT"</code>. The log entry includes the destination URL, HTTP method, and User-Agent — answer Q8 and Q9 from that event.</div>
       <div class="question">
         <div class="question-label">Q8</div>
         <div class="question-text">What destination did the payload call back to?</div>

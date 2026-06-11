@@ -344,6 +344,10 @@
     <div class="meta-chip">🛠 <strong>Wazuh · Suricata · TheHive · Cortex</strong></div>
   </div>
 
+  <div class="callout warn">
+    <strong>Windows / WSL2 users:</strong> Suricata requires raw packet capture and is disabled in the Windows deployment (<code>docker-compose.win.yml</code>). If you are on Windows, <strong>skip any step that references <code>rule.groups: suricata</code></strong> and use the syslog alternatives shown below each Suricata filter. Every beacon is also logged to syslog (rule 100601) — you can complete all timing analysis and interval measurements using syslog timestamps alone.
+  </div>
+
   <table class="mitre-table">
     <thead><tr><th>Tactic</th><th>Technique</th><th>What it means</th></tr></thead>
     <tbody>
@@ -588,10 +592,11 @@
   <p>Before running anything, establish what normal looks like. This is your zero line — any httpbin.org connections you see after the beacon starts are the attack.</p>
   <p>Open Wazuh with this filter, time range <strong>Last 30 minutes</strong>:</p>
   <pre>agent.name: s[N]-lab-target AND rule.groups: suricata</pre>
+  <div class="callout warn" style="margin-top:8px;"><strong>Windows users:</strong> Suricata is disabled — use this syslog filter to baseline beacon activity instead:<br><code>agent.name: s[N]-lab-target AND "BEACON:"</code><br>Q1 and Q2 should show zero results before the simulation starts.</div>
 
   <div class="question">
     <div class="question-label">Q1</div>
-    <div class="question-text">How many Suricata events does your target show right now?</div>
+    <div class="question-text">How many beacon events does your target show right now? (Suricata events on macOS/Linux; syslog <code>BEACON:</code> events on Windows)</div>
   </div>
   <div class="question">
     <div class="question-label">Q2</div>
@@ -622,8 +627,9 @@ echo "Beacon PID: $!"</pre>
 
   <!-- PART 3 -->
   <h2 id="part3">Part 3 — Observe the pattern forming</h2>
-  <p>Set Wazuh time range to <strong>Last 15 minutes</strong> and enable auto-refresh (every 30 seconds). Use the Suricata filter. Watch the alert count — every ~20 seconds, a new event should appear.</p>
+  <p>Set Wazuh time range to <strong>Last 15 minutes</strong> and enable auto-refresh (every 30 seconds). Watch the alert count — every ~20 seconds, a new event should appear.</p>
   <pre>agent.name: s[N]-lab-target AND rule.groups: suricata</pre>
+  <div class="callout warn" style="margin-top:8px;"><strong>Windows users:</strong> Use syslog instead — search for <code>"BEACON:"</code> and enable auto-refresh. Each beacon fires a rule 100601 event with timestamp, beacon number, and destination.</div>
 
   <div class="question">
     <div class="question-label">Q4</div>
@@ -635,7 +641,7 @@ echo "Beacon PID: $!"</pre>
   </div>
 
   <h3>Measure the intervals</h3>
-  <p>Look at three consecutive Suricata events. Record their timestamps and calculate the gaps:</p>
+  <p>Look at three consecutive beacon events (Suricata on macOS/Linux, or syslog <code>BEACON:</code> entries on Windows). Record their timestamps and calculate the gaps:</p>
 
   <div class="interval-sheet">
     <div class="is-title">Interval worksheet</div>
@@ -681,24 +687,24 @@ echo "Beacon PID: $!"</pre>
   </div>
   <div class="question">
     <div class="question-label">Q9</div>
-    <div class="question-text">Does the <code>next_in</code> field in syslog match the actual interval you calculated from Suricata timestamps?</div>
+    <div class="question-text">Does the <code>next_in</code> field in syslog match the actual interval you calculated from the beacon timestamps?</div>
   </div>
   <div class="callout">
-    The syslog shows what the implant <em>planned</em> to wait. The Suricata timestamps show when the packet <em>actually</em> arrived. Comparing these two reveals the jitter: the implant chose a random value within its jitter range and slept exactly that long. This is the same internal timing you would see in a Cobalt Strike or Metasploit Meterpreter beacon log.
+    The syslog shows what the implant <em>planned</em> to wait. The beacon event timestamps (Suricata on macOS/Linux, or syslog <code>BEACON:</code> events on Windows) show when the packet <em>actually</em> arrived. Comparing these two reveals the jitter: the implant chose a random value within its jitter range and slept exactly that long. This is the same internal timing you would see in a Cobalt Strike or Metasploit Meterpreter beacon log.
   </div>
 
   <!-- PART 5 -->
   <h2 id="part5">Part 5 — Decode the implant ID</h2>
-  <p>Every beacon carries the victim's hostname and username, encoded in base64 inside the User-Agent header. Find a Suricata alert and look at the HTTP User-Agent field. It will look like this:</p>
+  <p>Every beacon carries the victim's hostname and username, encoded in base64 inside the User-Agent header. Find a Suricata alert and look at the HTTP User-Agent field (macOS/Linux), or look at a syslog <code>BEACON:</code> event and find the <code>implant_id=</code> field (Windows) — that is the same base64 payload. It will look like this:</p>
 
   <div class="ua-box">
     <div class="ua-row">
-      <div class="ua-row-label">Full User-Agent (from Suricata alert)</div>
+      <div class="ua-row-label">Full User-Agent (from Suricata alert) / <code>implant_id=</code> value (from syslog on Windows)</div>
       <div class="ua-encoded">Mozilla/5.0 (compatible; SystemUpdater/<span style="color:var(--orange);">dmljdGltQHMxLWxhYi10YXJnZXQ=</span>)</div>
     </div>
     <div class="ua-row">
-      <div class="ua-row-label">Encoded payload (the part after SystemUpdater/)</div>
-      <input class="ua-decode-input" placeholder="Paste the base64 string from your Suricata alert here">
+      <div class="ua-row-label">Encoded payload (the part after SystemUpdater/, or the implant_id= value)</div>
+      <input class="ua-decode-input" placeholder="Paste the base64 string from your Suricata alert or syslog BEACON: event here">
     </div>
     <div class="ua-row">
       <div class="ua-row-label">Decoded — run in Kali terminal: <code>echo "YOUR_BASE64" | base64 -d</code></div>
