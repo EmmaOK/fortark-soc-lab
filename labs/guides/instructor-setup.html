@@ -1,0 +1,664 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Instructor Setup Guide | Fortark SOC Labs</title>
+<style>
+  :root {
+    --bg:#0d1117; --bg2:#161b22; --bg3:#21262d; --border:#30363d;
+    --text:#e6edf3; --muted:#8b949e;
+    --accent:#58a6ff; --accent2:#3fb950; --warn:#d29922; --danger:#f85149;
+    --purple:#bc8cff; --teal:#2ea89f; --orange:#e8812a;
+    --code-bg:#1c2128;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif;
+    background:var(--bg);color:var(--text);line-height:1.7;font-size:16px;}
+
+  a{color:var(--accent);text-decoration:none;}
+  a:hover{text-decoration:underline;}
+  code{font-family:'SF Mono','Fira Mono',monospace;font-size:13px;
+    background:var(--bg3);border:1px solid var(--border);
+    border-radius:4px;padding:1px 6px;color:var(--accent2);}
+  pre{background:var(--code-bg);border:1px solid var(--border);border-radius:8px;
+    padding:16px 20px;margin:14px 0;overflow-x:auto;
+    font-family:'SF Mono','Fira Mono',monospace;font-size:13px;
+    line-height:1.8;color:#a9b7c6;}
+  strong{color:var(--text);}
+  p{margin-bottom:12px;}
+  ul,ol{margin:10px 0 14px 22px;line-height:1.9;font-size:15px;}
+  li{margin-bottom:2px;}
+
+  .nav{background:var(--bg2);border-bottom:1px solid var(--border);
+    padding:14px 0;position:sticky;top:0;z-index:100;}
+  .nav-inner{max-width:960px;margin:0 auto;padding:0 24px;
+    display:flex;align-items:center;gap:14px;}
+  .logo{font-size:13px;font-weight:700;letter-spacing:.1em;color:var(--muted);}
+  .logo span{color:var(--accent);}
+  .inst-pill{padding:4px 14px;border-radius:20px;font-size:12px;font-weight:700;
+    background:rgba(248,81,73,.12);border:1px solid rgba(248,81,73,.25);
+    color:var(--danger);}
+  .nav-links{margin-left:auto;display:flex;gap:8px;align-items:center;}
+  .nav-link{font-size:12px;font-weight:600;color:var(--muted);
+    padding:4px 10px;border-radius:6px;}
+  .nav-link.next{font-weight:700;color:var(--accent);
+    border:1px solid rgba(88,166,255,.3);}
+
+  .container{max-width:960px;margin:0 auto;padding:0 24px 100px;}
+
+  .hero{padding:48px 0 40px;border-bottom:1px solid var(--border);}
+  .hero-eyebrow{font-size:12px;font-weight:700;letter-spacing:.14em;
+    text-transform:uppercase;color:var(--danger);margin-bottom:12px;}
+  .hero h1{font-size:34px;font-weight:800;letter-spacing:-.02em;
+    line-height:1.2;margin-bottom:12px;}
+  .hero-sub{font-size:16px;color:var(--muted);line-height:1.6;max-width:600px;}
+
+  h2{font-size:20px;font-weight:700;margin:44px 0 14px;
+    padding-bottom:10px;border-bottom:1px solid var(--border);}
+  h3{font-size:16px;font-weight:700;margin:24px 0 10px;color:var(--text);}
+
+  .section-label{font-size:11px;font-weight:700;letter-spacing:.12em;
+    text-transform:uppercase;color:var(--muted);margin-bottom:4px;margin-top:44px;}
+
+  /* ── CALLOUT ── */
+  .callout{border-left:3px solid var(--accent);border-radius:0 8px 8px 0;
+    padding:14px 18px;margin:16px 0;font-size:14px;color:var(--muted);
+    line-height:1.7;background:rgba(88,166,255,.06);}
+  .callout.warn{background:rgba(210,153,34,.06);border-left-color:var(--warn);}
+  .callout.danger{background:rgba(248,81,73,.06);border-left-color:var(--danger);}
+  .callout.success{background:rgba(63,185,80,.06);border-left-color:var(--accent2);}
+  .callout strong{color:var(--text);}
+
+  /* ── CHECKLIST ── */
+  .checklist{display:flex;flex-direction:column;gap:8px;margin:16px 0;}
+  .cl-item{display:flex;align-items:flex-start;gap:14px;
+    padding:14px 18px;background:var(--bg2);
+    border:1px solid var(--border);border-radius:8px;
+    cursor:pointer;transition:border-color .2s;}
+  .cl-item input[type="checkbox"]{display:none;}
+  .cl-box{width:20px;height:20px;border-radius:5px;flex-shrink:0;
+    border:2px solid var(--border);margin-top:2px;
+    display:flex;align-items:center;justify-content:center;
+    background:var(--bg3);transition:all .2s;}
+  .cl-box svg{display:none;}
+  .cl-item:has(input:checked){border-color:rgba(63,185,80,.4);background:rgba(63,185,80,.04);}
+  .cl-item:has(input:checked) .cl-box{background:var(--accent2);border-color:var(--accent2);}
+  .cl-item:has(input:checked) .cl-box svg{display:block;}
+  .cl-item:has(input:checked) .cl-head{text-decoration:line-through;color:var(--muted);}
+  .cl-item:hover:not(:has(input:checked)){border-color:var(--muted);}
+  .cl-head{font-size:14px;font-weight:700;margin-bottom:3px;}
+  .cl-sub{font-size:13px;color:var(--muted);line-height:1.55;}
+
+  /* ── TABLES ── */
+  table{width:100%;border-collapse:collapse;margin:16px 0;font-size:14px;}
+  th{background:var(--bg3);border:1px solid var(--border);
+    padding:10px 14px;text-align:left;font-size:11px;font-weight:700;
+    letter-spacing:.07em;text-transform:uppercase;color:var(--muted);}
+  td{border:1px solid var(--border);padding:10px 14px;vertical-align:top;}
+  tr:nth-child(even) td{background:rgba(33,38,45,.4);}
+  td:first-child{font-weight:600;}
+
+  /* ── STEP CARDS ── */
+  .steps{display:flex;flex-direction:column;gap:0;}
+  .step{display:flex;gap:20px;padding:18px 0;border-bottom:1px solid var(--border);}
+  .step:last-child{border-bottom:none;}
+  .step-num{width:34px;height:34px;border-radius:50%;flex-shrink:0;
+    background:var(--bg3);border:1px solid var(--border);
+    display:flex;align-items:center;justify-content:center;
+    font-weight:800;font-size:13px;color:var(--text);}
+  .step-head{font-size:15px;font-weight:700;margin-bottom:4px;}
+  .step-body{font-size:14px;color:var(--muted);line-height:1.6;}
+  .step-body p{margin-bottom:8px;}
+  .step-body p:last-child{margin-bottom:0;}
+
+  /* ── LAB NOTES ── */
+  .lab-notes{display:flex;flex-direction:column;gap:10px;margin:16px 0;}
+  .lab-note{background:var(--bg2);border:1px solid var(--border);
+    border-radius:8px;overflow:hidden;}
+  .ln-header{padding:12px 18px;display:flex;align-items:center;gap:12px;
+    border-bottom:1px solid var(--border);background:var(--bg3);}
+  .ln-badge{padding:2px 10px;border-radius:12px;font-size:11px;font-weight:700;}
+  .ln-badge.beginner{background:rgba(63,185,80,.15);color:var(--accent2);}
+  .ln-badge.intermediate{background:rgba(210,153,34,.15);color:var(--warn);}
+  .ln-badge.advanced{background:rgba(248,81,73,.15);color:var(--danger);}
+  .ln-title{font-size:14px;font-weight:700;}
+  .ln-body{padding:14px 18px;font-size:13px;color:var(--muted);line-height:1.6;}
+  .ln-body ul{margin:6px 0 6px 18px;line-height:1.8;}
+  .ln-body code{font-size:12px;}
+  .ln-body strong{color:var(--text);}
+
+  /* ── CRED TABLE ── */
+  .cred-table td:nth-child(3),
+  .cred-table td:nth-child(4){font-family:'SF Mono','Fira Mono',monospace;font-size:12px;}
+  .status-dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:6px;}
+  .status-dot.green{background:var(--accent2);}
+  .status-dot.yellow{background:var(--warn);}
+
+  @media(max-width:640px){
+    .hero h1{font-size:24px;}
+  }
+</style>
+</head>
+<body>
+
+<nav class="nav">
+  <div class="nav-inner">
+    <div class="logo">FORTARK <span>SOC LABS</span></div>
+    <div class="inst-pill">Instructor Guide</div>
+    <div class="nav-links">
+      <a href="index.html" class="nav-link next">← Course overview</a>
+    </div>
+  </div>
+</nav>
+
+<div class="container">
+
+  <!-- ── HERO ── -->
+  <div class="hero">
+    <div class="hero-eyebrow">Instructor reference</div>
+    <h1>Platform Setup &amp; Session Guide</h1>
+    <p class="hero-sub">Everything you need to deploy the platform, prepare for a session, run students through labs, reset between cohorts, and troubleshoot common issues. Not for students.</p>
+  </div>
+
+  <!-- ── PRE-SESSION CHECKLIST ── -->
+  <div class="section-label">Every session</div>
+  <h2>Pre-session checklist</h2>
+  <p style="color:var(--muted);font-size:14px;">Run through this 15 minutes before students arrive. Tick each item.</p>
+
+  <div class="checklist">
+    <label class="cl-item">
+      <input type="checkbox">
+      <div class="cl-box"><svg width="12" height="10" viewBox="0 0 12 10"><polyline points="1,5 4,8 11,1" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+      <div>
+        <div class="cl-head">All containers are up and healthy</div>
+        <div class="cl-sub"><code>docker ps --format "table {{.Names}}\t{{.Status}}"</code> — every container should show <strong>Up</strong>. <code>soc-wazuh-dashboard</code> may show <em>unhealthy</em> — that is a false alarm from the health-check probe; it still works.</div>
+      </div>
+    </label>
+    <label class="cl-item">
+      <input type="checkbox">
+      <div class="cl-box"><svg width="12" height="10" viewBox="0 0 12 10"><polyline points="1,5 4,8 11,1" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+      <div>
+        <div class="cl-head">Wazuh dashboard loads and agents are active</div>
+        <div class="cl-sub">Open the Wazuh dashboard → Agents. All <code>s[N]-lab-target</code> agents should show <strong>Active</strong> (green). If any show <em>Disconnected</em>, restart that container: <code>docker restart s[N]-lab-target</code></div>
+      </div>
+    </label>
+    <label class="cl-item">
+      <input type="checkbox">
+      <div class="cl-box"><svg width="12" height="10" viewBox="0 0 12 10"><polyline points="1,5 4,8 11,1" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+      <div>
+        <div class="cl-head">TheHive loads and student accounts work</div>
+        <div class="cl-sub">Log in as <code>student1@thehive.local</code> / <code>FortarkLabs1!</code>. You should reach the SOC organisation dashboard. Log out.</div>
+      </div>
+    </label>
+    <label class="cl-item">
+      <input type="checkbox">
+      <div class="cl-box"><svg width="12" height="10" viewBox="0 0 12 10"><polyline points="1,5 4,8 11,1" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+      <div>
+        <div class="cl-head">Lab scripts are present on every target</div>
+        <div class="cl-sub">Run the script check below for the lab you are running today. See the <em>Per-lab notes</em> section for the exact command.</div>
+      </div>
+    </label>
+    <label class="cl-item">
+      <input type="checkbox">
+      <div class="cl-box"><svg width="12" height="10" viewBox="0 0 12 10"><polyline points="1,5 4,8 11,1" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+      <div>
+        <div class="cl-head">Kali terminal loads</div>
+        <div class="cl-sub">Open the Kali URL. You should reach a <code>student@kali</code> prompt immediately. If the page hangs, restart: <code>docker restart soc-kali-attacker</code></div>
+      </div>
+    </label>
+    <label class="cl-item">
+      <input type="checkbox">
+      <div class="cl-box"><svg width="12" height="10" viewBox="0 0 12 10"><polyline points="1,5 4,8 11,1" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+      <div>
+        <div class="cl-head">Previous lab artifacts cleaned up</div>
+        <div class="cl-sub">If this is not the first session on this deployment, run the cleanup command for the previous lab (see <em>Lab reset</em> below). Old <code>.locked</code> files and ransom notes will confuse students if left over.</div>
+      </div>
+    </label>
+  </div>
+
+  <!-- ── STUDENT CREDENTIALS ── -->
+  <div class="section-label">Reference</div>
+  <h2>Student credentials &amp; URLs</h2>
+  <p style="color:var(--muted);font-size:14px;">Share the relevant row with each student at the start of the session. Students use <code>[N]</code> = their seat number (1–5) everywhere in the lab guides.</p>
+
+  <table class="cred-table">
+    <thead><tr><th>Service</th><th>URL</th><th>Username</th><th>Password</th><th>Notes</th></tr></thead>
+    <tbody>
+      <tr>
+        <td>Wazuh Dashboard</td>
+        <td><code>http://localhost</code> or<br><code>https://sec.fortark.com</code></td>
+        <td>admin</td>
+        <td><em>see .env → WAZUH_ADMIN_PASSWORD</em></td>
+        <td>Shared — all students use the same Wazuh login</td>
+      </tr>
+      <tr>
+        <td>TheHive</td>
+        <td><code>http://localhost/thehive/</code></td>
+        <td>student<strong>N</strong>@thehive.local</td>
+        <td>FortarkLabs1!</td>
+        <td>N = seat number. Each student has an isolated account in the SOC org.</td>
+      </tr>
+      <tr>
+        <td>Shuffle SOAR</td>
+        <td><code>http://localhost/shuffle/</code></td>
+        <td>shuffle@soc.local</td>
+        <td>FortarkLabs1!</td>
+        <td>Shared read-only view. Lab 3 only.</td>
+      </tr>
+      <tr>
+        <td>Kali Terminal</td>
+        <td><code>http://localhost/attacker/</code></td>
+        <td>student</td>
+        <td>FortarkLabs1!</td>
+        <td>Shared attacker container. One student at a time per session.</td>
+      </tr>
+      <tr>
+        <td>Lab target (SSH)</td>
+        <td><code>s[N]-lab-target</code> (internal hostname)</td>
+        <td>victim</td>
+        <td>password123</td>
+        <td>SSH from Kali only. Each student has their own isolated target.</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="callout warn">
+    <strong>Seat isolation:</strong> Students share the Wazuh dashboard but each has their own <code>s[N]-lab-target</code> container and TheHive account. If a student asks why they can see other students' alerts in Wazuh — that is expected. In the real world, a SOC monitors all hosts. The <code>agent.name: s[N]-lab-target</code> filter in every lab is what scopes the view to their own machine.
+  </div>
+
+  <!-- ── FIRST-TIME DEPLOYMENT ── -->
+  <div class="section-label">One-time setup</div>
+  <h2>First-time platform deployment</h2>
+  <p style="color:var(--muted);font-size:14px;">Do this once per machine. Takes 20–30 minutes on a good internet connection.</p>
+
+  <div class="steps">
+    <div class="step">
+      <div class="step-num">1</div>
+      <div>
+        <div class="step-head">Clone and run setup.sh</div>
+        <div class="step-body">
+          <pre>git clone https://github.com/EmmaOK/fortark-soc-lab.git
+cd fortark-soc-lab
+bash setup.sh</pre>
+          <p>The script checks Docker, sets RAM, generates TLS certs, creates <code>.env</code>, and starts all containers. Takes 5–10 minutes. On first run, image pulls add another 10–15 minutes.</p>
+          <p><strong>Windows:</strong> Run <code>.\setup.ps1</code> from an admin PowerShell session in WSL2. Use <code>docker-compose.win.yml</code> (Suricata is disabled automatically).</p>
+        </div>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">2</div>
+      <div>
+        <div class="step-head">Wait 5 minutes, then run post-start manual steps</div>
+        <div class="step-body">
+          <p>OpenSearch and Cassandra (TheHive's DB) need time to initialise. After 5 minutes:</p>
+          <ul>
+            <li>Open <code>http://localhost/thehive/</code> → login as <code>admin@thehive.local</code> / <code>secret</code></li>
+            <li>Admin → Organisations → Create org named <strong>SOC</strong></li>
+            <li>Create users <code>student1@thehive.local</code> through <code>student5@thehive.local</code> (role: <strong>analyst</strong>, org: SOC, password: <code>FortarkLabs1!</code>)</li>
+            <li>Also create <code>shuffle@soc.local</code> (role: <strong>analyst</strong>, org: SOC, same password)</li>
+            <li>Log in as <code>shuffle@soc.local</code> → Profile → API Keys → Create → copy the key</li>
+            <li>Add to <code>.env</code>: <code>THEHIVE_API_KEY=&lt;paste key&gt;</code></li>
+          </ul>
+        </div>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">3</div>
+      <div>
+        <div class="step-head">Set up Cortex</div>
+        <div class="step-body">
+          <ul>
+            <li>Open <code>http://localhost/cortex/</code> → create admin account on first visit</li>
+            <li>Admin → Organisations → Create <strong>SOC</strong></li>
+            <li>Create user <code>thehive@cortex.local</code> (role: read, analyze) in SOC org</li>
+            <li>Log in as that user → API Keys → Create → copy</li>
+            <li>Add to <code>.env</code>: <code>CORTEX_THEHIVE_API_KEY=&lt;paste key&gt;</code></li>
+            <li>Restart TheHive: <code>docker compose restart soc-thehive</code></li>
+          </ul>
+        </div>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">4</div>
+      <div>
+        <div class="step-head">Enable Cortex analysers and enroll Wazuh agents</div>
+        <div class="step-body">
+          <pre>bash platform/scripts/configure-cortex-analyzers.sh
+bash platform/scripts/enroll-wazuh-agent.sh</pre>
+          <p>The first script enables AbuseIPDB, VirusTotal, and Shodan analysers. The second installs and enrolls the Wazuh agent on every <code>s[N]-lab-target</code> container. Both require <code>.env</code> to have the API keys set (step 3).</p>
+        </div>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">5</div>
+      <div>
+        <div class="step-head">Deploy lab scripts to all target containers</div>
+        <div class="step-body">
+          <pre>for N in 1 2 3 4 5; do
+  for SCRIPT in labs/scripts/lab*.sh; do
+    docker cp "$SCRIPT" "s${N}-lab-target:/tmp/$(basename $SCRIPT)"
+    docker exec "s${N}-lab-target" chmod +x "/tmp/$(basename $SCRIPT)"
+  done
+  echo "s${N}-lab-target — scripts deployed"
+done</pre>
+          <p>This pushes all 7 lab scripts to every target container. Run this once after initial setup and again after any script update.</p>
+        </div>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">6</div>
+      <div>
+        <div class="step-head">Verify the SOAR pipeline</div>
+        <div class="step-body">
+          <pre>bash platform/scripts/verify-shuffle-py.sh</pre>
+          <p>Confirms <code>shuffle.py</code> is in place inside the Wazuh manager container and can reach TheHive. Run this after any Wazuh manager restart — the integration file can sometimes be overwritten on restart.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── PER-LAB NOTES ── -->
+  <div class="section-label">Lab reference</div>
+  <h2>Per-lab instructor notes</h2>
+  <p style="color:var(--muted);font-size:14px;">Things to know and check before running each lab. Does not replace reading the lab guide.</p>
+
+  <div class="lab-notes">
+
+    <div class="lab-note">
+      <div class="ln-header">
+        <span class="ln-badge beginner">Beginner</span>
+        <span class="ln-title">Lab 1 — SSH Brute Force</span>
+      </div>
+      <div class="ln-body">
+        <ul>
+          <li><strong>Script:</strong> <code>/tmp/lab1-brute-force-sim.sh</code> on <code>soc-kali-attacker</code> (not the target)</li>
+          <li><strong>Key timing:</strong> Rule 40112 needs 6+ failures from the same IP within 2 minutes, followed by a success. The bundled wordlist has 60 decoys before <code>password123</code> — do not shorten it or 40112 may not fire.</li>
+          <li><strong>SOAR:</strong> Not active in Lab 1. Students triage manually; SOAR is introduced in Lab 3.</li>
+          <li><strong>Check before session:</strong> <code>docker exec soc-kali-attacker ls /tmp/lab1-brute-force-sim.sh</code></li>
+          <li><strong>Common student error:</strong> Searching Wazuh for the wrong agent name. They must filter on <code>s[N]-lab-target</code>, not the Kali container.</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="lab-note">
+      <div class="ln-header">
+        <span class="ln-badge beginner">Beginner</span>
+        <span class="ln-title">Lab 2 — Post-Breach Investigation</span>
+      </div>
+      <div class="ln-body">
+        <ul>
+          <li><strong>Script:</strong> <code>/tmp/lab2-post-exploitation-sim.sh</code> on the student's <code>s[N]-lab-target</code></li>
+          <li><strong>The script runs fast</strong> (~15 seconds). Students must have Wazuh open before running it. Remind them: set time range to <em>Last 15 minutes</em> before triggering.</li>
+          <li><strong>FIM monitoring:</strong> Wazuh's FIM must be watching <code>/tmp</code>. If the payload file creation events don't appear, confirm the FIM config includes <code>/tmp</code>.</li>
+          <li><strong>Cleanup:</strong> <code>docker exec s[N]-lab-target /tmp/lab2-post-exploitation-sim.sh --cleanup</code></li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="lab-note">
+      <div class="ln-header">
+        <span class="ln-badge intermediate">Intermediate</span>
+        <span class="ln-title">Lab 3 — SOAR Automation</span>
+      </div>
+      <div class="ln-body">
+        <ul>
+          <li><strong>Depends on:</strong> SOAR pipeline working (<code>verify-shuffle-py.sh</code> must pass). If the pipeline is broken, SOAR alert never appears in TheHive — students will be stuck at Part 3.</li>
+          <li><strong>TheHive alert vs case:</strong> The pipeline creates an <em>Alert</em>, not a Case. Students must click <strong>Import/Promote</strong> to create a Case from the alert. This confuses almost every first-time cohort — address it before they start Part 4.</li>
+          <li><strong>Trigger:</strong> Lab 1 script (same brute force trigger). Students run it from Kali, then switch to TheHive.</li>
+          <li><strong>MITRE tags:</strong> TheHive alert should include <code>T1110</code> tag automatically via shuffle.py. If tags are missing, check <code>shuffle.py</code> is current: <code>bash platform/scripts/verify-shuffle-py.sh</code></li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="lab-note">
+      <div class="ln-header">
+        <span class="ln-badge intermediate">Intermediate</span>
+        <span class="ln-title">Lab 4 — Ransomware Detection</span>
+      </div>
+      <div class="ln-body">
+        <ul>
+          <li><strong>Script:</strong> <code>/tmp/lab4-ransomware-sim.sh</code> on <code>s[N]-lab-target</code></li>
+          <li><strong>FIM alert storm:</strong> 40 files renamed to <code>.locked</code> in rapid succession. Students should watch FIM <em>before</em> running the script. Set time range to <em>Last 15 minutes</em> first.</li>
+          <li><strong>Re-run issue fixed:</strong> The script cleans up its own staging directory on each run. Re-running is safe.</li>
+          <li><strong>Wazuh search:</strong> Teach students to use quoted keyword search (<code>"STAGE:INHIBIT"</code>) in the KQL bar, not the field filter dropdown. The <code>full_log</code> field is a keyword type — wildcards often fail.</li>
+          <li><strong>Cleanup:</strong> <code>docker exec s[N]-lab-target /tmp/lab4-ransomware-sim.sh --cleanup</code></li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="lab-note">
+      <div class="ln-header">
+        <span class="ln-badge intermediate">Intermediate</span>
+        <span class="ln-title">Lab 5 — Supply Chain Attack</span>
+      </div>
+      <div class="ln-body">
+        <ul>
+          <li><strong>Script:</strong> <code>/tmp/lab5-supply-chain-sim.sh</code> on <code>s[N]-lab-target</code></li>
+          <li><strong>Four stages in one run:</strong> Install → Dropper → Callback → Persistence. The entire chain completes in ~30 seconds. Students must have all three Wazuh tabs open before running.</li>
+          <li><strong>Suricata on Windows:</strong> Disabled. Windows students skip Tab C and use <code>"CALLBACK:BEACON_SENT"</code> syslog filter instead. The Windows callout in the guide handles this — no need to explain unless asked.</li>
+          <li><strong>Cron persistence:</strong> The script installs a real cron entry on the target. Run cleanup before the next cohort to remove it.</li>
+          <li><strong>Cleanup:</strong> <code>docker exec s[N]-lab-target /tmp/lab5-supply-chain-sim.sh --cleanup</code></li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="lab-note">
+      <div class="ln-header">
+        <span class="ln-badge advanced">Advanced</span>
+        <span class="ln-title">Lab 6 — C2 Beaconing</span>
+      </div>
+      <div class="ln-body">
+        <ul>
+          <li><strong>Script:</strong> <code>/tmp/lab6-c2-beacon-sim.sh</code> on <code>s[N]-lab-target</code>, run in the background (<code>&amp;</code>)</li>
+          <li><strong>The script runs for ~5 minutes</strong> (15 beacons × 20s). Students start it, immediately switch to Wazuh, and watch in real time. Do not let them wait for the script to finish first.</li>
+          <li><strong>Kill the beacon:</strong> Students write down the PID at start. To stop early: <code>docker exec s[N]-lab-target kill &lt;PID&gt;</code></li>
+          <li><strong>Suricata on Windows:</strong> Use <code>"BEACON:"</code> syslog filter instead of <code>rule.groups: suricata</code>. The syslog lines include <code>implant_id=</code> (base64) for the User-Agent decode exercise.</li>
+          <li><strong>Internet required:</strong> Beacon calls <code>httpbin.org</code>. Ensure the target container has outbound internet access.</li>
+          <li><strong>Cleanup:</strong> <code>docker exec s[N]-lab-target /tmp/lab6-c2-beacon-sim.sh --cleanup</code></li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="lab-note">
+      <div class="ln-header">
+        <span class="ln-badge advanced">Advanced</span>
+        <span class="ln-title">Lab 7 — LLM Key Exfiltration (Capstone)</span>
+      </div>
+      <div class="ln-body">
+        <ul>
+          <li><strong>Script:</strong> <code>/tmp/lab7-llm-key-exfil-sim.sh</code> on <code>s[N]-lab-target</code></li>
+          <li><strong>Decoy credentials:</strong> The script plants fake (non-functional) API keys in <code>/tmp/lab7-exfil/</code>. These are the targets — no real keys are used.</li>
+          <li><strong>Detection gap exercise:</strong> Part 5 asks students to explain why no standard ruleset catches this. There is no single correct answer — accept any response that correctly identifies the absence of AI-credential-specific rules in Wazuh's default ruleset.</li>
+          <li><strong>Internet required:</strong> Exfil and validation stages call <code>httpbin.org</code> and simulate a call to <code>api.anthropic.com</code>.</li>
+          <li><strong>Final lab:</strong> Students are expected to write the most complete triage note of the course. Allow extra time (15–20 min) for the closing summary.</li>
+          <li><strong>Cleanup:</strong> <code>docker exec s[N]-lab-target /tmp/lab7-llm-key-exfil-sim.sh --cleanup</code></li>
+        </ul>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ── LAB RESET ── -->
+  <div class="section-label">Between sessions</div>
+  <h2>Lab reset — cleanup commands</h2>
+  <p style="color:var(--muted);font-size:14px;">Run the appropriate cleanup after each student session or before repeating a lab. Replace <code>[N]</code> with the seat number, or loop over 1–5.</p>
+
+  <table>
+    <thead><tr><th>Lab</th><th>Cleanup command (on the host)</th></tr></thead>
+    <tbody>
+      <tr><td>Lab 1</td><td><code>docker exec s[N]-lab-target bash -c "rm -f /tmp/lab1-*"</code></td></tr>
+      <tr><td>Lab 2</td><td><code>docker exec s[N]-lab-target /tmp/lab2-post-exploitation-sim.sh --cleanup</code></td></tr>
+      <tr><td>Lab 3</td><td>No artifacts — TheHive alert/case must be closed or deleted manually in the UI</td></tr>
+      <tr><td>Lab 4</td><td><code>docker exec s[N]-lab-target /tmp/lab4-ransomware-sim.sh --cleanup</code></td></tr>
+      <tr><td>Lab 5</td><td><code>docker exec s[N]-lab-target /tmp/lab5-supply-chain-sim.sh --cleanup</code></td></tr>
+      <tr><td>Lab 6</td><td><code>docker exec s[N]-lab-target /tmp/lab6-c2-beacon-sim.sh --cleanup</code></td></tr>
+      <tr><td>Lab 7</td><td><code>docker exec s[N]-lab-target /tmp/lab7-llm-key-exfil-sim.sh --cleanup</code></td></tr>
+    </tbody>
+  </table>
+
+  <h3>Loop cleanup across all seats</h3>
+  <pre>LAB=4   # set to the lab number you want to clean
+for N in 1 2 3 4 5; do
+  docker exec s${N}-lab-target /tmp/lab${LAB}-*.sh --cleanup 2>/dev/null || \
+    echo "s${N}: no cleanup needed"
+done</pre>
+
+  <div class="callout warn">
+    <strong>TheHive cases and alerts are not cleaned by the lab scripts.</strong> They persist in the database until manually deleted or the full stack is reset. For a new cohort, either delete cases in the UI (Admin → Cases) or perform a full cohort reset below.
+  </div>
+
+  <!-- ── NEW COHORT RESET ── -->
+  <div class="section-label">New cohort</div>
+  <h2>Full cohort reset</h2>
+  <p style="color:var(--muted);font-size:14px;">Wipes all alert history, Wazuh events, TheHive cases, and container state. Do this between cohort groups, not between individual students.</p>
+
+  <div class="callout danger">
+    <strong>Destructive.</strong> This deletes all Wazuh events, TheHive cases, Cortex analysis results, and target container state. You cannot undo it. Make sure you have any triage notes or reports you want to keep before running.
+  </div>
+
+  <pre># Stop the stack and delete all volumes (Wazuh indices, TheHive DB, etc.)
+docker compose down -v
+
+# Rebuild and restart — re-runs container initialisation from scratch
+bash setup.sh</pre>
+
+  <p>After <code>setup.sh</code> completes, repeat steps 2–6 of the <em>First-time deployment</em> section above to re-create TheHive accounts, re-link Cortex, and re-deploy scripts.</p>
+
+  <!-- ── MONITORING ── -->
+  <div class="section-label">During a session</div>
+  <h2>Monitoring students in real time</h2>
+
+  <h3>Check all containers are healthy</h3>
+  <pre>watch -n 30 'docker ps --format "table {{.Names}}\t{{.Status}}\t{{.RunningFor}}"'</pre>
+
+  <h3>See what a specific student's target is doing</h3>
+  <pre>docker exec s[N]-lab-target tail -f /var/log/syslog</pre>
+
+  <h3>Check if a student's Wazuh agent is active</h3>
+  <pre>docker exec soc-wazuh-manager /var/ossec/bin/agent_control -l</pre>
+
+  <h3>Verify the SOAR pipeline is intact</h3>
+  <pre>bash platform/scripts/verify-shuffle-py.sh</pre>
+
+  <h3>Watch TheHive for incoming alerts</h3>
+  <p>Log in to TheHive as <code>admin@thehive.local</code> and view the Alerts list. You can see all student-generated alerts in real time from the admin account.</p>
+
+  <!-- ── TROUBLESHOOTING ── -->
+  <div class="section-label">When things break</div>
+  <h2>Troubleshooting</h2>
+
+  <table>
+    <thead><tr><th style="width:35%;">Symptom</th><th>Fix</th></tr></thead>
+    <tbody>
+      <tr>
+        <td>Wazuh dashboard shows "no index pattern" or blank</td>
+        <td>Wait 3–5 more minutes for OpenSearch indices to initialise. Refresh the page. If still blank after 10 min: <code>docker restart soc-opensearch soc-wazuh-dashboard</code></td>
+      </tr>
+      <tr>
+        <td>OpenSearch crashes immediately on Linux</td>
+        <td><code>sudo sysctl -w vm.max_map_count=262144</code>. Make permanent by adding to <code>/etc/sysctl.conf</code>.</td>
+      </tr>
+      <tr>
+        <td>OpenSearch crashes on Windows WSL2</td>
+        <td>Add <code>kernelCommandLine = sysctl.vm.max_map_count=262144</code> to <code>%UserProfile%\.wslconfig</code>, then restart WSL2: <code>wsl --shutdown</code></td>
+      </tr>
+      <tr>
+        <td>Rule 40112 never fires in Lab 1/3</td>
+        <td>The wordlist needs 6+ failures before the success. Use the bundled <code>lab1-brute-force-sim.sh</code> — do not shorten the wordlist. Also check the agent is active in Wazuh.</td>
+      </tr>
+      <tr>
+        <td>TheHive alert never appears (Lab 3)</td>
+        <td>1. Confirm rule 40112 fired in Wazuh. 2. Run <code>verify-shuffle-py.sh</code>. 3. Check <code>docker logs soc-wazuh-manager | grep shuffle</code> for errors. Most common cause: stale <code>shuffle.py</code> missing the <code>THEHIVE_API_KEY</code>.</td>
+      </tr>
+      <tr>
+        <td>TheHive shows "Cortex unreachable"</td>
+        <td>Check <code>CORTEX_THEHIVE_API_KEY</code> in <code>.env</code>. Restart: <code>docker compose restart soc-thehive</code></td>
+      </tr>
+      <tr>
+        <td>Wazuh agent shows Disconnected</td>
+        <td><code>docker restart s[N]-lab-target</code>. Agent re-connects automatically within 60 seconds.</td>
+      </tr>
+      <tr>
+        <td>Lab script gives "same file" error (Lab 4)</td>
+        <td>Run <code>docker exec s[N]-lab-target /tmp/lab4-ransomware-sim.sh --cleanup</code> to clear the previous run's <code>.locked</code> files, then re-run the script. (Fixed in current version — only affects old deployments.)</td>
+      </tr>
+      <tr>
+        <td>Suricata alerts missing (macOS)</td>
+        <td>Suricata uses pcap on macOS via the Docker bridge. If no Suricata events appear, check: <code>docker logs soc-suricata</code>. On macOS it is normal for Suricata to miss some inter-container traffic.</td>
+      </tr>
+      <tr>
+        <td>shuffle.py overwritten after Wazuh restart</td>
+        <td>Run <code>bash platform/scripts/verify-shuffle-py.sh</code> — it detects and restores the file automatically.</td>
+      </tr>
+      <tr>
+        <td>Kali terminal page hangs / no prompt</td>
+        <td><code>docker restart soc-kali-attacker</code>. Reload the browser tab after ~15 seconds.</td>
+      </tr>
+      <tr>
+        <td>Wazuh search shows no results for a lab stage</td>
+        <td>1. Check time range is set to <em>Last 15 minutes</em> (not <em>Today</em>). 2. Use quoted keyword search in the KQL bar, not the field filter dropdown. 3. Confirm the syslog rule matched — check <code>docker exec soc-wazuh-manager tail -f /var/ossec/logs/alerts/alerts.json | grep LAB</code>.</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <!-- ── WINDOWS ── -->
+  <div class="section-label">Windows deployment</div>
+  <h2>Windows / WSL2 deployment</h2>
+
+  <p>The platform runs on Windows via WSL2. Two differences from macOS:</p>
+
+  <ul>
+    <li><strong>Use <code>setup.ps1</code></strong> not <code>setup.sh</code>. Run from an admin PowerShell session.</li>
+    <li><strong>Suricata is disabled</strong> in <code>docker-compose.win.yml</code>. WSL2 cannot capture raw packets across Docker bridge interfaces. Labs 5, 6, and 7 include inline syslog alternatives for Windows students — no guide changes needed.</li>
+  </ul>
+
+  <pre># Windows — start the stack
+docker compose -f docker-compose.yml -f docker-compose.win.yml up -d
+
+# Windows — stop
+docker compose -f docker-compose.yml -f docker-compose.win.yml down</pre>
+
+  <div class="callout">
+    Students on Windows see the <strong>Windows users:</strong> callout boxes in Labs 5–7 automatically. They use Wazuh syslog filters instead of Suricata network alerts. All five rubric categories are achievable without Suricata.
+  </div>
+
+  <!-- ── QUICK REFERENCE ── -->
+  <div class="section-label">Quick reference</div>
+  <h2>Common commands</h2>
+
+  <pre># Start the platform (macOS)
+docker compose -f docker-compose.yml -f docker-compose.mac.yml up -d
+
+# Stop (keeps data)
+docker compose -f docker-compose.yml -f docker-compose.mac.yml down
+
+# View container health
+docker ps --format "table {{.Names}}\t{{.Status}}"
+
+# Restart a single container
+docker restart s[N]-lab-target
+
+# Tail Wazuh manager alerts in real time
+docker exec soc-wazuh-manager tail -f /var/ossec/logs/alerts/alerts.log
+
+# Reload Wazuh rules (required after editing custom_rules.xml)
+docker restart soc-wazuh-manager
+
+# Reload nginx (after updating a guide file)
+docker exec soc-nginx nginx -s reload
+
+# Verify SOAR pipeline
+bash platform/scripts/verify-shuffle-py.sh
+
+# Deploy / refresh all lab scripts to all targets
+for N in 1 2 3 4 5; do
+  for SCRIPT in labs/scripts/lab*.sh; do
+    docker cp "$SCRIPT" "s${N}-lab-target:/tmp/$(basename $SCRIPT)"
+    docker exec "s${N}-lab-target" chmod +x "/tmp/$(basename $SCRIPT)"
+  done
+done</pre>
+
+</div><!-- /container -->
+</body>
+</html>
