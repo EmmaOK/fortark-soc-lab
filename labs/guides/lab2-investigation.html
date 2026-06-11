@@ -1386,6 +1386,68 @@ Please write two things:
 
   </div>
 
+  <h3 style="font-size:15px;font-weight:700;margin:28px 0 10px;">Self-assess your closing summary</h3>
+  <p style="font-size:14px;color:#8b949e;margin-bottom:16px;">Score each category 0–3. A strong note scores 12 or higher. If you score below 10, revise before moving on.</p>
+  <div style="border:1px solid #30363d;border-radius:10px;overflow:hidden;margin-bottom:8px;">
+    <div style="overflow-x:auto;">
+      <table style="width:100%;border-collapse:collapse;font-size:13px;min-width:680px;">
+        <thead>
+          <tr>
+            <th style="background:#21262d;border:1px solid #30363d;padding:10px 14px;text-align:left;font-size:11px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:#8b949e;width:140px;">Category</th>
+            <th style="background:rgba(248,81,73,.08);border:1px solid #30363d;padding:10px 14px;text-align:left;font-size:11px;font-weight:700;color:#f85149;letter-spacing:.05em;text-transform:uppercase;">0 — Missing</th>
+            <th style="background:rgba(210,153,34,.08);border:1px solid #30363d;padding:10px 14px;text-align:left;font-size:11px;font-weight:700;color:#d29922;letter-spacing:.05em;text-transform:uppercase;">1 — Incomplete</th>
+            <th style="background:rgba(88,166,255,.08);border:1px solid #30363d;padding:10px 14px;text-align:left;font-size:11px;font-weight:700;color:#58a6ff;letter-spacing:.05em;text-transform:uppercase;">2 — Adequate</th>
+            <th style="background:rgba(63,185,80,.08);border:1px solid #30363d;padding:10px 14px;text-align:left;font-size:11px;font-weight:700;color:#3fb950;letter-spacing:.05em;text-transform:uppercase;">3 — Strong</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td style="border:1px solid #30363d;padding:10px 14px;font-weight:700;color:#e6edf3;vertical-align:top;">Incident<br>identification</td>
+            <td style="border:1px solid #30363d;padding:10px 14px;color:#8b949e;vertical-align:top;line-height:1.5;">Attack type not named</td>
+            <td style="border:1px solid #30363d;padding:10px 14px;color:#8b949e;vertical-align:top;line-height:1.5;">Attack named but host or timestamp missing</td>
+            <td style="border:1px solid #30363d;padding:10px 14px;color:#8b949e;vertical-align:top;line-height:1.5;">Attack type, affected host, and first-seen timestamp all present</td>
+            <td style="border:1px solid #30363d;padding:10px 14px;color:#8b949e;vertical-align:top;line-height:1.5;">Above + attacker direction, scope, and victim context clearly stated</td>
+          </tr>
+          <tr style="background:rgba(33,38,45,.5);">
+            <td style="border:1px solid #30363d;padding:10px 14px;font-weight:700;color:#e6edf3;vertical-align:top;">Evidence cited</td>
+            <td style="border:1px solid #30363d;padding:10px 14px;color:#8b949e;vertical-align:top;line-height:1.5;">No rule IDs, counts, or log evidence</td>
+            <td style="border:1px solid #30363d;padding:10px 14px;color:#8b949e;vertical-align:top;line-height:1.5;">Mentions alerts but no specific rule IDs or counts</td>
+            <td style="border:1px solid #30363d;padding:10px 14px;color:#8b949e;vertical-align:top;line-height:1.5;">At least one rule ID with count, or one specific IOC</td>
+            <td style="border:1px solid #30363d;padding:10px 14px;color:#8b949e;vertical-align:top;line-height:1.5;">Two or more rule IDs with counts and at least one specific IOC (IP, path, or hash)</td>
+          </tr>
+          <tr>
+            <td style="border:1px solid #30363d;padding:10px 14px;font-weight:700;color:#e6edf3;vertical-align:top;">MITRE mapping</td>
+            <td style="border:1px solid #30363d;padding:10px 14px;color:#8b949e;vertical-align:top;line-height:1.5;">No technique mentioned</td>
+            <td style="border:1px solid #30363d;padding:10px 14px;color:#8b949e;vertical-align:top;line-height:1.5;">Technique ID listed with no explanation</td>
+            <td style="border:1px solid #30363d;padding:10px 14px;color:#8b949e;vertical-align:top;line-height:1.5;">Correct technique ID with a one-line plain-English explanation</td>
+            <td style="border:1px solid #30363d;padding:10px 14px;color:#8b949e;vertical-align:top;line-height:1.5;">Correct technique, explanation, and link to specific observed behaviour in this incident</td>
+          </tr>
+          <tr style="background:rgba(33,38,45,.5);">
+            <td style="border:1px solid #30363d;padding:10px 14px;font-weight:700;color:#e6edf3;vertical-align:top;">Severity &amp;<br>impact</td>
+            <td style="border:1px solid #30363d;padding:10px 14px;color:#8b949e;vertical-align:top;line-height:1.5;">Severity not stated</td>
+            <td style="border:1px solid #30363d;padding:10px 14px;color:#8b949e;vertical-align:top;line-height:1.5;">Severity label only (e.g. "High") with no justification</td>
+            <td style="border:1px solid #30363d;padding:10px 14px;color:#8b949e;vertical-align:top;line-height:1.5;">Severity stated with one-line justification tied to the evidence</td>
+            <td style="border:1px solid #30363d;padding:10px 14px;color:#8b949e;vertical-align:top;line-height:1.5;">Severity justified and actual or potential impact quantified (e.g. credentials exposed, breach confirmed)</td>
+          </tr>
+          <tr>
+            <td style="border:1px solid #30363d;padding:10px 14px;font-weight:700;color:#e6edf3;vertical-align:top;">Recommended<br>action</td>
+            <td style="border:1px solid #30363d;padding:10px 14px;color:#8b949e;vertical-align:top;line-height:1.5;">No action mentioned</td>
+            <td style="border:1px solid #30363d;padding:10px 14px;color:#8b949e;vertical-align:top;line-height:1.5;">Vague action only (e.g. "escalate" or "investigate further")</td>
+            <td style="border:1px solid #30363d;padding:10px 14px;color:#8b949e;vertical-align:top;line-height:1.5;">One concrete action step relevant to this incident type</td>
+            <td style="border:1px solid #30363d;padding:10px 14px;color:#8b949e;vertical-align:top;line-height:1.5;">Two or more specific, sequenced actions with tool or owner named</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <div style="background:#161b22;border-top:1px solid #30363d;padding:12px 20px;font-size:12px;color:#8b949e;display:flex;gap:20px;flex-wrap:wrap;align-items:center;">
+      <span style="font-size:13px;font-weight:700;color:#e6edf3;">Total: ___ / 15</span>
+      <span style="color:#3fb950;">13–15 &nbsp;Excellent</span>
+      <span style="color:#58a6ff;">10–12 &nbsp;Competent</span>
+      <span style="color:#d29922;">7–9 &nbsp;Needs revision</span>
+      <span style="color:#f85149;">Below 7 — rewrite before submitting</span>
+    </div>
+  </div>
+
   <hr>
 
   <!-- CLEANUP -->
