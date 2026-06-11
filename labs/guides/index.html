@@ -1,0 +1,668 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Fortark SOC Labs — Course Overview</title>
+<style>
+  :root {
+    --bg:#0d1117; --bg2:#161b22; --bg3:#21262d; --border:#30363d;
+    --text:#e6edf3; --muted:#8b949e;
+    --accent:#58a6ff; --accent2:#3fb950; --warn:#d29922; --danger:#f85149;
+    --purple:#bc8cff; --teal:#2ea89f; --orange:#e8812a;
+    --code-bg:#1c2128;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif;
+    background:var(--bg);color:var(--text);line-height:1.7;font-size:16px;}
+
+  a{color:var(--accent);text-decoration:none;}
+  a:hover{text-decoration:underline;}
+  code{font-family:'SF Mono','Fira Mono',monospace;font-size:13px;
+    background:var(--bg3);border:1px solid var(--border);
+    border-radius:4px;padding:1px 6px;color:var(--accent2);}
+  strong{color:var(--text);}
+  p{margin-bottom:14px;}
+
+  /* ── NAV ── */
+  .nav{background:var(--bg2);border-bottom:1px solid var(--border);
+    padding:14px 0;position:sticky;top:0;z-index:100;}
+  .nav-inner{max-width:960px;margin:0 auto;padding:0 24px;
+    display:flex;align-items:center;gap:14px;}
+  .logo{font-size:13px;font-weight:700;letter-spacing:.1em;color:var(--muted);}
+  .logo span{color:var(--accent);}
+  .nav-pill{padding:4px 14px;border-radius:20px;font-size:12px;font-weight:700;
+    background:rgba(88,166,255,.12);border:1px solid rgba(88,166,255,.25);
+    color:var(--accent);}
+
+  /* ── LAYOUT ── */
+  .container{max-width:960px;margin:0 auto;padding:0 24px 100px;}
+
+  /* ── HERO ── */
+  .hero{padding:64px 0 52px;border-bottom:1px solid var(--border);}
+  .hero-eyebrow{font-size:12px;font-weight:700;letter-spacing:.14em;
+    text-transform:uppercase;color:var(--accent);margin-bottom:14px;}
+  .hero h1{font-size:42px;font-weight:800;letter-spacing:-.03em;line-height:1.15;
+    margin-bottom:18px;}
+  .hero h1 span{color:var(--accent);}
+  .hero-sub{font-size:18px;color:var(--muted);line-height:1.6;max-width:620px;
+    margin-bottom:32px;}
+  .hero-stats{display:flex;flex-wrap:wrap;gap:28px;}
+  .stat{text-align:left;}
+  .stat-num{font-size:28px;font-weight:800;color:var(--text);line-height:1;}
+  .stat-label{font-size:13px;color:var(--muted);margin-top:4px;}
+
+  /* ── SECTION HEADINGS ── */
+  .section{margin-top:60px;}
+  .section-label{font-size:11px;font-weight:700;letter-spacing:.12em;
+    text-transform:uppercase;color:var(--muted);margin-bottom:6px;}
+  .section h2{font-size:24px;font-weight:700;margin-bottom:6px;}
+  .section-sub{font-size:15px;color:var(--muted);margin-bottom:28px;}
+
+  /* ── OUTCOMES ── */
+  .outcomes{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
+    gap:14px;margin-top:24px;}
+  .outcome-card{background:var(--bg2);border:1px solid var(--border);
+    border-radius:10px;padding:20px 22px;}
+  .oc-icon{font-size:24px;margin-bottom:10px;}
+  .oc-title{font-size:15px;font-weight:700;margin-bottom:6px;}
+  .oc-desc{font-size:13px;color:var(--muted);line-height:1.6;}
+
+  /* ── PREREQS ── */
+  .prereq-box{background:var(--bg2);border:1px solid var(--border);border-radius:10px;
+    padding:22px 26px;margin-top:24px;display:grid;
+    grid-template-columns:1fr 1fr;gap:20px;}
+  .prereq-col-title{font-size:12px;font-weight:700;letter-spacing:.08em;
+    text-transform:uppercase;color:var(--muted);margin-bottom:12px;}
+  .prereq-list{list-style:none;padding:0;}
+  .prereq-list li{font-size:14px;padding:5px 0;border-bottom:1px solid var(--border);
+    display:flex;align-items:center;gap:8px;}
+  .prereq-list li:last-child{border-bottom:none;}
+  .prereq-list li::before{content:'✓';color:var(--accent2);font-weight:700;font-size:13px;}
+  .prereq-list.not li::before{content:'✗';color:var(--muted);}
+
+  /* ── COURSE TRACK ── */
+  .track{margin-top:28px;}
+  .track-section{margin-bottom:40px;}
+  .track-header{display:flex;align-items:center;gap:14px;margin-bottom:16px;
+    padding-bottom:12px;border-bottom:1px solid var(--border);}
+  .track-badge{padding:4px 14px;border-radius:20px;font-size:12px;font-weight:700;}
+  .track-badge.foundation{background:rgba(88,166,255,.12);border:1px solid rgba(88,166,255,.25);color:var(--accent);}
+  .track-badge.beginner{background:rgba(63,185,80,.12);border:1px solid rgba(63,185,80,.25);color:var(--accent2);}
+  .track-badge.intermediate{background:rgba(210,153,34,.12);border:1px solid rgba(210,153,34,.25);color:var(--warn);}
+  .track-badge.advanced{background:rgba(248,81,73,.12);border:1px solid rgba(248,81,73,.25);color:var(--danger);}
+  .track-title{font-size:16px;font-weight:700;}
+  .track-desc{font-size:13px;color:var(--muted);}
+
+  /* ── MODULE CARDS (horizontal) ── */
+  .module-cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px;}
+  .module-card{background:var(--bg2);border:1px solid var(--border);border-radius:10px;
+    padding:18px 20px;transition:border-color .2s;}
+  .module-card:hover{border-color:var(--muted);}
+  .mc-num{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;
+    color:var(--accent);margin-bottom:6px;}
+  .mc-title{font-size:15px;font-weight:700;margin-bottom:6px;}
+  .mc-desc{font-size:13px;color:var(--muted);line-height:1.55;margin-bottom:14px;}
+  .mc-footer{display:flex;align-items:center;justify-content:space-between;}
+  .mc-time{font-size:12px;color:var(--muted);}
+  .mc-link{font-size:12px;font-weight:700;color:var(--accent);
+    padding:4px 12px;border:1px solid rgba(88,166,255,.3);border-radius:6px;
+    transition:background .2s;}
+  .mc-link:hover{background:rgba(88,166,255,.1);text-decoration:none;}
+
+  /* ── LAB CARDS (full width) ── */
+  .lab-cards{display:flex;flex-direction:column;gap:12px;}
+  .lab-card{background:var(--bg2);border:1px solid var(--border);border-radius:10px;
+    overflow:hidden;transition:border-color .2s;}
+  .lab-card:hover{border-color:var(--muted);}
+  .lc-inner{display:grid;grid-template-columns:auto 1fr auto;gap:0;align-items:stretch;}
+  .lc-num{width:70px;display:flex;align-items:center;justify-content:center;
+    border-right:1px solid var(--border);flex-shrink:0;padding:18px 0;}
+  .lc-num-text{font-size:22px;font-weight:800;color:var(--bg3);}
+  .lc-num.beginner{background:rgba(63,185,80,.06);}
+  .lc-num.beginner .lc-num-text{color:var(--accent2);}
+  .lc-num.intermediate{background:rgba(210,153,34,.06);}
+  .lc-num.intermediate .lc-num-text{color:var(--warn);}
+  .lc-num.advanced{background:rgba(248,81,73,.06);}
+  .lc-num.advanced .lc-num-text{color:var(--danger);}
+  .lc-body{padding:18px 22px;}
+  .lc-title{font-size:16px;font-weight:700;margin-bottom:4px;}
+  .lc-desc{font-size:13px;color:var(--muted);line-height:1.55;margin-bottom:12px;}
+  .lc-tags{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px;}
+  .lc-tag{padding:2px 8px;border-radius:4px;font-size:11px;font-weight:700;
+    background:var(--bg3);border:1px solid var(--border);color:var(--muted);}
+  .lc-tag.wazuh{background:rgba(88,166,255,.08);border-color:rgba(88,166,255,.2);color:var(--accent);}
+  .lc-tag.suricata{background:rgba(232,129,42,.08);border-color:rgba(232,129,42,.2);color:var(--orange);}
+  .lc-tag.thehive{background:rgba(188,140,255,.08);border-color:rgba(188,140,255,.2);color:var(--purple);}
+  .lc-tag.shuffle{background:rgba(46,168,159,.08);border-color:rgba(46,168,159,.2);color:var(--teal);}
+  .lc-tag.kali{background:rgba(248,81,73,.08);border-color:rgba(248,81,73,.2);color:var(--danger);}
+  .lc-tag.cortex{background:rgba(63,185,80,.08);border-color:rgba(63,185,80,.2);color:var(--accent2);}
+  .lc-meta{display:flex;gap:16px;font-size:12px;color:var(--muted);}
+  .lc-cta{padding:18px 22px;display:flex;flex-direction:column;justify-content:center;
+    align-items:flex-end;gap:8px;border-left:1px solid var(--border);min-width:120px;}
+  .lc-badge{padding:3px 10px;border-radius:12px;font-size:11px;font-weight:700;white-space:nowrap;}
+  .lc-badge.beginner{background:rgba(63,185,80,.12);border:1px solid rgba(63,185,80,.25);color:var(--accent2);}
+  .lc-badge.intermediate{background:rgba(210,153,34,.12);border:1px solid rgba(210,153,34,.25);color:var(--warn);}
+  .lc-badge.advanced{background:rgba(248,81,73,.12);border:1px solid rgba(248,81,73,.25);color:var(--danger);}
+  .lc-start{font-size:13px;font-weight:700;color:var(--accent);
+    padding:7px 16px;border:1px solid rgba(88,166,255,.3);border-radius:6px;
+    text-align:center;transition:background .2s;white-space:nowrap;}
+  .lc-start:hover{background:rgba(88,166,255,.1);text-decoration:none;}
+  .lc-prereq{font-size:11px;color:var(--muted);text-align:right;}
+
+  /* ── MITRE COVERAGE ── */
+  .mitre-grid{display:flex;flex-wrap:wrap;gap:8px;margin-top:20px;}
+  .mitre-pill{padding:4px 12px;border-radius:20px;font-size:12px;font-weight:700;
+    font-family:monospace;background:rgba(188,140,255,.1);
+    border:1px solid rgba(188,140,255,.25);color:var(--purple);}
+  .mitre-pill span{font-weight:400;color:var(--muted);font-size:11px;
+    font-family:inherit;margin-left:6px;}
+
+  /* ── TOOLS GLOSSARY ── */
+  .tools-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));
+    gap:12px;margin-top:20px;}
+  .tool-card{background:var(--bg2);border:1px solid var(--border);border-radius:10px;
+    padding:18px 20px;}
+  .tool-name{font-size:14px;font-weight:700;margin-bottom:4px;}
+  .tool-role{font-size:11px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;
+    margin-bottom:8px;}
+  .tool-desc{font-size:13px;color:var(--muted);line-height:1.55;}
+  .tool-name.wazuh{color:var(--accent);}
+  .tool-name.suricata{color:var(--orange);}
+  .tool-name.thehive{color:var(--purple);}
+  .tool-name.shuffle{color:var(--teal);}
+  .tool-name.cortex{color:var(--accent2);}
+  .tool-name.kali{color:var(--danger);}
+
+  /* ── START STEPS ── */
+  .start-steps{display:flex;flex-direction:column;gap:0;margin-top:24px;}
+  .start-step{display:flex;gap:20px;padding:20px 0;
+    border-bottom:1px solid var(--border);}
+  .start-step:last-child{border-bottom:none;}
+  .ss-num{width:36px;height:36px;border-radius:50%;flex-shrink:0;
+    background:var(--bg3);border:1px solid var(--border);
+    display:flex;align-items:center;justify-content:center;
+    font-weight:800;font-size:14px;color:var(--text);}
+  .ss-head{font-size:15px;font-weight:700;margin-bottom:4px;}
+  .ss-sub{font-size:13px;color:var(--muted);line-height:1.6;}
+
+  /* ── CALLOUT ── */
+  .callout{background:rgba(88,166,255,.06);border-left:3px solid var(--accent);
+    border-radius:0 8px 8px 0;padding:14px 18px;margin:20px 0;
+    font-size:14px;color:var(--muted);line-height:1.7;}
+  .callout.warn{background:rgba(210,153,34,.06);border-left-color:var(--warn);}
+  .callout.success{background:rgba(63,185,80,.06);border-left-color:var(--accent2);}
+  .callout strong{color:var(--text);}
+
+  @media(max-width:700px){
+    .hero h1{font-size:28px;}
+    .lc-inner{grid-template-columns:1fr;}
+    .lc-num{width:100%;height:44px;border-right:none;border-bottom:1px solid var(--border);}
+    .lc-cta{border-left:none;border-top:1px solid var(--border);
+      flex-direction:row;justify-content:space-between;align-items:center;}
+    .prereq-box{grid-template-columns:1fr;}
+  }
+</style>
+</head>
+<body>
+
+<nav class="nav">
+  <div class="nav-inner">
+    <div class="logo">FORTARK <span>SOC LABS</span></div>
+    <div class="nav-pill">Course Overview</div>
+  </div>
+</nav>
+
+<div class="container">
+
+  <!-- ── HERO ─────────────────────────────────────────────────────────────── -->
+  <div class="hero">
+    <div class="hero-eyebrow">Fortark SOC Labs</div>
+    <h1>Learn to Defend Systems<br>by <span>Attacking</span> Them First</h1>
+    <p class="hero-sub">A hands-on SOC analyst training program. You will trigger real attacks, watch them appear in a live SIEM, investigate the evidence, and write triage reports — exactly as analysts do in production.</p>
+    <div class="hero-stats">
+      <div class="stat"><div class="stat-num">10</div><div class="stat-label">modules &amp; labs</div></div>
+      <div class="stat"><div class="stat-num">~9 hrs</div><div class="stat-label">total hands-on time</div></div>
+      <div class="stat"><div class="stat-num">7</div><div class="stat-label">MITRE ATT&amp;CK techniques</div></div>
+      <div class="stat"><div class="stat-num">6</div><div class="stat-label">industry tools</div></div>
+    </div>
+  </div>
+
+  <!-- ── WHAT YOU WILL BE ABLE TO DO ───────────────────────────────────────── -->
+  <div class="section">
+    <div class="section-label">Outcomes</div>
+    <h2>What you will be able to do</h2>
+    <p class="section-sub">By the end of this course you have completed tasks that belong to a real Tier 1 and Tier 2 SOC analyst role.</p>
+
+    <div class="outcomes">
+      <div class="outcome-card">
+        <div class="oc-icon">🔍</div>
+        <div class="oc-title">Hunt threat actor activity</div>
+        <div class="oc-desc">Use a SIEM to find brute force, ransomware, C2 beacons, and exfiltration events hidden in thousands of log lines.</div>
+      </div>
+      <div class="outcome-card">
+        <div class="oc-icon">🧩</div>
+        <div class="oc-title">Correlate multi-source alerts</div>
+        <div class="oc-desc">Connect FIM, syslog, and network IDS events across time to reconstruct a complete attack chain from first entry to persistence.</div>
+      </div>
+      <div class="outcome-card">
+        <div class="oc-icon">📋</div>
+        <div class="oc-title">Triage and classify incidents</div>
+        <div class="oc-desc">Decide true vs. false positive, assign severity, and write the structured triage note that gets handed to Tier 2.</div>
+      </div>
+      <div class="outcome-card">
+        <div class="oc-icon">⚙️</div>
+        <div class="oc-title">Automate with SOAR</div>
+        <div class="oc-desc">Watch a detection rule trigger an automated response pipeline that creates a case in TheHive without any human in the loop.</div>
+      </div>
+      <div class="outcome-card">
+        <div class="oc-icon">🛡️</div>
+        <div class="oc-title">Work the incident lifecycle</div>
+        <div class="oc-desc">Contain, eradicate, recover, and document — following the IR lifecycle from alert to closed case the way a production SOC does.</div>
+      </div>
+      <div class="outcome-card">
+        <div class="oc-icon">🤖</div>
+        <div class="oc-title">Spot emerging AI threats</div>
+        <div class="oc-desc">Detect LLM API key exfiltration — a real attack class with no standard ruleset yet — and understand why AI credentials are high-value targets.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── PREREQUISITES ─────────────────────────────────────────────────────── -->
+  <div class="section">
+    <div class="section-label">Before you start</div>
+    <h2>Prerequisites</h2>
+    <p class="section-sub">Lab 1 requires nothing. The modules in the Foundation track cover everything else you need before you reach Lab 3.</p>
+
+    <div class="prereq-box">
+      <div>
+        <div class="prereq-col-title">You need</div>
+        <ul class="prereq-list">
+          <li>Basic comfort using a web browser and terminal</li>
+          <li>Ability to read a log line and follow timestamps</li>
+          <li>The lab platform running at <code>http://localhost</code></li>
+          <li>About 1 hour of uninterrupted time per lab</li>
+        </ul>
+      </div>
+      <div>
+        <div class="prereq-col-title">You do not need</div>
+        <ul class="prereq-list not">
+          <li>Prior cybersecurity or SOC experience</li>
+          <li>Networking or Linux certifications</li>
+          <li>Programming or scripting knowledge</li>
+          <li>Prior experience with Wazuh, Suricata, or TheHive</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="callout warn" style="margin-top:16px;">
+      <strong>Windows / WSL2 users:</strong> The platform runs identically on Windows. One limitation — Suricata (the network IDS) is disabled because WSL2 cannot capture raw packets. Labs 5, 6, and 7 all include Windows-specific syslog alternatives so you can complete every objective without Suricata.
+    </div>
+  </div>
+
+  <!-- ── COURSE STRUCTURE ───────────────────────────────────────────────────── -->
+  <div class="section">
+    <div class="section-label">Course map</div>
+    <h2>Course structure</h2>
+    <p class="section-sub">Start with the Foundation modules, then work through the labs in order. Each lab builds on the previous one.</p>
+
+    <div class="track">
+
+      <!-- Foundation -->
+      <div class="track-section">
+        <div class="track-header">
+          <div class="track-badge foundation">Foundation</div>
+          <div>
+            <div class="track-title">Theory modules — read before Labs 1–2</div>
+            <div class="track-desc">Short conceptual reads. No platform access required. ~55 minutes total.</div>
+          </div>
+        </div>
+        <div class="module-cards">
+          <div class="module-card">
+            <div class="mc-num">Module 0</div>
+            <div class="mc-title">How Attackers Think</div>
+            <div class="mc-desc">Understand the attacker mindset, the kill chain, and why defenders need to think offensively. Sets the frame for every lab.</div>
+            <div class="mc-footer">
+              <div class="mc-time">⏱ 20 min</div>
+              <a class="mc-link" href="module0-attacker-mindset.html">Open →</a>
+            </div>
+          </div>
+          <div class="module-card">
+            <div class="mc-num">Module 1</div>
+            <div class="mc-title">Logs, Events, and Alerts</div>
+            <div class="mc-desc">What syslog, FIM, and IDS events actually are — and the difference between a raw event, a Wazuh alert, and an incident.</div>
+            <div class="mc-footer">
+              <div class="mc-time">⏱ 20 min</div>
+              <a class="mc-link" href="module1-logs-events-alerts.html">Open →</a>
+            </div>
+          </div>
+          <div class="module-card">
+            <div class="mc-num">Module 2</div>
+            <div class="mc-title">The SOC Analyst Role</div>
+            <div class="mc-desc">Tier 1 vs. Tier 2, the alert queue, triage decisions, and what a well-written triage note looks like in the real world.</div>
+            <div class="mc-footer">
+              <div class="mc-time">⏱ 15 min</div>
+              <a class="mc-link" href="module2-soc-role.html">Open →</a>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Beginner labs -->
+      <div class="track-section">
+        <div class="track-header">
+          <div class="track-badge beginner">Beginner</div>
+          <div>
+            <div class="track-title">Labs 1–2 — Detection fundamentals</div>
+            <div class="track-desc">No prior experience required. Introduces the full detection → triage workflow.</div>
+          </div>
+        </div>
+        <div class="lab-cards">
+
+          <div class="lab-card">
+            <div class="lc-inner">
+              <div class="lc-num beginner"><div class="lc-num-text">01</div></div>
+              <div class="lc-body">
+                <div class="lc-title">SSH Brute Force — Attack, Detect, Triage</div>
+                <div class="lc-desc">You launch a credential-stuffing attack against a live target and then switch seats to investigate it in Wazuh. First full triage note of the course.</div>
+                <div class="lc-tags">
+                  <span class="lc-tag wazuh">Wazuh</span>
+                  <span class="lc-tag kali">Kali Linux</span>
+                </div>
+                <div class="lc-meta">
+                  <span>⏱ 45 min</span>
+                  <span>No prerequisites</span>
+                </div>
+              </div>
+              <div class="lc-cta">
+                <span class="lc-badge beginner">Beginner</span>
+                <a class="lc-start" href="lab1-brute-force.html">Start lab →</a>
+                <div class="lc-prereq">Read Modules 0–2 first</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="lab-card">
+            <div class="lc-inner">
+              <div class="lc-num beginner"><div class="lc-num-text">02</div></div>
+              <div class="lc-body">
+                <div class="lc-title">Post-Breach Investigation</div>
+                <div class="lc-desc">The attacker is already inside. Hunt the post-exploitation activity — discovery, lateral movement, credential access — and reconstruct the timeline.</div>
+                <div class="lc-tags">
+                  <span class="lc-tag wazuh">Wazuh</span>
+                  <span class="lc-tag suricata">Suricata</span>
+                  <span class="lc-tag thehive">TheHive</span>
+                  <span class="lc-tag cortex">Cortex</span>
+                </div>
+                <div class="lc-meta">
+                  <span>⏱ 60 min</span>
+                  <span>Complete Lab 1 first</span>
+                </div>
+              </div>
+              <div class="lc-cta">
+                <span class="lc-badge beginner">Beginner</span>
+                <a class="lc-start" href="lab2-investigation.html">Start lab →</a>
+                <div class="lc-prereq">Requires Lab 1</div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- Intermediate labs -->
+      <div class="track-section">
+        <div class="track-header">
+          <div class="track-badge intermediate">Intermediate</div>
+          <div>
+            <div class="track-title">Labs 3–5 — Automation and advanced threats</div>
+            <div class="track-desc">SOAR pipelines, ransomware, and supply chain attacks. Builds on your Lab 1–2 SIEM skills.</div>
+          </div>
+        </div>
+        <div class="lab-cards">
+
+          <div class="lab-card">
+            <div class="lc-inner">
+              <div class="lc-num intermediate"><div class="lc-num-text">03</div></div>
+              <div class="lc-body">
+                <div class="lc-title">SOAR Automation — Alerts to Cases</div>
+                <div class="lc-desc">Watch a Wazuh detection rule trigger Shuffle SOAR, which automatically creates a structured case in TheHive. Then work the case through the full incident response lifecycle.</div>
+                <div class="lc-tags">
+                  <span class="lc-tag wazuh">Wazuh</span>
+                  <span class="lc-tag shuffle">Shuffle SOAR</span>
+                  <span class="lc-tag thehive">TheHive</span>
+                </div>
+                <div class="lc-meta">
+                  <span>⏱ 60 min</span>
+                  <span>Complete Labs 1–2 first</span>
+                </div>
+              </div>
+              <div class="lc-cta">
+                <span class="lc-badge intermediate">Intermediate</span>
+                <a class="lc-start" href="lab3-soar.html">Start lab →</a>
+                <div class="lc-prereq">Requires Labs 1–2</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="lab-card">
+            <div class="lc-inner">
+              <div class="lc-num intermediate"><div class="lc-num-text">04</div></div>
+              <div class="lc-body">
+                <div class="lc-title">Ransomware Detection</div>
+                <div class="lc-desc">A simulated ransomware payload runs on your target: discovery, mass encryption, ransom note drop, backup destruction. Hunt every stage using FIM and syslog alerts.</div>
+                <div class="lc-tags">
+                  <span class="lc-tag wazuh">Wazuh</span>
+                  <span class="lc-tag thehive">TheHive</span>
+                  <span class="lc-tag shuffle">Shuffle</span>
+                </div>
+                <div class="lc-meta">
+                  <span>⏱ 75 min</span>
+                  <span>Complete Labs 1–3 first</span>
+                </div>
+              </div>
+              <div class="lc-cta">
+                <span class="lc-badge intermediate">Intermediate</span>
+                <a class="lc-start" href="lab4-ransomware.html">Start lab →</a>
+                <div class="lc-prereq">Requires Labs 1–3</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="lab-card">
+            <div class="lc-inner">
+              <div class="lc-num intermediate"><div class="lc-num-text">05</div></div>
+              <div class="lc-body">
+                <div class="lc-title">Supply Chain Attack</div>
+                <div class="lc-desc">A malicious Python package installs a dropper, calls back to C2, and installs a cron-based persistence mechanism — all during a normal <code>pip install</code>. Correlate FIM, syslog, and network events across four stages.</div>
+                <div class="lc-tags">
+                  <span class="lc-tag wazuh">Wazuh</span>
+                  <span class="lc-tag suricata">Suricata</span>
+                  <span class="lc-tag thehive">TheHive</span>
+                  <span class="lc-tag cortex">Cortex</span>
+                </div>
+                <div class="lc-meta">
+                  <span>⏱ 60 min</span>
+                  <span>Complete Labs 1–4 first</span>
+                </div>
+              </div>
+              <div class="lc-cta">
+                <span class="lc-badge intermediate">Intermediate</span>
+                <a class="lc-start" href="lab5-supply-chain.html">Start lab →</a>
+                <div class="lc-prereq">Requires Labs 1–4</div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- Advanced labs -->
+      <div class="track-section">
+        <div class="track-header">
+          <div class="track-badge advanced">Advanced</div>
+          <div>
+            <div class="track-title">Labs 6–7 — Behavioural detection and emerging threats</div>
+            <div class="track-desc">No signature-based detection. Pattern recognition, statistical analysis, and threats that no standard ruleset catches yet.</div>
+          </div>
+        </div>
+        <div class="lab-cards">
+
+          <div class="lab-card">
+            <div class="lc-inner">
+              <div class="lc-num advanced"><div class="lc-num-text">06</div></div>
+              <div class="lc-body">
+                <div class="lc-title">C2 Beaconing — The Signal in the Noise</div>
+                <div class="lc-desc">A compromised host beacons to an attacker every ~20 seconds with jitter. You watch the pattern emerge in real time, measure intervals, decode the encoded victim ID hidden in the User-Agent header, and write your first Suricata detection rule.</div>
+                <div class="lc-tags">
+                  <span class="lc-tag wazuh">Wazuh</span>
+                  <span class="lc-tag suricata">Suricata</span>
+                  <span class="lc-tag thehive">TheHive</span>
+                  <span class="lc-tag cortex">Cortex</span>
+                </div>
+                <div class="lc-meta">
+                  <span>⏱ 60 min</span>
+                  <span>Complete Labs 1–5 first</span>
+                </div>
+              </div>
+              <div class="lc-cta">
+                <span class="lc-badge advanced">Advanced</span>
+                <a class="lc-start" href="lab6-c2-beaconing.html">Start lab →</a>
+                <div class="lc-prereq">Requires Labs 1–5</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="lab-card">
+            <div class="lc-inner">
+              <div class="lc-num advanced"><div class="lc-num-text">07</div></div>
+              <div class="lc-body">
+                <div class="lc-title">LLM API Key Exfiltration — Capstone</div>
+                <div class="lc-desc">The final lab and the hardest to detect. An attacker discovers, extracts, exfiltrates, and validates AI API keys from a compromised developer machine. No standard SIEM ruleset catches this. You build the detection from scratch and write the full incident report.</div>
+                <div class="lc-tags">
+                  <span class="lc-tag wazuh">Wazuh</span>
+                  <span class="lc-tag suricata">Suricata</span>
+                  <span class="lc-tag thehive">TheHive</span>
+                  <span class="lc-tag cortex">Cortex</span>
+                </div>
+                <div class="lc-meta">
+                  <span>⏱ 60 min</span>
+                  <span>Complete all prior labs</span>
+                </div>
+              </div>
+              <div class="lc-cta">
+                <span class="lc-badge advanced">Advanced</span>
+                <a class="lc-start" href="lab7-llm-key-exfil.html">Start lab →</a>
+                <div class="lc-prereq">Requires Labs 1–6</div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+    </div><!-- /track -->
+  </div>
+
+  <!-- ── MITRE COVERAGE ─────────────────────────────────────────────────────── -->
+  <div class="section">
+    <div class="section-label">ATT&amp;CK framework</div>
+    <h2>MITRE ATT&amp;CK coverage</h2>
+    <p class="section-sub">Each lab maps directly to real adversary techniques used in production incidents.</p>
+    <div class="mitre-grid">
+      <div class="mitre-pill">T1110 <span>Brute Force</span></div>
+      <div class="mitre-pill">T1082 <span>System Discovery</span></div>
+      <div class="mitre-pill">T1049 <span>Network Connections</span></div>
+      <div class="mitre-pill">T1083 <span>File Discovery</span></div>
+      <div class="mitre-pill">T1486 <span>Data Encrypted for Impact</span></div>
+      <div class="mitre-pill">T1490 <span>Inhibit System Recovery</span></div>
+      <div class="mitre-pill">T1491 <span>Defacement / Ransom Note</span></div>
+      <div class="mitre-pill">T1195.001 <span>Supply Chain Compromise</span></div>
+      <div class="mitre-pill">T1059 <span>Command &amp; Scripting</span></div>
+      <div class="mitre-pill">T1053.003 <span>Cron Persistence</span></div>
+      <div class="mitre-pill">T1071.001 <span>Web Protocol C2</span></div>
+      <div class="mitre-pill">T1573.001 <span>Encrypted Channel</span></div>
+      <div class="mitre-pill">T1552.001 <span>Credentials in Files</span></div>
+      <div class="mitre-pill">T1041 <span>Exfiltration Over C2</span></div>
+      <div class="mitre-pill">T1078 <span>Valid Accounts</span></div>
+    </div>
+  </div>
+
+  <!-- ── TOOLS ──────────────────────────────────────────────────────────────── -->
+  <div class="section">
+    <div class="section-label">Platform</div>
+    <h2>Tools you will use</h2>
+    <p class="section-sub">All tools run locally in Docker. No accounts, no cloud subscriptions, no setup beyond starting the platform.</p>
+    <div class="tools-grid">
+      <div class="tool-card">
+        <div class="tool-name wazuh">Wazuh</div>
+        <div class="tool-role" style="color:var(--accent);">SIEM / XDR</div>
+        <div class="tool-desc">Collects logs from every container, runs detection rules, and indexes everything in OpenSearch. Your primary investigation interface — used in every lab.</div>
+      </div>
+      <div class="tool-card">
+        <div class="tool-name suricata">Suricata</div>
+        <div class="tool-role" style="color:var(--orange);">Network IDS</div>
+        <div class="tool-desc">Inspects network traffic and fires alerts when it sees suspicious connections, C2 beacons, or known attack signatures. Disabled on Windows/WSL2.</div>
+      </div>
+      <div class="tool-card">
+        <div class="tool-name thehive">TheHive</div>
+        <div class="tool-role" style="color:var(--purple);">Case Management</div>
+        <div class="tool-desc">Where incidents live as Cases. You triage alerts, document findings, run observables through Cortex, and close cases with a verdict — exactly as Tier 1 analysts do.</div>
+      </div>
+      <div class="tool-card">
+        <div class="tool-name shuffle">Shuffle SOAR</div>
+        <div class="tool-role" style="color:var(--teal);">Automation</div>
+        <div class="tool-desc">Receives Wazuh webhooks and automatically creates TheHive alerts without human intervention. Lab 3 is built around watching this pipeline fire in real time.</div>
+      </div>
+      <div class="tool-card">
+        <div class="tool-name cortex">Cortex</div>
+        <div class="tool-role" style="color:var(--accent2);">Threat Intelligence</div>
+        <div class="tool-desc">Enriches observables — IPs, domains, hashes — by querying threat intelligence feeds. Integrated with TheHive so you can run enrichment directly from a case.</div>
+      </div>
+      <div class="tool-card">
+        <div class="tool-name kali">Kali Linux</div>
+        <div class="tool-role" style="color:var(--danger);">Attacker Terminal</div>
+        <div class="tool-desc">The attacker machine, accessible from your browser at <code>http://localhost/attacker/</code>. You use it to run Hydra, simulated malware, and other attack tools — then switch to Wazuh to investigate what you just did.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── HOW TO START ───────────────────────────────────────────────────────── -->
+  <div class="section">
+    <div class="section-label">Getting started</div>
+    <h2>How to begin</h2>
+    <p class="section-sub">The platform is already running. Three steps and you are in your first lab.</p>
+
+    <div class="start-steps">
+      <div class="start-step">
+        <div class="ss-num">1</div>
+        <div>
+          <div class="ss-head">Confirm the platform is up</div>
+          <div class="ss-sub">Open <a href="http://localhost">http://localhost</a> — you should see the Wazuh dashboard. Open <a href="http://localhost/thehive/">http://localhost/thehive/</a> and log in as <code>studentN@thehive.local</code> / <code>FortarkLabs1!</code>. If anything is down, ask your instructor.</div>
+        </div>
+      </div>
+      <div class="start-step">
+        <div class="ss-num">2</div>
+        <div>
+          <div class="ss-head">Read the three Foundation modules</div>
+          <div class="ss-sub">Modules 0, 1, and 2 are short reads (55 minutes total). They cover the concepts Labs 1–7 assume you know. You will answer Q1 of Lab 1 with confidence if you read them first — you will guess if you skip them.</div>
+        </div>
+      </div>
+      <div class="start-step">
+        <div class="ss-num">3</div>
+        <div>
+          <div class="ss-head">Open Lab 1 and follow the pre-flight check</div>
+          <div class="ss-sub">Every lab starts with a pre-flight checklist that verifies your agent is active and your Wazuh filters are correctly set. Do not skip it — a wrong filter is the most common reason alerts seem missing. Confirm all green before you trigger anything.</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="callout success" style="margin-top:28px;">
+      <strong>Work in order.</strong> Each lab builds on the vocabulary, tool familiarity, and analytical muscle built in the one before it. Lab 7 expects you to already know how to read a Wazuh alert JSON, correlate timestamps, and write a triage note — all skills from earlier labs. Jumping ahead will make the advanced labs significantly harder than they need to be.
+    </div>
+  </div>
+
+</div><!-- /container -->
+
+</body>
+</html>
